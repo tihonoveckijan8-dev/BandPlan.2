@@ -344,3 +344,36 @@ These are migration defaults, not a mandate to retain the old visual design. The
 5. Resolve setlist item `songId` references within the same scope first (group-to-group or personal-to-personal).
 6. Keep normalized event participation as an independent repository operation.
 7. Treat roster snapshots as presentation/cache data; authoritative membership is `bandplan_group_members` and the group-list RPC.
+
+
+## 11. Final RPC behavior and security-advisor findings
+
+The remaining live function definitions were inspected read-only.
+
+### Group creation and invite behavior
+
+- `bandplan_create_group(p_name, p_display_name, p_roles)` requires an authenticated user, validates a 3–50 character group name, creates the group and membership, upserts account display name/roles without overwriting non-empty values with empty inputs, generates a 10-character uppercase hex invite code, initializes group state with empty `members/events/songs/setlists` arrays, and activates the group.
+- `bandplan_create_group_and_invite(..., p_group_id)` either validates membership in the supplied group or selects the user's active/earliest membership. If no group exists, it creates one (using the supplied name or fallback `Моя группа`). It returns an existing valid invite created by the current user or creates a new unlimited-use invite, then activates that group.
+- `bandplan_get_invite_code()` is not a pure read: if the user has no group, it creates a group using their account display name/roles, then creates or returns an invite code. The Flutter UI must make this side effect explicit and must not call it merely to preview invite availability.
+- `bandplan_delete_my_account()` is destructive and deletes the authenticated row from `auth.users`. Before doing so, it transfers ownership of owned groups to the earliest remaining member, deletes groups with no remaining members and their group data, reassigns shared record `updated_by` values, removes participation/friendship/member/invite/account/profile/user-state references, and deletes the auth user. This operation requires a clearly confirmed user flow and must never be called as a background cleanup.
+- `bandplan_cleanup_expired_events()` deletes expired one-off events and repeating series only when their explicit `repeatUntil` date has passed; it also removes corresponding participation rows. It is a server/admin maintenance operation, not a mobile-client operation.
+- `bandplan_admin_table_info()` returns public table metadata excluding the recycle bin. It is administrative metadata and not part of the app client contract.
+
+### Security advisor snapshot (2026-10-31)
+
+The Supabase security advisor returned:
+- INFO: `bandplan_admin_recycle_bin` has RLS enabled but no policies. This is an intentional closed client boundary; do not add a permissive policy to silence the lint.
+- WARN: 12 authenticated-callable SECURITY DEFINER RPCs. The advisor flags the pattern generically; several are required business operations and explicitly verify `auth.uid()` and/or group membership. Each function must continue to be reviewed individually for authorization, pinned search_path, and safe inputs. Do not revoke all EXECUTE grants indiscriminately because that would break the current client contract.
+- WARN: leaked-password protection is disabled in Supabase Auth. This is a dashboard-level security setting; it was not changed during this repository task. The project owner should review enabling it after checking expected sign-up behavior.
+- The advisor snapshot is time-bound and should be re-run before production release.
+
+### OAuth/native callback configuration remains unverified
+
+The available Supabase project/database tools do not expose the Auth URL configuration or Google/Apple provider client settings in this audit. Therefore the following are still blockers before enabling native OAuth in Flutter:
+- approved Site URL and additional redirect URLs;
+- Android app link/custom scheme callback registration and package SHA fingerprints where applicable;
+- iOS bundle ID and universal-link/custom-scheme callback registration;
+- Google provider enabled state, client IDs, and authorized redirect URI;
+- Apple provider enabled state, Services ID / bundle association, and key configuration.
+
+Do not copy secrets into the repository. Store only non-secret public client identifiers in platform configuration and keep provider secrets in Supabase Auth settings. Until these values are verified, OAuth must be treated as not yet configured for native builds.
