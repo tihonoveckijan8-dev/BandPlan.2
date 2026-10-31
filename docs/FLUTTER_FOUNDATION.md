@@ -15,6 +15,9 @@ The initial Flutter application foundation and email/password auth flow are pres
 - `lib/features/auth/data/auth_repository.dart` — email/password sign-in, sign-up, password reset, confirmation resend, and sign-out operations.
 - `lib/features/auth/application/auth_providers.dart` — Riverpod access to the auth repository and auth-state stream.
 - `lib/features/auth/presentation/auth_page.dart` — initial email/password sign-in, sign-up, and password-reset UI.
+- `lib/features/groups/data/group_repository.dart` — adapter for the existing list/create/join/activate/invite/leave/rename group RPCs.
+- `lib/features/groups/application/group_providers.dart` — Riverpod group repository and membership-list providers.
+- `lib/features/groups/presentation/group_workspace_page.dart` — initial group list, create/join dialogs, active-group selection, invite-code copy, and leave action.
 
 ## Configuration
 
@@ -30,10 +33,10 @@ When configuration is absent, Supabase initialization is skipped and the app dis
 
 ## Important limits
 - This is not yet a complete Flutter platform project. Android, iOS, Windows, and macOS runner folders have not been generated.
-- A successful sign-in currently leads to a temporary session screen; group workspace, onboarding, and account profile screens are not implemented.
+- A successful sign-in opens the initial group workspace. Onboarding and account profile screens are not implemented.
 - Realtime subscriptions, data repositories for songs/events/setlists, and offline synchronization have not been implemented.
 - No production database writes, migrations, or schema changes have been made.
 - Flutter SDK and dependency resolution have not been run in this environment. Verify with `flutter pub get`, `flutter analyze`, and `flutter test` before treating this foundation as build-verified.
 
 ## Next implementation step
-Implement the multi-group workspace using the existing RPC and JSON contracts: fetch memberships, switch the active group, create a group, join by invite code, and leave a selected group. Preserve the live database schema and existing RPC behavior.
+Harden the group workflow with active-group restoration, typed RPC response models, member roster, group rename, and reliable error states. Then implement the shared song/event/setlist data layer. Preserve the live database schema and existing RPC behavior.
