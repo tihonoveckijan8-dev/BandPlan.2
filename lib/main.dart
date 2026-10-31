@@ -1,20 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(const BandPlanApp());
-}
+import 'app/bandplan_app.dart';
+import 'core/supabase/supabase_bootstrap.dart';
 
-class BandPlanApp extends StatelessWidget {
-  const BandPlanApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BandPlan',
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF1554FF)),
-      home: const Scaffold(
-        body: Center(child: Text('BandPlan')),
-      ),
-    );
-  }
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseBootstrap.initialize();
+  runApp(const ProviderScope(child: BandPlanApp()));
 }
