@@ -1,0 +1,334 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../auth/application/auth_providers.dart';
+import '../application/group_providers.dart';
+import '../data/group_repository.dart';
+
+class GroupWorkspacePage extends ConsumerWidget {
+  const GroupWorkspacePage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final groups = ref.watch(myGroupsProvider);
+    final repository = ref.watch(groupRepositoryProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Рабочие группы'),
+        actions: [
+          IconButton(
+            tooltip: 'Выйти из аккаунта',
+            onPressed: () => ref.read(authRepositoryProvider)?.signOut(),
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: groups.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => _LoadError(
+            message: error.toString(),
+            onRetry: () => ref.invalidate(myGroupsProvider),
+          ),
+          data: (value) {
+            final items = value is List
+                ? value.whereType<Map>().map(
+                    (item) => Map<String, dynamic>.from(item),
+                  ).toList()
+                : <Map<String, dynamic>>[];
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              children: [
+                Text(
+                  'Пространство вашей группы',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Создайте новую группу или присоединитесь к существующей по коду приглашения.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: repository == null
+                      ? null
+                      : () => _showGroupDialog(context, ref, repository, create: true),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Создать группу'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: repository == null
+                      ? null
+                      : () => _showGroupDialog(context, ref, repository, create: false),
+                  icon: const Icon(Icons.group_add_outlined),
+                  label: const Text('Вступить по коду'),
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  'Мои группы',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                if (items.isEmpty)
+                  const _EmptyGroups()
+                else
+                  for (final group in items)
+                    _GroupTile(
+                      group: group,
+                      repository: repository,
+                      onChanged: () => ref.invalidate(myGroupsProvider),
+                    ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showGroupDialog(
+    BuildContext context,
+    WidgetRef ref,
+    GroupRepository repository, {
+    required bool create,
+  }) async {
+    final nameController = TextEditingController();
+    final codeController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final userEmail = ref.read(authRepositoryProvider)?.currentUser?.email ?? '';
+    final displayName = userEmail.split('@').first;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(create ? 'Новая группа' : 'Вступить в группу'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: create ? nameController : codeController,
+            autofocus: true,
+            textCapitalization:
+                create ? TextCapitalization.words : TextCapitalization.characters,
+            decoration: InputDecoration(
+              labelText: create ? 'Название группы' : 'Код приглашения',
+            ),
+            validator: (value) {
+              if ((value ?? '').trim().isEmpty) return 'Заполните поле';
+              if (create && (value!.trim().length < 3 || value.trim().length > 50)) {
+                return 'Название должно содержать от 3 до 50 символов';
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              try {
+                if (create) {
+                  await repository.createGroup(
+                    name: nameController.text.trim(),
+                    displayName: displayName,
+                    roles: const [],
+                  );
+                } else {
+                  await repository.joinGroup(
+                    inviteCode: codeController.text.trim(),
+                    displayName: displayName,
+                    roles: const [],
+                  );
+                }
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                ref.invalidate(myGroupsProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(create ? 'Группа создана.' : 'Вы вступили в группу.'),
+                  ),
+                );
+              } catch (error) {
+                if (!dialogContext.mounted) return;
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text(error.toString())),
+                );
+              }
+            },
+            child: Text(create ? 'Создать' : 'Вступить'),
+          ),
+        ],
+      ),
+    );
+    nameController.dispose();
+    codeController.dispose();
+  }
+}
+
+class _GroupTile extends StatelessWidget {
+  const _GroupTile({
+    required this.group,
+    required this.repository,
+    required this.onChanged,
+  });
+
+  final Map<String, dynamic> group;
+  final GroupRepository repository;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final id = group['group_id']?.toString() ?? '';
+    final name = group['group_name']?.toString() ?? 'Группа';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Icon(Icons.groups_rounded,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      )),
+            ),
+            PopupMenuButton<String>(
+              onSelected: (action) async {
+                if (action == 'activate') {
+                  try {
+                    await repository.setActiveGroup(id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Активная группа: $name')),
+                      );
+                    }
+                  } catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error.toString())),
+                      );
+                    }
+                  }
+                } else if (action == 'invite') {
+                  try {
+                    final result = await repository.getOrCreateInviteCode();
+                    if (!context.mounted) return;
+                    final code = result is Map
+                        ? (result['invite_code'] ?? result['code'])?.toString()
+                        : result?.toString();
+                    if (code == null || code.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Сервер не вернул код приглашения.')),
+                      );
+                      return;
+                    }
+                    await Clipboard.setData(ClipboardData(text: code));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Код $code скопирован.')),
+                    );
+                  } catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error.toString())),
+                      );
+                    }
+                  }
+                } else if (action == 'leave') {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Покинуть группу?'),
+                      content: Text('Вы действительно хотите покинуть «$name»?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('Отмена'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: const Text('Покинуть'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    try {
+                      await repository.leaveGroup(id);
+                      onChanged();
+                    } catch (error) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(error.toString())),
+                        );
+                      }
+                    }
+                  }
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'activate', child: Text('Сделать активной')),
+                PopupMenuItem(value: 'invite', child: Text('Получить код приглашения')),
+                PopupMenuItem(value: 'leave', child: Text('Покинуть группу')),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyGroups extends StatelessWidget {
+  const _EmptyGroups();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 28),
+      child: Center(child: Text('Пока нет групп. Создайте группу или вступите по коду.')),
+    );
+  }
+}
+
+class _LoadError extends StatelessWidget {
+  const _LoadError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded, size: 40),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: const Text('Повторить')),
+          ],
+        ),
+      ),
+    );
+  }
+}
