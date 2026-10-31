@@ -1,0 +1,9 @@
+{
+  "name": "BandPlan — Music Group OS",
+  "short_name": "BandPlan",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#101426",
+  "theme_color": "#101426",
+  "description": "Workspace for a music group"
+}
