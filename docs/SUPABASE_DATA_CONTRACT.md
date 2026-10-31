@@ -211,3 +211,52 @@ Supabase reports migration history through 2026-10-31, including more versions t
 - Current auth provider configuration and OAuth redirect allowlists.
 - Whether profile/friendship tables are still part of the active BandPlan product or legacy-only functionality.
 - Full RPC bodies for account deletion and event cleanup, plus function grants.
+
+
+### Additional live security and Realtime verification
+
+A second read-only catalog pass checked triggers, recycle-bin policies, Realtime publication membership, and function ACL/search_path settings.
+
+**Triggers**
+- Only one trigger on a `bandplan_*` table was returned by `information_schema.triggers`: `bandplan_profiles_updated_at`, BEFORE UPDATE on `bandplan_profiles`, calling `bandplan_touch_updated_at()`.
+- No trigger was observed on the core state, group, song, event, setlist, invite, or participation tables in that catalog query. This does not rule out application-level timestamp updates.
+
+**Admin recycle bin**
+- `bandplan_admin_recycle_bin` has RLS enabled but the live `pg_policies` query returned no policies for it.
+- Treat it as server/admin-only. The Flutter client must not read or write this table. Do not add client policies as part of the migration without a separately reviewed product/security requirement.
+
+**Realtime publication**
+The live `supabase_realtime` publication contains:
+- `bandplan_user_state`
+- `bandplan_groups`
+- `bandplan_group_members`
+- `bandplan_group_state`
+- `bandplan_accounts`
+- `bandplan_songs`
+- `bandplan_events`
+- `bandplan_setlists`
+- `bandplan_event_participation`
+- `bandplan_state` (legacy locked table; do not subscribe to it in the new client).
+
+No publication entry was returned for `bandplan_group_invites`, `bandplan_profiles`, `bandplan_friendships`, or `bandplan_admin_recycle_bin`. Realtime subscriptions should therefore be limited to the verified publication list and scoped with the user's authorized group/account identifiers.
+
+**Live function ACL and search_path observations**
+- Public business RPCs in the live catalog are SECURITY DEFINER and grant EXECUTE to `authenticated` and `service_role`; their configured search_path is pinned to `public, auth`.
+- `bandplan_cleanup_expired_events()` and `bandplan_admin_table_info()` are SECURITY DEFINER but their ACL shows only `postgres` and `service_role`, not `authenticated`. Do not call them from the Flutter client.
+- `bandplan_touch_updated_at()` is an ordinary trigger function, not SECURITY DEFINER.
+- The recycle-bin policies query returned an empty array. This is an intentional client access boundary until proven otherwise.
+- The catalog ACL string is evidence of current grants, not a recommendation to broaden them.
+
+**Behavior confirmed in inspected live function definitions**
+- `bandplan_join_group` locks the matching invite row, validates expiry/use limits, inserts a membership with conflict-do-nothing, increments invite uses only when a new membership is added, preserves existing memberships, updates account display name/roles only when non-empty values are supplied, and activates the joined group.
+- `bandplan_leave_group` removes only the requested membership; if the departing user owns the group, ownership transfers to the earliest remaining member. If the owner is the sole member, the group is deleted. The user's active group is moved to another membership when possible; otherwise activeGroupId and group-bound arrays are cleared from their personal state.
+- `bandplan_set_active_group` verifies membership before writing activeGroupId.
+- `bandplan_set_event_participation` validates yes/maybe/no, verifies membership and event existence, clamps client timestamps, and applies last-write-wins per user/event/group.
+- `bandplan_sync_group` upserts JSON records by group_id + id and processes explicit delete-ID arrays. When updating an event that contains participation, it merges the existing participation object with the incoming participation object rather than blindly replacing it.
+
+**Migration implications**
+- Preserve multi-group membership as a first-class relationship; never model a user as belonging to only one group.
+- Group leave/delete must use the existing RPC semantics rather than direct table deletes.
+- Keep event participation as a separate user-owned write path; do not let ordinary event JSON sync overwrite another member's participation.
+- Keep account deletion, expired-event cleanup, admin metadata, and recycle-bin operations out of ordinary client code until their complete function bodies and authorization model are separately reviewed.
+- No schema changes or production writes were made during this audit.
