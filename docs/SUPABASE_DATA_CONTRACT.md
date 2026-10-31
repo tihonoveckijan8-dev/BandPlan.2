@@ -260,3 +260,87 @@ No publication entry was returned for `bandplan_group_invites`, `bandplan_profil
 - Keep event participation as a separate user-owned write path; do not let ordinary event JSON sync overwrite another member's participation.
 - Keep account deletion, expired-event cleanup, admin metadata, and recycle-bin operations out of ordinary client code until their complete function bodies and authorization model are separately reviewed.
 - No schema changes or production writes were made during this audit.
+
+
+## 10. Legacy client payload contract — verified from current `bandplan.js`
+
+The legacy browser app's top-level local state and group hydration were inspected directly. This section records only fields/semantics visible in the client; it is not a claim that every optional field is exhaustive.
+
+### User state JSON
+
+The client calls `saveUserState(userId, payload)` with:
+- `activeGroupId`: UUID string or null.
+- `profile`: `name`, `role`, `roles[]`, `defaultParticipation`.
+- `settings`: user preferences object.
+- `onboardingDone`: boolean.
+- `personalSongs[]`: personal song records.
+- `personalSetlists[]`: personal setlist/template records.
+
+On group hydration, the client reads those same personal fields and overlays profile/settings with the account row. The personal library is not the group library.
+
+### Group state JSON
+
+The client hydrates `remote.state` into four top-level arrays:
+- `songs[]`
+- `events[]`
+- `setlists[]`
+- `members[]`
+
+The app also stores the active group name as `profile.bandName` in its local view state. Member entries are expected to carry an account identity (the client matches `accountId` or `id` to auth user ID), display name, roles/role, color and optional note. A fallback current-member row is synthesized in the UI if no matching member is present in the roster snapshot.
+
+### Song and chord representation
+
+Verified song-level fields consumed by the UI include:
+- `id`, `title`, `artist`, `key`, `lyrics`
+- optional `fav`, `dynamics`, `tags`, and provenance fields used when copying between personal and group libraries (for example `groupSourceId`, `personalSourceId`, `addedAt`).
+
+The current legacy chord representation is embedded in the `lyrics` text:
+- inline chords use square-bracket tokens, e.g. `[Am]` within a lyric line;
+- standalone chord rows are also supported;
+- section headings use square brackets on a line by themselves, e.g. `[Куплет]`, and are distinguished from chord tokens;
+- the client extracts chord tokens from both forms and transposes them in rendering rather than rewriting the stored lyric text.
+
+**Flutter migration decision:** preserve the raw legacy `lyrics` string losslessly on import. Introduce a typed lyric document/anchor model only as a derived/editable representation with a reversible serializer. Do not split the text into guessed parallel arrays or discard whitespace/newlines; that would shift chord-to-word alignment and break existing songs. Keep section markers distinct from chord anchors.
+
+### Events and participation
+
+Group events are hydrated as JSON objects from `group.events[]`. The client overlays `myStatus` using the normalized participation map returned separately by the cloud adapter, with fallback to `event.participation[authUserId]` or legacy `event.myStatus`. This confirms that:
+- `myStatus` is a client-side convenience field, not the normalized database key;
+- normalized participation belongs to `bandplan_event_participation`;
+- event JSON may still contain legacy participation snapshots and must be read compatibly during migration.
+
+### Setlists and cross-library references
+
+- Setlists are group JSON records in `group.setlists[]`; personal templates are in `user_state.state.personalSetlists[]`.
+- Setlist items reference songs by `songId`.
+- Template conversion copies referenced songs into the personal library and rewrites item references to the personal song IDs.
+- Importing a personal template into a group copies songs into the group library and rewrites item references to group song IDs.
+- The client intentionally makes these copies independent; it does not maintain a live cross-scope song reference.
+
+### Settings and defaults visible in the legacy client
+
+The legacy defaults include:
+- theme: `light`
+- accent: `#2547D0`
+- notation: `auto`
+- weekStart: `1`
+- lyricsSize: `15`
+- sceneSize: `26`
+- sceneSpeed: `60`
+- autoscroll: `true`
+- reduced: `false`
+- calView: `month`
+- toastMode: `off`
+- showChords: `true`
+
+These are migration defaults, not a mandate to retain the old visual design. The new app's preferred accent/design system can differ, but user-imported settings should be mapped deliberately and unknown keys should not be silently dropped during compatibility reads.
+
+### Important compatibility rules for Flutter
+
+1. Preserve unknown JSON keys when round-tripping legacy song/event/setlist records until a typed migration has proven they are obsolete.
+2. Keep personal and group collections separate in the domain and repository layers.
+3. Treat all imported IDs as opaque identifiers; do not regenerate them on ordinary reads.
+4. Preserve raw lyrics exactly, including spaces and line endings, until the chord-anchor editor can serialize without loss.
+5. Resolve setlist item `songId` references within the same scope first (group-to-group or personal-to-personal).
+6. Keep normalized event participation as an independent repository operation.
+7. Treat roster snapshots as presentation/cache data; authoritative membership is `bandplan_group_members` and the group-list RPC.
