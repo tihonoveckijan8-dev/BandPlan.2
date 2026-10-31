@@ -121,3 +121,93 @@ The exact publication configuration and Realtime authorization for every table s
 - Whether all currently used columns are exposed through the Supabase Data API.
 
 **Implementation rule:** until these unknowns are resolved, Flutter may define draft domain interfaces but must not issue guessed production writes or schema changes.
+
+
+---
+
+## 9. Live database verification (2026-10-31)
+
+The connected Supabase project list confirms project ref oczcjphvzoadfqntoqlc, project name groupp, region ca-central-1, status ACTIVE_HEALTHY. A read-only live schema inspection was performed. No database writes or migrations were executed.
+
+### Live public tables and exact columns
+
+| Table | Primary key | Columns observed |
+|---|---|---|
+| bandplan_user_state | user_id | user_id uuid, state jsonb default {}, updated_at timestamptz default now() |
+| bandplan_accounts | user_id | user_id uuid, display_name text default '', roles text[] default {}, personal_settings jsonb default {}, updated_at timestamptz default now() |
+| bandplan_groups | id | id uuid default gen_random_uuid(), name text, normalized_name generated text, owner_id uuid, created_at timestamptz default now() |
+| bandplan_group_members | (group_id,user_id) | group_id uuid, user_id uuid, joined_at timestamptz default now() |
+| bandplan_group_state | group_id | group_id uuid, state jsonb default {}, updated_at timestamptz default now() |
+| bandplan_group_invites | id | id uuid, group_id uuid, invite_code text unique, created_by uuid, expires_at timestamptz nullable, max_uses integer nullable, uses integer default 0, created_at timestamptz default now() |
+| bandplan_songs | (group_id,id) | group_id uuid, id text, data jsonb default {}, updated_by uuid, updated_at timestamptz default now() |
+| bandplan_events | (group_id,id) | group_id uuid, id text, data jsonb default {}, updated_by uuid, updated_at timestamptz default now() |
+| bandplan_setlists | (group_id,id) | group_id uuid, id text, data jsonb default {}, updated_by uuid, updated_at timestamptz default now() |
+| bandplan_event_participation | (group_id,event_id,user_id) | group_id uuid, event_id text, user_id uuid, status text, updated_at timestamptz default now() |
+| bandplan_profiles | id | id uuid, username text, friend_code text, created_at timestamptz default now(), updated_at timestamptz default now() |
+| bandplan_friendships | (user_id,friend_id) | user_id uuid, friend_id uuid, created_at timestamptz default now() |
+| bandplan_state | id | id integer, state jsonb default {}, updated_at timestamptz default now() |
+| bandplan_admin_recycle_bin | id | id uuid, table_name text, primary_key jsonb, row_data jsonb, deleted_at timestamptz, deleted_by text, restored_at timestamptz nullable, restored_by text nullable |
+
+Foreign keys observed:
+- groups.owner_id → auth.users.id.
+- group_members.group_id → groups.id; group_members.user_id → auth.users.id.
+- group_state.group_id → groups.id.
+- group_invites.group_id → groups.id; created_by → auth.users.id.
+- songs/events/setlists.group_id → groups.id; updated_by → auth.users.id.
+- event_participation(group_id,event_id) → events(group_id,id); user_id → auth.users.id.
+- accounts.user_id, user_state.user_id, profiles.id, friendships.user_id/friend_id reference auth.users.
+
+Additional constraints observed:
+- group name length 3–50 and unique normalized_name index.
+- membership composite primary key.
+- invite_code unique; max_uses nullable but >= 1; uses >= 0.
+- participation status constrained to yes/maybe/no.
+- song/event/setlist composite primary keys scoped by group.
+
+### Live RLS policy summary
+
+The live pg_policies view confirms:
+- bandplan_user_state: authenticated user can select/insert/update only own user_id.
+- bandplan_accounts: own insert/update/delete; read own account and accounts of users sharing a group.
+- bandplan_groups and group_members: group members can read their groups and membership rows through private.bandplan_is_group_member.
+- bandplan_group_state: group members can select/insert/update; no member delete policy observed.
+- bandplan_songs, bandplan_events, bandplan_setlists: members can select/insert/update/delete records for groups they belong to.
+- bandplan_event_participation: group members can read; users can insert/update/delete only their own participation, with membership checks on insert.
+- bandplan_group_invites: group members can read invite rows.
+- bandplan_profiles: own read/insert/update/delete only.
+- bandplan_friendships: user can read relationships involving them, insert own outgoing row (not self), and delete rows involving them.
+- bandplan_state: authenticated policy is intentionally false; legacy shared state is locked.
+- bandplan_admin_recycle_bin: RLS enabled; policy inventory should be inspected separately before any client use.
+
+These are policy summaries, not a complete security review. Table grants and policy interaction still require a dedicated least-privilege check.
+
+### Live RPC signature verification
+
+Read-only pg_proc inspection confirmed these public RPCs and return types:
+- bandplan_get_my_groups() → table(group_id uuid, group_name text, owner_id uuid, joined_at timestamptz, role text)
+- bandplan_set_active_group(p_group_id uuid) → uuid
+- bandplan_get_my_group() → table(group_id uuid, group_name text)
+- bandplan_create_group(p_name text, p_display_name text, p_roles text[]) → table(group_id uuid, invite_code text)
+- bandplan_join_group(p_code text, p_display_name text, p_roles text[]) → table(group_id uuid, group_name text)
+- bandplan_get_invite_code() → text
+- bandplan_create_group_and_invite(p_name text, p_display_name text, p_roles text[], p_group_id uuid) → table(group_id uuid, group_name text, invite_code text)
+- bandplan_leave_group(p_group_id uuid) → table(group_id uuid, group_name text)
+- bandplan_rename_group(p_name text, p_group_id uuid) → void
+- bandplan_sync_group(p_songs jsonb, p_events jsonb, p_setlists jsonb, p_roster jsonb, p_display_name text, p_roles text[], p_personal_settings jsonb, p_delete_songs text[], p_delete_events text[], p_delete_setlists text[], p_group_id uuid) → void
+- bandplan_set_event_participation(p_event_id text, p_status text, p_updated_at timestamptz, p_group_id uuid) → jsonb
+- bandplan_delete_my_account() → void
+- bandplan_cleanup_expired_events() → integer
+
+All listed public business RPCs above were observed as SECURITY DEFINER in live catalog. Verify exact argument defaults and function bodies before calling from Dart. The private helper bandplan_is_group_member(p_group_id uuid) returns boolean and is SECURITY DEFINER.
+
+### Live migration history
+
+Supabase reports migration history through 2026-10-31, including more versions than the SQL files currently visible in the legacy repository. Therefore the live schema is authoritative for the current project state; do not assume the checked-in migration directory alone is a complete replayable history.
+
+### Remaining unknowns
+- Full JSON shapes inside user_state.state, group_state.state, and data fields for songs/events/setlists.
+- Exact grants and policies for admin_recycle_bin.
+- Trigger inventory and complete Realtime publication list.
+- Current auth provider configuration and OAuth redirect allowlists.
+- Whether profile/friendship tables are still part of the active BandPlan product or legacy-only functionality.
+- Full RPC bodies for account deletion and event cleanup, plus function grants.
