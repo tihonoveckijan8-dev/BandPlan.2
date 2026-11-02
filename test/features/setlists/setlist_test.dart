@@ -30,6 +30,41 @@ void main() {
       expect(item['note'], 'Intro');
     });
 
+    test('preserves existing event link when eventId is omitted from partial edit', () {
+      final setlist = Setlist.fromJson({
+        'id': 'sl-linked',
+        'name': 'Program',
+        'eventId': 'event-keep',
+        'items': [{'id': 'item-1', 'songId': 'song-1'}],
+      });
+
+      final edited = setlist.withEdits(
+        name: 'Renamed program',
+        note: 'Updated note',
+        items: setlist.items,
+      );
+
+      expect(edited.eventId, 'event-keep');
+      expect(edited.toLegacyJson()['eventId'], 'event-keep');
+    });
+
+    test('clears event link only when an empty eventId is explicitly passed', () {
+      final setlist = Setlist.fromJson({
+        'id': 'sl-unlink',
+        'name': 'Program',
+        'eventId': 'event-old',
+      });
+
+      final edited = setlist.withEdits(
+        name: setlist.name,
+        note: setlist.note,
+        items: setlist.items,
+        eventId: '',
+      );
+
+      expect(edited.eventId, isEmpty);
+    });
+
     test('preserves item order and unresolved song references', () {
       final setlist = Setlist.fromJson({
         'id': 'sl-2',

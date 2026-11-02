@@ -29,13 +29,15 @@ class Setlist {
     required String name,
     required String note,
     required List<SetlistItem> items,
-    String eventId = '',
+    String? eventId,
   }) =>
       Setlist._({
         ...raw,
         'name': name,
         'note': note,
-        'eventId': eventId,
+        // WHY: omitting eventId during a partial edit must not silently unlink
+        // an existing setlist; pass an empty string explicitly to clear it.
+        'eventId': eventId ?? this.eventId,
         'items': items.map((item) => item.toJson()).toList(growable: false),
         'updatedAt': DateTime.now().toUtc().toIso8601String(),
       });
