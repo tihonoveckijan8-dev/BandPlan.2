@@ -21,6 +21,28 @@ class SongDocument {
 
   /// Returns the original representation unchanged for safe legacy storage.
   String toLegacyLyrics() => source;
+
+  static bool isChordSymbol(String value) => SongDocumentLine.isChordSymbol(value);
+
+  /// Inserts a legacy chord token at the selected lyric position.
+  /// WHY: this keeps chord placement tied to the cursor/syllable, not to manually
+  /// estimated spaces that change between fonts and screen sizes.
+  static String insertChordToken({
+    required String source,
+    required int selectionStart,
+    required int selectionEnd,
+    required String chord,
+  }) {
+    final normalizedChord = chord.trim();
+    if (!isChordSymbol(normalizedChord)) {
+      throw ArgumentError.value(chord, 'chord', 'Invalid chord symbol');
+    }
+    final lower = (selectionStart < selectionEnd ? selectionStart : selectionEnd)
+        .clamp(0, source.length);
+    final upper = (selectionStart > selectionEnd ? selectionStart : selectionEnd)
+        .clamp(0, source.length);
+    return source.replaceRange(lower, upper, '[$normalizedChord]');
+  }
 }
 
 class SongDocumentLine {
@@ -61,7 +83,7 @@ class SongDocumentLine {
     final trimmed = source.trim();
     final sectionMatch = RegExp(r'^\[([^\]\r\n]+)\]$').firstMatch(trimmed);
     final sectionToken = sectionMatch?.group(1);
-    final sectionLabel = sectionToken != null && !_isChord(sectionToken)
+    final sectionLabel = sectionToken != null && !isChordSymbol(sectionToken)
         ? sectionToken
         : null;
 
@@ -89,7 +111,7 @@ class SongDocumentLine {
     return (words.length, 0);
   }
 
-  static bool _isChord(String value) => RegExp(
+  static bool isChordSymbol(String value) => RegExp(
         r'^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus[24]?|add\d+|no\d+|omit\d+|\d+|[b#]\d+|ø|°|\+|-)*(?:/[A-G](?:#|b)?)?$',
       ).hasMatch(value);
 }
