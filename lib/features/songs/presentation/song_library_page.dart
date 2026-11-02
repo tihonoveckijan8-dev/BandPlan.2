@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/song_providers.dart';
 import '../../groups/application/group_providers.dart';
 import '../domain/song.dart';
-import '../domain/song_document.dart';
+import 'song_lyrics_view.dart';
 import '../../stage/presentation/stage_mode_page.dart';
 
 enum _SongLibrary { group, personal }
@@ -443,7 +443,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                       padding: const EdgeInsets.all(20),
                       child: displayedSong.lyrics.isEmpty
                           ? const Text('Текст песни пока не добавлен.')
-                          : _StructuredSongLyrics(
+                          : SongLyricsView(
                               lyrics: displayedSong.lyrics,
                               textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 fontFamily: 'monospace',
@@ -461,141 +461,6 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
     );
   }
 
-}
-
-/// Displays legacy inline chord tokens as labels above their lyric anchors.
-class _StructuredSongLyrics extends StatelessWidget {
-  const _StructuredSongLyrics({required this.lyrics, this.textStyle});
-
-  final String lyrics;
-  final TextStyle? textStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    final document = SongDocument.fromLegacyLyrics(lyrics);
-    return SelectionArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final line in document.lines)
-            if (line.sectionLabel != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 14, bottom: 8),
-                child: Text(
-                  line.sectionLabel!,
-                  style: textStyle?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              )
-            else
-              _StructuredSongLine(line: line, textStyle: textStyle),
-        ],
-      ),
-    );
-  }
-}
-
-class _StructuredSongLine extends StatelessWidget {
-  const _StructuredSongLine({required this.line, this.textStyle});
-
-  final SongDocumentLine line;
-  final TextStyle? textStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    final words = RegExp(r'\\S+').allMatches(line.lyricText).toList();
-    if (words.isEmpty) {
-      return SizedBox(height: (textStyle?.fontSize ?? 16) * 1.5);
-    }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.end,
-        children: [
-          for (var index = 0; index < words.length; index++)
-            _StructuredSongWord(
-              word: words[index].group(0)!,
-              anchors: line.anchors
-                  .where((anchor) => anchor.wordIndex == index)
-                  .toList(growable: false),
-              textStyle: textStyle,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StructuredSongWord extends StatelessWidget {
-  const _StructuredSongWord({
-    required this.word,
-    required this.anchors,
-    this.textStyle,
-  });
-
-  final String word;
-  final List<SongChordAnchor> anchors;
-  final TextStyle? textStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    if (anchors.isEmpty) return Text(word, style: textStyle);
-    final ordered = [...anchors]
-      ..sort((a, b) => a.characterOffset.compareTo(b.characterOffset));
-    final pieces = <Widget>[];
-    var offset = 0;
-    for (final anchor in ordered) {
-      final position = anchor.characterOffset.clamp(offset, word.length).toInt();
-      if (position > offset) {
-        pieces.add(_SongWordPiece(
-          text: word.substring(offset, position),
-          style: textStyle,
-        ));
-      }
-      pieces.add(_SongWordPiece(
-        text: word.substring(position, position),
-        chord: anchor.chord,
-        style: textStyle,
-      ));
-      offset = position;
-    }
-    if (offset < word.length) {
-      pieces.add(_SongWordPiece(
-        text: word.substring(offset),
-        style: textStyle,
-      ));
-    }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: pieces,
-    );
-  }
-}
-
-class _SongWordPiece extends StatelessWidget {
-  const _SongWordPiece({required this.text, required this.style, this.chord});
-
-  final String text;
-  final String? chord;
-  final TextStyle? style;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (chord != null)
-            Text(
-              chord!,
-              style: style?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          Text(text, style: style),
-        ],
-      );
 }
 
 class _SongTile extends StatelessWidget {
