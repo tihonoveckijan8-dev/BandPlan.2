@@ -50,6 +50,7 @@ class SetlistsPage extends ConsumerWidget {
               );
             }
             final songMap = {for (final song in songs.asData?.value ?? const <Song>[]) song.id: song};
+            final eventMap = {for (final event in events.asData?.value ?? const <GroupEvent>[]) event.id: event};
             return ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
               itemCount: items.length,
@@ -69,8 +70,10 @@ class SetlistsPage extends ConsumerWidget {
                     subtitle: Text([
                       '${setlist.items.length} песен',
                       if (duration > 0) _durationLabel(duration),
+                      if (_linkedEventLabel(setlist, eventMap).isNotEmpty)
+                        'Событие: ${_linkedEventLabel(setlist, eventMap)}',
                       if (setlist.note.isNotEmpty) setlist.note,
-                    ].join(' · '), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    ].join(' · '), maxLines: 3, overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => _editSetlist(context, ref, songs.asData?.value ?? const <Song>[], events.asData?.value ?? const <GroupEvent>[], setlist),
                   ),
@@ -98,10 +101,17 @@ class SetlistsPage extends ConsumerWidget {
     final nameController = TextEditingController(text: existing?.name ?? '');
     final noteController = TextEditingController(text: existing?.note ?? '');
     final items = List<SetlistItem>.of(existing?.items ?? const []);
-    final inferredEvent = events.where((event) => event.setlistId == existing?.id).firstOrNull;
+    GroupEvent? inferredEvent;
+    for (final event in events) {
+      if (event.setlistId == existing?.id) {
+        inferredEvent = event;
+        break;
+      }
+    }
     var linkedEventId = existing?.eventId.isNotEmpty == true
         ? existing!.eventId
         : (inferredEvent?.id ?? '');
+    final linkedEventExists = events.any((event) => event.id == linkedEventId);
     var saving = false;
     final formKey = GlobalKey<FormState>();
 
@@ -136,6 +146,12 @@ class SetlistsPage extends ConsumerWidget {
                       decoration: const InputDecoration(labelText: 'Связанное событие', border: OutlineInputBorder()),
                       items: [
                         const DropdownMenuItem<String>(value: '', child: Text('Без события')),
+                        if (linkedEventId.isNotEmpty && !linkedEventExists)
+                          DropdownMenuItem<String>(
+                            value: linkedEventId,
+                            enabled: false,
+                            child: const Text('Связанное событие недоступно'),
+                          ),
                         ...events.map((event) => DropdownMenuItem<String>(
                           value: event.id,
                           child: Text('${event.title} · ${event.date}', overflow: TextOverflow.ellipsis),
@@ -286,6 +302,20 @@ class SetlistsPage extends ConsumerWidget {
         actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Отмена'))],
       ),
     );
+  }
+
+  String _linkedEventLabel(Setlist setlist, Map<String, GroupEvent> eventMap) {
+    GroupEvent? event = eventMap[setlist.eventId];
+    if (event == null) {
+      for (final candidate in eventMap.values) {
+        if (candidate.setlistId == setlist.id) {
+          event = candidate;
+          break;
+        }
+      }
+    }
+    if (event == null) return setlist.eventId.isNotEmpty ? 'Событие недоступно' : '';
+    return [event.title, event.date].where((value) => value.isNotEmpty).join(' · ');
   }
 
   String _durationLabel(int seconds) => '${seconds ~/ 60} мин';
