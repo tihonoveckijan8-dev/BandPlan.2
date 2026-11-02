@@ -14,7 +14,9 @@ class CalendarPage extends ConsumerWidget {
     final events=ref.watch(groupEventsProvider);
     final setlists=ref.watch(groupSetlistsProvider);
     final programs=setlists.asData?.value??const <Setlist>[];
-    return Scaffold(
+    var visibleMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    var selectedDate = _iso(DateTime.now());
+    return StatefulBuilder(builder:(context,setCalendarState)=>Scaffold(
       appBar:AppBar(title:const Text('Календарь'),actions:[
         IconButton(tooltip:'Сет-листы',onPressed:()=>context.push('/setlists'),icon:const Icon(Icons.queue_music_rounded))]),
       floatingActionButton:FloatingActionButton.extended(onPressed:()=>_edit(context,ref,programs),
@@ -24,25 +26,74 @@ class CalendarPage extends ConsumerWidget {
         error:(e,_)=>_Error(message:e.toString(),retry:()=>ref.invalidate(groupEventsProvider)),
         data:(values){
           final items=[...values]..sort((a,b){final d=a.date.compareTo(b.date);return d==0?a.time.compareTo(b.time):d;});
-          if(items.isEmpty)return const Center(child:Padding(padding:EdgeInsets.all(28),child:Column(mainAxisSize:MainAxisSize.min,children:[
-            Icon(Icons.calendar_month_rounded,size:48),SizedBox(height:12),
-            Text('Пока нет событий',style:TextStyle(fontSize:18,fontWeight:FontWeight.w700)),SizedBox(height:6),
-            Text('Добавьте репетицию, выступление или служение.',textAlign:TextAlign.center)])));
           final map={for(final s in programs)s.id:s};
-          return ListView.separated(padding:const EdgeInsets.fromLTRB(16,12,16,100),itemCount:items.length,
-            separatorBuilder:(_,__)=>const SizedBox(height:10),itemBuilder:(context,i){
-              final e=items[i];final sl=map[e.setlistId];
-              return Card(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
+          final selectedItems=items.where((e){final d=DateTime.tryParse(e.date);return d!=null&&_iso(d)==selectedDate;}).toList();
+          return ListView(padding:const EdgeInsets.fromLTRB(12,12,12,100),children:[
+            _monthCalendar(context,visibleMonth,selectedDate,items,
+              (month)=>setCalendarState(()=>visibleMonth=month),
+              (day)=>setCalendarState(()=>selectedDate=_iso(day))),
+            Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
+              _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
+            if(selectedItems.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(18),child:Text('На этот день событий нет.'))),
+            ...selectedItems.map((e){final sl=map[e.setlistId];return Padding(padding:const EdgeInsets.only(bottom:10),
+              child:Card(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
                 leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
                 title:Text(e.title,style:const TextStyle(fontWeight:FontWeight.w700)),
-                subtitle:Text([_date(e.date),if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location,
+                subtitle:Text([if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location,
                   if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено',if(e.status=='cancelled')'Отменено'].join(' · '),
                   maxLines:3,overflow:TextOverflow.ellipsis),
                 trailing:const Icon(Icons.chevron_right_rounded),
-                onTap:()=>_details(context,ref,e,sl,programs)));
-            });
+                onTap:()=>_details(context,ref,e,sl,programs))));}),
+          ]);
         })),
-    );
+    ));
+  }
+
+  Widget _monthCalendar(BuildContext context,DateTime month,String selectedDate,List<GroupEvent> events,
+      ValueChanged<DateTime> onMonthChanged,ValueChanged<DateTime> onDaySelected) {
+    const monthNames=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    const weekdays=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+    final first=DateTime(month.year,month.month,1);
+    final offset=first.weekday-1;
+    final days=DateTime(month.year,month.month+1,0).day;
+    final cells=((offset+days+6)~/7)*7;
+    final counts=<String,int>{};
+    for(final event in events){final parsed=DateTime.tryParse(event.date);if(parsed!=null){final key=_iso(parsed);counts.update(key,(v)=>v+1,ifAbsent:()=>1);}}
+    final scheme=Theme.of(context).colorScheme;
+    return Card(child:Padding(padding:const EdgeInsets.fromLTRB(12,10,12,12),child:Column(children:[
+      Row(children:[
+        IconButton(tooltip:'Предыдущий месяц',onPressed:()=>onMonthChanged(DateTime(month.year,month.month-1,1)),icon:const Icon(Icons.chevron_left_rounded)),
+        Expanded(child:Center(child:Text('${monthNames[month.month-1][0].toUpperCase()}${monthNames[month.month-1].substring(1)} ${month.year}',
+          style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.w800)))),
+        IconButton(tooltip:'Следующий месяц',onPressed:()=>onMonthChanged(DateTime(month.year,month.month+1,1)),icon:const Icon(Icons.chevron_right_rounded)),
+      ]),
+      Row(children:weekdays.map((day)=>Expanded(child:Center(child:Padding(padding:const EdgeInsets.symmetric(vertical:8),
+        child:Text(day,style:Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight:FontWeight.w700,
+          color:day=='Сб'||day=='Вс'?scheme.primary:scheme.onSurfaceVariant)))))).toList()),
+      GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:cells,
+        gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:7,childAspectRatio:1.12),
+        itemBuilder:(context,index){
+          final dayNumber=index-offset+1;
+          if(dayNumber<1||dayNumber>days)return const SizedBox.shrink();
+          final day=DateTime(month.year,month.month,dayNumber);
+          final key=_iso(day);final isSelected=key==selectedDate;final count=counts[key]??0;
+          final isToday=key==_iso(DateTime.now());
+          return Padding(padding:const EdgeInsets.all(2),child:Material(
+            color:isSelected?scheme.primary:Colors.transparent,borderRadius:BorderRadius.circular(12),
+            child:InkWell(borderRadius:BorderRadius.circular(12),onTap:()=>onDaySelected(day),
+              child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[
+                Text('$dayNumber',style:TextStyle(fontWeight:isSelected||isToday?FontWeight.w800:FontWeight.w500,
+                  color:isSelected?scheme.onPrimary:isToday?scheme.primary:scheme.onSurface)),
+                const SizedBox(height:3),
+                if(count>0)Container(width:5,height:5,decoration:BoxDecoration(
+                  color:isSelected?scheme.onPrimary:scheme.primary,shape:BoxShape.circle)),
+              ])),
+          ));
+        }),
+      const SizedBox(height:4),
+      Align(alignment:Alignment.centerRight,child:TextButton.icon(
+        onPressed:()=>onDaySelected(DateTime.now()),icon:const Icon(Icons.today_rounded,size:18),label:const Text('Сегодня'))),
+    ])));
   }
 
   Future<void> _details(BuildContext context,WidgetRef ref,GroupEvent e,Setlist? sl,List<Setlist> programs) async {
