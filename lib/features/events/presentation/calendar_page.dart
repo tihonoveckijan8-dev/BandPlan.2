@@ -129,7 +129,7 @@ class CalendarPage extends ConsumerWidget {
               editOne=action=='one';
             }
             if(sheet.mounted)Navigator.pop(sheet);
-            await _edit(context,ref,programs,seriesEvent,
+            await _edit(context,ref,programs,old:seriesEvent,
               occurrenceDate:editOne?occurrenceDate:null,initial:editOne?e:null);
           },
             icon:const Icon(Icons.edit_rounded),label:Text(seriesEvent.repeat.isNotEmpty&&seriesEvent.repeat!='none'?'Изменить':'Изменить'))])
@@ -169,7 +169,7 @@ class CalendarPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _edit(BuildContext context,WidgetRef ref,List<Setlist> programs,[GroupEvent? old],{String? occurrenceDate,GroupEvent? initial}) async {
+  Future<void> _edit(BuildContext context,WidgetRef ref,List<Setlist> programs,{GroupEvent? old,String? occurrenceDate,GroupEvent? initial}) async {
     final group=await ref.read(activeGroupProvider.future);if(group==null||!context.mounted)return;
     final repo=ref.read(eventRepositoryProvider);if(repo==null)return;
     final source=initial??old;
