@@ -14,6 +14,14 @@ void main(){
     expect(expandEventOccurrences([make(repeat:'biweekly')],DateTime(2026,11,1),DateTime(2026,11,30)).map((x)=>x.date),
       ['2026-11-02','2026-11-16','2026-11-30']);
   });
+  test('old daily series fast-forwards beyond the safety guard',(){
+    final e=GroupEvent.fromJson({
+      'id':'old-daily','title':'Daily','date':'2024-01-01',
+      'repeat':'daily','repeatUntil':'2026-12-31',
+    });
+    expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,3)).map((x)=>x.date),
+      ['2026-11-01','2026-11-02','2026-11-03']);
+  });
   test('monthly recurrence preserves legacy Date.setMonth overflow behavior',(){
     final e=GroupEvent.fromJson({
       'id':'month-end','title':'Month end','date':'2027-01-31',
