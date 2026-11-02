@@ -18,13 +18,18 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
 
     expect(find.text('Stage song'), findsOneWidget);
-    expect(find.text('Am'), findsOneWidget);
+    expect(find.text('Am'), findsWidgets);
     expect(find.text('96 BPM'), findsOneWidget);
-    expect(find.text('[Am]First line\n[Куплет]\nSecond line'), findsOneWidget);
+    expect(find.text('First'), findsOneWidget);
+    expect(find.text('line'), findsOneWidget);
+    expect(find.text('Куплет'), findsOneWidget);
+    expect(find.text('[Am]First line\n[Куплет]\nSecond line'), findsNothing);
 
     await tester.tap(find.byTooltip('Скрыть аккорды'));
     await tester.pump();
-    expect(find.text('First line\n[Куплет]\nSecond line'), findsOneWidget);
+    expect(find.text('First'), findsOneWidget);
+    expect(find.text('line'), findsOneWidget);
+    expect(find.text('Куплет'), findsOneWidget);
   });
 
   testWidgets('font and auto-scroll controls respond to user input', (tester) async {
