@@ -28,8 +28,8 @@ void main() {
   });
 
   testWidgets('font and auto-scroll controls respond to user input', (tester) async {
-    await tester.view.setPhysicalSize(const Size(900, 1400));
-    await tester.view.setDevicePixelRatio(1);
+    tester.view.physicalSize = const Size(900, 1400);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
