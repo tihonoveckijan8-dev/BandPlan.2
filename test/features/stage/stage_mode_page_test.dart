@@ -80,4 +80,35 @@ void main() {
     expect(find.text('First track'), findsOneWidget);
     expect(find.text('First note'), findsOneWidget);
   });
+  testWidgets('keeps setlist navigation usable on a phone-sized screen', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final first = makeSong('one', 'First track', 'Am', 'First lyrics');
+    final second = makeSong('two', 'Second track', 'C', 'Second lyrics');
+    await tester.pumpWidget(MaterialApp(
+      home: StageModePage(
+        song: first,
+        queue: [
+          StageModeTrack(song: first),
+          StageModeTrack(song: second),
+        ],
+      ),
+    ));
+
+    expect(find.text('Песня 1 из 2'), findsOneWidget);
+    expect(find.byTooltip('Предыдущая песня'), findsOneWidget);
+    expect(find.byTooltip('Следующая песня'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byTooltip('Следующая песня'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Second track'), findsOneWidget);
+    expect(find.text('Песня 2 из 2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }
