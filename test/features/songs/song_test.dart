@@ -222,7 +222,7 @@ void main() {
       expect(
         SongDocument.insertChordToken(
           source: 'До этого слова',
-          selectionStart: 8,
+          selectionStart: 9,
           selectionEnd: 3,
           chord: 'D/F#',
         ),
