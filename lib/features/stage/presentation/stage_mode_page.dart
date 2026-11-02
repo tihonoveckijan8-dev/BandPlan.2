@@ -4,18 +4,35 @@ import 'package:flutter/material.dart';
 
 import '../../songs/domain/song.dart';
 
-/// Read-only performance screen with a cancellable, adjustable text scroller.
+/// A setlist-specific song view; the source repertoire record remains untouched.
+class StageModeTrack {
+  const StageModeTrack({
+    required this.song,
+    this.semitones = 0,
+    this.note = '',
+  });
+
+  final Song song;
+  final int semitones;
+  final String note;
+}
+
+/// Read-only performance screen with cancellable scrolling and optional track navigation.
 class StageModePage extends StatefulWidget {
   const StageModePage({
     super.key,
     required this.song,
     this.initialSemitones = 0,
     this.performanceNote = '',
+    this.queue = const [],
+    this.initialTrackIndex = 0,
   });
 
   final Song song;
   final int initialSemitones;
   final String performanceNote;
+  final List<StageModeTrack> queue;
+  final int initialTrackIndex;
 
   @override
   State<StageModePage> createState() => _StageModePageState();
@@ -24,20 +41,49 @@ class StageModePage extends StatefulWidget {
 class _StageModePageState extends State<StageModePage> {
   final ScrollController _scrollController = ScrollController();
   Timer? _scrollTimer;
+  late int _trackIndex;
   double _fontSize = 30;
   double _speed = 24;
   bool _isScrolling = false;
   bool _showChords = true;
 
-  Song get _song => widget.song.transposedBy(widget.initialSemitones);
+  StageModeTrack get _track => widget.queue.isEmpty
+      ? StageModeTrack(
+          song: widget.song,
+          semitones: widget.initialSemitones,
+          note: widget.performanceNote,
+        )
+      : widget.queue[_trackIndex];
+
+  Song get _song => _track.song.transposedBy(_track.semitones);
+
+  @override
+  void initState() {
+    super.initState();
+    _trackIndex = widget.queue.isEmpty
+        ? 0
+        : widget.initialTrackIndex.clamp(0, widget.queue.length - 1).toInt();
+  }
 
   String get _lyrics {
-    if (_showChords) return _song.lyrics;
+    final lyrics = _song.lyrics;
+    if (_showChords) return lyrics;
     // WHY: hide chord tokens only; section labels such as [Куплет] stay visible.
-    return _song.lyrics.replaceAll(
+    return lyrics.replaceAll(
       RegExp(r'\[(?:[A-G](?:#|b)?)(?:(?:maj|min|m|M|dim|aug|sus[24]?|add\d+|no\d+|omit\d+|\d+|[b#]\d+|ø|°|\+|-)*)?(?:/[A-G](?:#|b)?)?\]'),
       '',
     );
+  }
+
+  void _moveTrack(int delta) {
+    final next = _trackIndex + delta;
+    if (next < 0 || next >= widget.queue.length) return;
+    _pauseScroll();
+    setState(() {
+      _trackIndex = next;
+      // WHY: each song starts at its first line instead of inheriting the prior song's offset.
+      _scrollController.jumpTo(0);
+    });
   }
 
   void _startScroll() {
@@ -81,10 +127,18 @@ class _StageModePageState extends State<StageModePage> {
   Widget build(BuildContext context) {
     final song = _song;
     final colorScheme = Theme.of(context).colorScheme;
+    final hasQueue = widget.queue.length > 1;
     return Scaffold(
       appBar: AppBar(
         title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
+          if (hasQueue)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text('${_trackIndex + 1}/${widget.queue.length}'),
+              ),
+            ),
           IconButton(
             tooltip: _showChords ? 'Скрыть аккорды' : 'Показать аккорды',
             onPressed: () => setState(() => _showChords = !_showChords),
@@ -107,16 +161,16 @@ class _StageModePageState extends State<StageModePage> {
                     children: [
                       if (song.key.isNotEmpty) _StageChip(label: song.key),
                       if (song.bpm != null) _StageChip(label: '${song.bpm} BPM'),
-                      if (widget.initialSemitones != 0)
+                      if (_track.semitones != 0)
                         _StageChip(
-                          label: '${widget.initialSemitones > 0 ? '+' : ''}${widget.initialSemitones} пт.',
+                          label: '${_track.semitones > 0 ? '+' : ''}${_track.semitones} пт.',
                         ),
                     ],
                   ),
                 ],
               ),
             ),
-            if (widget.performanceNote.trim().isNotEmpty)
+            if (_track.note.trim().isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: Container(
@@ -126,7 +180,7 @@ class _StageModePageState extends State<StageModePage> {
                     color: colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Text(widget.performanceNote),
+                  child: Text(_track.note),
                 ),
               ),
             const Divider(height: 1),
@@ -135,6 +189,7 @@ class _StageModePageState extends State<StageModePage> {
                 controller: _scrollController,
                 thumbVisibility: true,
                 child: SingleChildScrollView(
+                  key: ValueKey('stage-lyrics-${_trackIndex}'),
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(22, 22, 22, 36),
                   child: SelectableText(
@@ -151,37 +206,63 @@ class _StageModePageState extends State<StageModePage> {
             ),
             const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (hasQueue)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _trackIndex > 0 ? () => _moveTrack(-1) : null,
+                            icon: const Icon(Icons.skip_previous_rounded),
+                            label: const Text('Предыдущая'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _trackIndex < widget.queue.length - 1
+                                ? () => _moveTrack(1)
+                                : null,
+                            icon: const Icon(Icons.skip_next_rounded),
+                            label: const Text('Следующая'),
+                          ),
+                        ),
+                      ],
+                    ),
                   Row(
                     children: [
-                      const Icon(Icons.text_fields_rounded),
+                      const Icon(Icons.text_fields_rounded, size: 20),
                       IconButton(
                         tooltip: 'Уменьшить текст',
+                        visualDensity: VisualDensity.compact,
                         onPressed: () => _changeFont(-2),
                         icon: const Icon(Icons.remove_rounded),
                       ),
-                      Expanded(
-                        child: Center(child: Text('${_fontSize.round()} px')),
-                      ),
+                      Expanded(child: Center(child: Text('${_fontSize.round()} px'))),
                       IconButton(
                         tooltip: 'Увеличить текст',
+                        visualDensity: VisualDensity.compact,
                         onPressed: () => _changeFont(2),
                         icon: const Icon(Icons.add_rounded),
                       ),
-                      const SizedBox(width: 8),
-                      FilledButton.tonalIcon(
-                        onPressed: _isScrolling ? _pauseScroll : _startScroll,
-                        icon: Icon(_isScrolling ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                        label: Text(_isScrolling ? 'Пауза' : 'Автопрокрутка'),
+                      const SizedBox(width: 4),
+                      Tooltip(
+                        message: _isScrolling ? 'Пауза' : 'Автопрокрутка',
+                        child: FilledButton.tonal(
+                          onPressed: _isScrolling ? _pauseScroll : _startScroll,
+                          child: Icon(
+                            _isScrolling ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.slow_motion_video_rounded, size: 20),
+                      const Icon(Icons.slow_motion_video_rounded, size: 18),
                       Expanded(
                         child: Slider(
                           min: 5,
@@ -193,9 +274,10 @@ class _StageModePageState extends State<StageModePage> {
                         ),
                       ),
                       SizedBox(
-                        width: 54,
-                        child: Text('${_speed.round()} px/с', textAlign: TextAlign.end),
+                        width: 48,
+                        child: Text('${_speed.round()}', textAlign: TextAlign.end),
                       ),
+                      const Text(' px/с'),
                     ],
                   ),
                 ],
