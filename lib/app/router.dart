@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/profile/presentation/profile_page.dart';
 import 'auth_gate_page.dart';
 
 final GoRouter bandPlanRouter = GoRouter(
@@ -9,6 +10,11 @@ final GoRouter bandPlanRouter = GoRouter(
       path: '/',
       name: 'home',
       builder: (context, state) => const AuthGatePage(),
+    ),
+    GoRoute(
+      path: '/profile',
+      name: 'profile',
+      builder: (context, state) => const ProfilePage(),
     ),
   ],
   errorBuilder: (context, state) => _RouteErrorPage(
