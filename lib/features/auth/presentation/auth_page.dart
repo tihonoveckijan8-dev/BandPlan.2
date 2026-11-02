@@ -53,8 +53,8 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       }
     } on AuthException catch (error) {
       if (mounted) _showMessage(error.message);
-    } catch (_) {
-      if (mounted) _showMessage('Не удалось выполнить запрос. Попробуйте ещё раз.');
+    } catch (error) {
+      if (mounted) _showMessage('Ошибка входа: $error');
     } finally {
       if (mounted) setState(() => _isBusy = false);
     }
