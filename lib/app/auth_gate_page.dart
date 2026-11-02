@@ -5,6 +5,8 @@ import '../core/config/app_config.dart';
 import '../features/auth/application/auth_providers.dart';
 import '../features/auth/presentation/auth_page.dart';
 import '../features/groups/presentation/group_workspace_page.dart';
+import '../features/onboarding/application/onboarding_providers.dart';
+import '../features/onboarding/presentation/onboarding_page.dart';
 
 class AuthGatePage extends ConsumerWidget {
   const AuthGatePage({super.key});
@@ -18,7 +20,33 @@ class AuthGatePage extends ConsumerWidget {
 
     ref.watch(authStateProvider);
     if (repository.currentSession == null) return const AuthPage();
-    return const GroupWorkspacePage();
+
+    final onboarding = ref.watch(onboardingCompleteProvider);
+    return onboarding.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Не удалось проверить профиль аккаунта.'),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => ref.invalidate(onboardingCompleteProvider),
+                  child: const Text('Повторить'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      data: (complete) =>
+          complete ? const GroupWorkspacePage() : const OnboardingPage(),
+    );
   }
 }
 
