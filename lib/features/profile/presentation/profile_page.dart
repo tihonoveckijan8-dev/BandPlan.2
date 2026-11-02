@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/application/auth_providers.dart';
+import '../../groups/presentation/group_workspace_page.dart';
 import '../application/profile_providers.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -62,10 +64,29 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final profile = ref.watch(myProfileProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Мой профиль')),
-      body: SafeArea(
-        child: profile.when(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Профиль'),
+          actions: [
+            IconButton(
+              tooltip: 'Выйти из аккаунта',
+              onPressed: () => ref.read(authRepositoryProvider)?.signOut(),
+              icon: const Icon(Icons.logout_rounded),
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.person_outline_rounded), text: 'Профиль'),
+              Tab(icon: Icon(Icons.groups_outlined), text: 'Группы'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            SafeArea(
+              child: profile.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) => Center(
             child: Padding(
@@ -141,8 +162,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ],
             );
           },
+              ),
+            ),
+            const GroupWorkspacePage(embedded: true),
+          ],
         ),
       ),
+    ),
     );
   }
 }
