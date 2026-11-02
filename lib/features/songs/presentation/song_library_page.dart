@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/song_providers.dart';
 import '../../groups/application/group_providers.dart';
 import '../domain/song.dart';
+import '../../stage/presentation/stage_mode_page.dart';
 
 enum _SongLibrary { group, personal }
 
@@ -351,6 +352,21 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => StageModePage(
+                            song: song,
+                            initialSemitones: semitones,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.theater_comedy_rounded),
+                      label: const Text('Сценический режим'),
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
                     child: Column(

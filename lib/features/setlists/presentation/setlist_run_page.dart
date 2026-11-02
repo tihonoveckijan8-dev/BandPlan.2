@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../songs/domain/song.dart';
 import '../domain/setlist.dart';
+import '../../stage/presentation/stage_mode_page.dart';
 
 /// Read-only performance view. Per-item transposition is applied to a temporary
 /// Song view so the original repertoire record is never modified.
@@ -38,6 +39,20 @@ class _SetlistRunPageState extends State<SetlistRunPage> {
     setState(() => _index = next);
   }
 
+  void _openStage(BuildContext context) {
+    final song = _sourceSong;
+    if (song == null) return;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => StageModePage(
+          song: song,
+          initialSemitones: _item.shift,
+          performanceNote: _item.note,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final item = _item;
@@ -48,6 +63,12 @@ class _SetlistRunPageState extends State<SetlistRunPage> {
       appBar: AppBar(
         title: Text(widget.setlist.name, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
+          if (_sourceSong != null)
+            IconButton(
+              tooltip: 'Сценический режим',
+              onPressed: () => _openStage(context),
+              icon: const Icon(Icons.theater_comedy_rounded),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Center(
