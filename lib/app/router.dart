@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/profile/presentation/profile_page.dart';
 import '../features/songs/presentation/song_library_page.dart';
+import '../features/setlists/presentation/setlists_page.dart';
 import 'auth_gate_page.dart';
 
 final GoRouter bandPlanRouter = GoRouter(
@@ -16,6 +17,11 @@ final GoRouter bandPlanRouter = GoRouter(
       path: '/songs',
       name: 'songs',
       builder: (context, state) => const SongLibraryPage(),
+    ),
+    GoRoute(
+      path: '/setlists',
+      name: 'setlists',
+      builder: (context, state) => const SetlistsPage(),
     ),
     GoRoute(
       path: '/profile',
