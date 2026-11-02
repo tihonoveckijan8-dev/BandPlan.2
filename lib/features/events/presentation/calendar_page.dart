@@ -257,6 +257,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                     'location':edited.location,'notes':edited.notes,'status':edited.status,'setlistId':edited.setlistId,
                   });
                   await repo.saveGroupEvent(group.id,event);ref.invalidate(groupEventsProvider);if(sheet.mounted)Navigator.pop(sheet);
+                  if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content:Text(old==null?'Событие создано.':'Событие сохранено.')));
                 }catch(error){setState(()=>saving=false);if(sheet.mounted)ScaffoldMessenger.of(sheet).showSnackBar(SnackBar(content:Text('Не удалось сохранить: $error')));}
               },icon:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.save_rounded),
                 label:Text(saving?'Сохранение…':'Сохранить событие')),
