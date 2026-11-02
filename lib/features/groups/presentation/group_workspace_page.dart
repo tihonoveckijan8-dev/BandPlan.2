@@ -191,6 +191,8 @@ class GroupWorkspacePage extends ConsumerWidget {
                 if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
                 ref.invalidate(myGroupsProvider);
+                // WHY: create/join RPCs may update account display name and roles.
+                ref.invalidate(myProfileProvider);
                 // WHY: create/join may change the server-selected active group.
                 ref.invalidate(activeGroupProvider);
                 ScaffoldMessenger.of(context).showSnackBar(
