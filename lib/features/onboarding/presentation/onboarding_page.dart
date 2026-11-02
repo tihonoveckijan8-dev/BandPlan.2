@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../groups/application/group_providers.dart';
 import '../../profile/application/profile_providers.dart';
-import '../../groups/application/group_providers.dart' show myGroupsProvider, activeGroupProvider;
+import '../application/onboarding_providers.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
