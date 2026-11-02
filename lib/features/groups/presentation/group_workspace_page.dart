@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/application/auth_providers.dart';
 import '../application/group_providers.dart';
 import '../data/group_repository.dart';
+import '../../profile/application/profile_providers.dart';
 import '../domain/group_summary.dart';
 
 class GroupWorkspacePage extends ConsumerWidget {
@@ -21,6 +22,7 @@ class GroupWorkspacePage extends ConsumerWidget {
       error: (_, __) => null,
     );
     final repository = ref.watch(groupRepositoryProvider);
+    final profile = ref.watch(myProfileProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -121,7 +123,11 @@ class GroupWorkspacePage extends ConsumerWidget {
     final codeController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     final userEmail = ref.read(authRepositoryProvider)?.currentUser?.email ?? '';
-    final displayName = userEmail.split('@').first;
+    final profile = ref.read(myProfileProvider).valueOrNull;
+    final displayName = profile?.displayName.trim().isNotEmpty == true
+        ? profile!.displayName.trim()
+        : userEmail.split('@').first;
+    final roles = profile?.roles ?? const <String>[];
 
     await showDialog<void>(
       context: context,
@@ -159,13 +165,13 @@ class GroupWorkspacePage extends ConsumerWidget {
                   await repository.createGroup(
                     name: nameController.text.trim(),
                     displayName: displayName,
-                    roles: const [],
+                    roles: roles,
                   );
                 } else {
                   await repository.joinGroup(
                     inviteCode: codeController.text.trim(),
                     displayName: displayName,
-                    roles: const [],
+                    roles: roles,
                   );
                 }
                 if (!dialogContext.mounted) return;
@@ -265,6 +271,53 @@ class _GroupTile extends StatelessWidget {
                       );
                     }
                   }
+                } else if (action == 'rename') {
+                  final controller = TextEditingController(text: name);
+                  final renamed = await showDialog<String>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Переименовать группу'),
+                      content: TextField(
+                        controller: controller,
+                        autofocus: true,
+                        maxLength: 50,
+                        decoration: const InputDecoration(labelText: 'Название группы'),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Отмена'),
+                        ),
+                        FilledButton(
+                          onPressed: () {
+                            final value = controller.text.trim();
+                            if (value.length >= 3 && value.length <= 50) {
+                              Navigator.pop(dialogContext, value);
+                            }
+                          },
+                          child: const Text('Сохранить'),
+                        ),
+                      ],
+                    ),
+                  );
+                  controller.dispose();
+                  if (renamed != null) {
+                    try {
+                      await repo.renameGroup(groupId: id, name: renamed);
+                      onChanged();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Название группы обновлено.')),
+                        );
+                      }
+                    } catch (error) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(error.toString())),
+                        );
+                      }
+                    }
+                  }
                 } else if (action == 'invite') {
                   try {
                     await repo.setActiveGroup(id);
@@ -324,6 +377,7 @@ class _GroupTile extends StatelessWidget {
               },
               itemBuilder: (context) => const [
                 PopupMenuItem(value: 'activate', child: Text('Сделать активной')),
+                PopupMenuItem(value: 'rename', child: Text('Переименовать')),
                 PopupMenuItem(value: 'invite', child: Text('Получить код приглашения')),
                 PopupMenuItem(value: 'leave', child: Text('Покинуть группу')),
               ],
