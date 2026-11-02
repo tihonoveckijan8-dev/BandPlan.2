@@ -69,7 +69,7 @@ class Song {
   static String _transposeLyricsLine(String line, int semitones) {
     // Legacy section labels such as [Куплет] are deliberately left untouched.
     final withInlineChords = line.replaceAllMapped(
-      RegExp(r'\[([^]\r\n]+)\]'),
+      RegExp(r'\[([^\r\n\]]+)\]'),
       (match) {
         final chord = _transposeChord(match.group(1)!, semitones);
         return chord == null ? match.group(0)! : '[$chord]';
@@ -89,28 +89,7 @@ class Song {
 
   static String? _transposeChord(String value, int semitones) {
     final match = RegExp(
-      r'^([A-G](?:#|b)?)(?:(?:maj|min|m|M|dim|aug|sus[24]?|add\d+|\d+|ø|°|\+|-)*)(?:/([A-G](?:#|b)?))?  Map<String, dynamic> toLegacyJson() => Map<String, dynamic>.from(raw);
-
-  String get searchableText =>
-      '$title $artist ${tags.join(' ')} $lyrics'.toLowerCase();
-
-  static String _string(Object? value) => value?.toString().trim() ?? '';
-
-  static int? _integer(Object? value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '');
-  }
-
-  static List<String> _stringList(Object? value) {
-    if (value is! List) return const [];
-    return value
-        .map((item) => item?.toString().trim() ?? '')
-        .where((item) => item.isNotEmpty)
-        .toList(growable: false);
-  }
-}
-
+      r'^([A-G](?:#|b)?)(?:(?:maj|min|m|M|dim|aug|sus[24]?|add\d+|\d+|ø|°|\+|-)*)(?:/([A-G](?:#|b)?))?$'
     ).firstMatch(value);
     if (match == null) return null;
     final root = _transposeNote(match.group(1)!, semitones);
