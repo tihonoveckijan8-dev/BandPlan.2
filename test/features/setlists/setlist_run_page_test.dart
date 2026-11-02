@@ -121,8 +121,10 @@ void main() {
     await tester.tap(find.byTooltip('Сценический режим'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Selected song lyrics'), findsOneWidget);
-    expect(find.text('Following song lyrics'), findsNothing);
+    expect(find.text('Selected'), findsOneWidget);
+    expect(find.text('song'), findsWidgets);
+    expect(find.text('lyrics'), findsOneWidget);
+    expect(find.text('Following'), findsNothing);
   });
 
 }
