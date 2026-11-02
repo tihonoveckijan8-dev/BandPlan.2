@@ -41,10 +41,10 @@ class CalendarPage extends ConsumerWidget {
                 leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
                 title:Text(e.title,style:const TextStyle(fontWeight:FontWeight.w700)),
                 subtitle:Text([if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location,
-                  if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено',if(e.status=='cancelled')'Отменено'].join(' · '),
+                  if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено'].join(' · '),
                   maxLines:3,overflow:TextOverflow.ellipsis),
                 trailing:const Icon(Icons.chevron_right_rounded),
-                onTap:()=>_details(context,ref,e,sl,programs,occurrenceDate:occurrence.date))));}),
+                onTap:()=>_details(context,ref,e,sl,programs,occurrenceDate:occurrence.date,seriesEvent:occurrence.series))));}),
           ]);
         })),
     ));
@@ -97,7 +97,7 @@ class CalendarPage extends ConsumerWidget {
     ])));
   }
 
-  Future<void> _details(BuildContext context,WidgetRef ref,GroupEvent e,Setlist? sl,List<Setlist> programs,{required String occurrenceDate}) async {
+  Future<void> _details(BuildContext context,WidgetRef ref,GroupEvent e,Setlist? sl,List<Setlist> programs,{required String occurrenceDate,required GroupEvent seriesEvent}) async {
     await showModalBottomSheet<void>(context:context,useSafeArea:true,showDragHandle:true,
       builder:(sheet)=>Padding(padding:const EdgeInsets.all(20),child:Wrap(runSpacing:12,children:[
         Text(e.title,style:Theme.of(context).textTheme.headlineSmall),
@@ -107,28 +107,32 @@ class CalendarPage extends ConsumerWidget {
           subtitle:Text('${sl.items.length} песен'),onTap:(){Navigator.pop(sheet);context.push('/setlists');}),
         Row(children:[
           IconButton(tooltip:'Удалить событие',color:Theme.of(context).colorScheme.error,
-            onPressed:()=>_deleteEvent(context,sheet,ref,e,occurrenceDate),icon:const Icon(Icons.delete_outline_rounded)),
+            onPressed:()=>_deleteEvent(context,sheet,ref,seriesEvent,occurrenceDate),icon:const Icon(Icons.delete_outline_rounded)),
           if(sl==null)TextButton.icon(onPressed:(){Navigator.pop(sheet);context.push('/setlists');},
             icon:const Icon(Icons.queue_music_rounded),label:const Text('Сет-листы')),
           const Spacer(),
           TextButton(onPressed:()=>Navigator.pop(sheet),child:const Text('Закрыть')),
           FilledButton.icon(onPressed:()async{
-            final recurring=e.repeat.isNotEmpty&&e.repeat!='none';
+            final recurring=seriesEvent.repeat.isNotEmpty&&seriesEvent.repeat!='none';
+            var editOne=false;
             if(recurring){
-              final confirmed=await showDialog<bool>(context:context,builder:(dialog)=>AlertDialog(
-                title:const Text('Изменить всю серию?'),
-                content:const Text('Изменения будут применены к событию целиком: исходной дате и всем его повторениям. Отдельное изменение одной даты пока не поддерживается.'),
+              final action=await showDialog<String>(context:context,builder:(dialog)=>AlertDialog(
+                title:const Text('Что изменить?'),
+                content:Text('«${e.title}» — ${_date(occurrenceDate)}. Можно изменить только эту дату или всю серию.'),
                 actions:[
-                  TextButton(onPressed:()=>Navigator.pop(dialog,false),child:const Text('Отмена')),
-                  FilledButton(onPressed:()=>Navigator.pop(dialog,true),child:const Text('Изменить серию')),
+                  TextButton(onPressed:()=>Navigator.pop(dialog,'cancel'),child:const Text('Отмена')),
+                  TextButton(onPressed:()=>Navigator.pop(dialog,'one'),child:const Text('Только это повторение')),
+                  FilledButton(onPressed:()=>Navigator.pop(dialog,'all'),child:const Text('Всю серию')),
                 ],
               ));
-              if(confirmed!=true||!context.mounted)return;
+              if(action==null||action=='cancel'||!context.mounted)return;
+              editOne=action=='one';
             }
             if(sheet.mounted)Navigator.pop(sheet);
-            await _edit(context,ref,programs,e);
+            await _edit(context,ref,programs,seriesEvent,
+              occurrenceDate:editOne?occurrenceDate:null,initial:editOne?e:null);
           },
-            icon:const Icon(Icons.edit_rounded),label:Text(e.repeat.isNotEmpty&&e.repeat!='none'?'Изменить серию':'Изменить'))])
+            icon:const Icon(Icons.edit_rounded),label:Text(seriesEvent.repeat.isNotEmpty&&seriesEvent.repeat!='none'?'Изменить':'Изменить'))])
       ])));
   }
 
@@ -165,27 +169,29 @@ class CalendarPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _edit(BuildContext context,WidgetRef ref,List<Setlist> programs,[GroupEvent? old]) async {
+  Future<void> _edit(BuildContext context,WidgetRef ref,List<Setlist> programs,[GroupEvent? old],{String? occurrenceDate,GroupEvent? initial}) async {
     final group=await ref.read(activeGroupProvider.future);if(group==null||!context.mounted)return;
     final repo=ref.read(eventRepositoryProvider);if(repo==null)return;
-    final title=TextEditingController(text:old?.title??'');
-    final date=TextEditingController(text:old?.date??_iso(DateTime.now()));
-    final time=TextEditingController(text:old?.time??'19:00');
-    final end=TextEditingController(text:old?.end??'');
-    final place=TextEditingController(text:old?.location??'');
-    final notes=TextEditingController(text:old?.notes??'');
+    final source=initial??old;
+    final title=TextEditingController(text:source?.title??'');
+    final date=TextEditingController(text:occurrenceDate??source?.date??_iso(DateTime.now()));
+    final time=TextEditingController(text:source?.time??'19:00');
+    final end=TextEditingController(text:source?.end??'');
+    final place=TextEditingController(text:source?.location??'');
+    final notes=TextEditingController(text:source?.notes??'');
     final until=TextEditingController(text:old?.repeatUntil??'');
     final key=GlobalKey<FormState>();
-    var type=old?.type.isNotEmpty==true?old!.type:'rehearsal';
-    var status=old?.status.isNotEmpty==true?old!.status:'upcoming';
-    var repeat=old?.repeat.isNotEmpty==true?old!.repeat:'none';
-    var setlist=old?.setlistId??'';var saving=false;
+    var type=source?.type.isNotEmpty==true?source!.type:'rehearsal';
+    var status=source?.status.isNotEmpty==true?source!.status:'upcoming';
+    var repeat=occurrenceDate!=null?'none':(old?.repeat.isNotEmpty==true?old!.repeat:'none');
+    var setlist=source?.setlistId??'';var saving=false;
     try{
       await showModalBottomSheet<void>(context:context,isScrollControlled:true,useSafeArea:true,showDragHandle:true,
         builder:(sheet)=>StatefulBuilder(builder:(context,setState)=>SizedBox(height:MediaQuery.of(context).size.height*.9,
           child:Padding(padding:EdgeInsets.fromLTRB(18,8,18,MediaQuery.of(context).viewInsets.bottom+16),
             child:Form(key:key,child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-              Text(old==null?'Новое событие':'Изменить событие',style:Theme.of(context).textTheme.headlineSmall),
+              Text(old==null?'Новое событие':occurrenceDate!=null?'Изменить повторение':'Изменить событие',style:Theme.of(context).textTheme.headlineSmall),
+              if(occurrenceDate!=null)const Padding(padding:EdgeInsets.only(bottom:8),child:Text('Изменения затронут только выбранную дату. Остальные повторения останутся прежними.')),
               const SizedBox(height:12),Expanded(child:ListView(children:[
                 TextFormField(controller:title,maxLength:80,decoration:const InputDecoration(labelText:'Название *',border:OutlineInputBorder()),
                   validator:(v)=>(v?.trim().isEmpty??true)?'Введите название':null),
@@ -196,7 +202,7 @@ class CalendarPage extends ConsumerWidget {
                   onChanged:(v)=>setState(()=>type=v??'other')),
                 const SizedBox(height:8),
                 TextFormField(controller:date,readOnly:true,decoration:const InputDecoration(labelText:'Дата',border:OutlineInputBorder(),suffixIcon:Icon(Icons.calendar_month)),
-                  onTap:()async{final d=DateTime.tryParse(date.text)??DateTime.now();final p=await showDatePicker(context:context,initialDate:d,firstDate:DateTime(2000),lastDate:DateTime(2100));if(p!=null)date.text=_iso(p);},
+                  onTap:occurrenceDate!=null?null:()async{final d=DateTime.tryParse(date.text)??DateTime.now();final p=await showDatePicker(context:context,initialDate:d,firstDate:DateTime(2000),lastDate:DateTime(2100));if(p!=null)date.text=_iso(p);},
                   validator:(v)=>DateTime.tryParse(v??'')==null?'Выберите дату':null),
                 const SizedBox(height:8),Row(children:[
                   Expanded(child:TextFormField(controller:time,decoration:const InputDecoration(labelText:'Начало',hintText:'19:00',border:OutlineInputBorder()))),
@@ -205,11 +211,12 @@ class CalendarPage extends ConsumerWidget {
                 const SizedBox(height:8),DropdownButtonFormField<String>(value:status,decoration:const InputDecoration(labelText:'Статус',border:OutlineInputBorder()),
                   items:const [DropdownMenuItem(value:'upcoming',child:Text('Запланировано')),DropdownMenuItem(value:'done',child:Text('Проведено')),
                     DropdownMenuItem(value:'cancelled',child:Text('Отменено'))],onChanged:(v)=>setState(()=>status=v??'upcoming')),
-                const SizedBox(height:8),DropdownButtonFormField<String>(value:repeat,decoration:const InputDecoration(labelText:'Повторение',border:OutlineInputBorder()),
+                if(occurrenceDate==null)const SizedBox(height:8),
+                if(occurrenceDate==null)DropdownButtonFormField<String>(value:repeat,decoration:const InputDecoration(labelText:'Повторение',border:OutlineInputBorder()),
                   items:const [DropdownMenuItem(value:'none',child:Text('Не повторять')),DropdownMenuItem(value:'daily',child:Text('Каждый день')),
                     DropdownMenuItem(value:'weekly',child:Text('Каждую неделю')),DropdownMenuItem(value:'biweekly',child:Text('Раз в две недели')),DropdownMenuItem(value:'monthly',child:Text('Каждый месяц'))],
                   onChanged:(v)=>setState(()=>repeat=v??'none')),
-                if(repeat!='none')...[
+                if(occurrenceDate==null&&repeat!='none')...[
                   const SizedBox(height:8),TextFormField(controller:until,readOnly:true,decoration:const InputDecoration(labelText:'Повторять до',border:OutlineInputBorder()),
                     onTap:()async{final d=DateTime.tryParse(until.text)??DateTime.tryParse(date.text)??DateTime.now();final p=await showDatePicker(context:context,initialDate:d,firstDate:DateTime(2000),lastDate:DateTime(2100));if(p!=null)until.text=_iso(p);})],
                 const SizedBox(height:8),DropdownButtonFormField<String>(value:setlist,
@@ -225,11 +232,21 @@ class CalendarPage extends ConsumerWidget {
                 if(repeat!='none'&&until.text.isNotEmpty&&until.text.compareTo(date.text)<0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Дата окончания повтора раньше начала.')));return;}
                 setState(()=>saving=true);
                 try{
-                  final event=old==null?GroupEvent.create(id:DateTime.now().microsecondsSinceEpoch.toString(),title:title.text.trim(),
+                  final edited=old==null?GroupEvent.create(id:DateTime.now().microsecondsSinceEpoch.toString(),title:title.text.trim(),
                     date:date.text,type:type,time:time.text.trim(),end:end.text.trim(),location:place.text.trim(),notes:notes.text.trim(),
                     status:status,repeat:repeat,repeatUntil:until.text.trim(),setlistId:setlist):
                     old.withEdits(title:title.text.trim(),date:date.text,type:type,time:time.text.trim(),end:end.text.trim(),
                       location:place.text.trim(),notes:notes.text.trim(),status:status,repeat:repeat,repeatUntil:until.text.trim(),setlistId:setlist);
+                  final event=occurrenceDate==null?edited:GroupEvent.fromJson({
+                    ...old!.raw,
+                    'overrides':{
+                      if(old.raw['overrides'] is Map)...Map<String,dynamic>.from(old.raw['overrides'] as Map),
+                      occurrenceDate:{
+                        'title':edited.title,'type':edited.type,'time':edited.time,'end':edited.end,
+                        'location':edited.location,'notes':edited.notes,'status':edited.status,'setlistId':edited.setlistId,
+                      },
+                    },
+                  });
                   await repo.saveGroupEvent(group.id,event);ref.invalidate(groupEventsProvider);if(sheet.mounted)Navigator.pop(sheet);
                 }catch(error){setState(()=>saving=false);if(sheet.mounted)ScaffoldMessenger.of(sheet).showSnackBar(SnackBar(content:Text('Не удалось сохранить: $error')));}
               },icon:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.save_rounded),
