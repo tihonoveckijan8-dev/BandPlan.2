@@ -46,7 +46,8 @@ class _SetlistRunPageState extends State<SetlistRunPage> {
       final item = widget.setlist.items[i];
       final song = _songById[item.songId];
       if (song == null) continue;
-      if (i < _index) currentTrackIndex++;
+      // WHY: map the selected setlist item after missing songs are skipped.
+      if (i == _index) currentTrackIndex = queue.length;
       queue.add(StageModeTrack(song: song, semitones: item.shift, note: item.note));
     }
     if (queue.isEmpty) return;
