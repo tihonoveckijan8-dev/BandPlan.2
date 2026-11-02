@@ -220,45 +220,42 @@ class SetlistsPage extends ConsumerWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(Icons.drag_handle_rounded),
-                                        IconButton(
-                                          tooltip: 'Понизить на полутон',
-                                          visualDensity: VisualDensity.compact,
-                                          onPressed: () => setSheetState(() {
-                                            items[index] = item.withEdits(shift: item.shift - 1);
-                                          }),
-                                          icon: const Icon(Icons.remove_circle_outline_rounded),
-                                        ),
-                                        Text(
-                                          item.shift > 0 ? '+${item.shift}' : item.shift.toString(),
-                                          style: Theme.of(context).textTheme.labelMedium,
-                                        ),
-                                        IconButton(
-                                          tooltip: 'Повысить на полутон',
-                                          visualDensity: VisualDensity.compact,
-                                          onPressed: () => setSheetState(() {
-                                            items[index] = item.withEdits(shift: item.shift + 1);
-                                          }),
-                                          icon: const Icon(Icons.add_circle_outline_rounded),
-                                        ),
-                                        IconButton(
-                                          tooltip: item.note.isEmpty ? 'Добавить заметку к песне' : 'Изменить заметку',
-                                          visualDensity: VisualDensity.compact,
-                                          onPressed: () async {
-                                            final updatedNote = await _editItemNote(context, item.note);
-                                            if (updatedNote != null) {
-                                              setSheetState(() {
-                                                items[index] = item.withEdits(note: updatedNote);
-                                              });
+                                        PopupMenuButton<String>(
+                                          tooltip: 'Настройки песни в сет-листе',
+                                          onSelected: (action) async {
+                                            switch (action) {
+                                              case 'down':
+                                                setSheetState(() {
+                                                  items[index] = item.withEdits(shift: item.shift - 1);
+                                                });
+                                                break;
+                                              case 'up':
+                                                setSheetState(() {
+                                                  items[index] = item.withEdits(shift: item.shift + 1);
+                                                });
+                                                break;
+                                              case 'note':
+                                                final updatedNote = await _editItemNote(context, item.note);
+                                                if (updatedNote != null) {
+                                                  setSheetState(() {
+                                                    items[index] = item.withEdits(note: updatedNote);
+                                                  });
+                                                }
+                                                break;
+                                              case 'remove':
+                                                setSheetState(() => items.removeAt(index));
+                                                break;
                                             }
                                           },
-                                          icon: Icon(item.note.isEmpty ? Icons.note_add_outlined : Icons.sticky_note_2_outlined),
+                                          itemBuilder: (context) => const [
+                                            PopupMenuItem(value: 'down', child: Text('Понизить на полутон')),
+                                            PopupMenuItem(value: 'up', child: Text('Повысить на полутон')),
+                                            PopupMenuItem(value: 'note', child: Text('Заметка к песне')),
+                                            PopupMenuItem(value: 'remove', child: Text('Убрать из программы')),
+                                          ],
                                         ),
-                                        IconButton(
-                                          tooltip: 'Убрать из программы',
-                                          visualDensity: VisualDensity.compact,
-                                          onPressed: () => setSheetState(() => items.removeAt(index)),
-                                          icon: const Icon(Icons.close_rounded),
-                                        ),
+                                      ],
+                                    ),
                                       ],
                                     ),
                                   ),
