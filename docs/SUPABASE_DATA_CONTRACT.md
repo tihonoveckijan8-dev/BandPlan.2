@@ -407,4 +407,26 @@ that create, join, and leave RPCs return a group identifier, and validates the
 active-group selection result before treating the action as successful.
 
 No table structure, RLS policy, authentication flow, or RPC definition was
-changed by this correction.
+changed by the write-permission correction.
+
+
+## 13. Group RPC ambiguity fix (2026-11-02)
+
+The live PostgreSQL functions were failing before completing group actions.
+Because `bandplan_create_group` returns an OUT column named `invite_code`,
+its unqualified `where invite_code = v_code` lookup conflicted with the
+PL/pgSQL output variable. Likewise, `bandplan_leave_group` returns an OUT
+column named `group_id`, and unqualified membership-table references to
+`group_id` were ambiguous.
+
+The functions were replaced with equivalent implementations that qualify
+table columns through aliases. Existing authorization checks, SECURITY DEFINER
+ownership, pinned search_path, membership behavior, invite generation,
+ownership transfer, and last-owner cleanup were retained. No table, column,
+RLS policy, or authentication flow was changed.
+
+A live database transaction exercised group creation, invite-code return,
+joining by that code, a member leaving, and the sole owner leaving. It completed
+without SQL errors and was rolled back, so the diagnostic group and membership
+rows were not retained. The migration is tracked in
+`supabase/migrations/20261102190000_fix_group_rpc_ambiguous_column_references.sql`.
