@@ -143,7 +143,30 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      height: 52,
+                      child: OutlinedButton.icon(
+                        onPressed: _isBusy ? null : _signInWithGoogle,
+                        icon: const Icon(Icons.g_mobiledata_rounded, size: 30),
+                        label: const Text(
+                          'Продолжить с Google',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('или', style: theme.textTheme.bodySmall),
+                        ),
+                        const Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -210,29 +233,6 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                                 ),
                               )
                             : Text(_isSignUp ? 'Создать аккаунт' : 'Войти'),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Expanded(child: Divider()),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            'или',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ),
-                        const Expanded(child: Divider()),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: _isBusy ? null : _signInWithGoogle,
-                      icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
-                      label: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Text('Продолжить с Google'),
                       ),
                     ),
                     const SizedBox(height: 12),
