@@ -28,6 +28,11 @@ class GroupWorkspacePage extends ConsumerWidget {
         title: const Text('Рабочие группы'),
         actions: [
           IconButton(
+            tooltip: 'Каталог песен',
+            onPressed: () => context.push('/songs'),
+            icon: const Icon(Icons.library_music_outlined),
+          ),
+          IconButton(
             tooltip: 'Мой профиль',
             onPressed: () => context.push('/profile'),
             icon: const Icon(Icons.person_outline_rounded),

@@ -1,0 +1,71 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:bandplan/features/songs/domain/song.dart';
+
+void main() {
+  group('Song legacy payload', () {
+    test('reads common catalogue fields without rewriting lyrics', () {
+      const lyrics = '[Куплет 1]\nEm       G\nТекст строки\nC [D] дальше';
+      final song = Song.fromJson({
+        'id': 'legacy-1',
+        'title': 'Песня',
+        'artist': 'Исполнитель',
+        'key': 'Em',
+        'bpm': 104,
+        'duration': 225,
+        'tags': ['рок', 'живое'],
+        'fav': true,
+        'lyrics': lyrics,
+      });
+
+      expect(song.id, 'legacy-1');
+      expect(song.title, 'Песня');
+      expect(song.artist, 'Исполнитель');
+      expect(song.key, 'Em');
+      expect(song.bpm, 104);
+      expect(song.durationSeconds, 225);
+      expect(song.tags, ['рок', 'живое']);
+      expect(song.isFavorite, isTrue);
+      expect(song.lyrics, lyrics);
+    });
+
+    test('keeps unknown chord and arrangement fields for round-trip', () {
+      final payload = <String, dynamic>{
+        'id': 'legacy-2',
+        'title': 'Сложная песня',
+        'lyrics': 'Am [C] текст',
+        'chordAnchors': [
+          {'line': 0, 'offset': 3, 'chord': 'Am'},
+        ],
+        'dynamics': {'instruments': ['vocal', 'guitar']},
+        'customLegacyField': {'version': 7},
+      };
+
+      final song = Song.fromJson(payload);
+
+      expect(song.toLegacyJson(), payload);
+      expect(song.toLegacyJson()['chordAnchors'], payload['chordAnchors']);
+      expect(song.toLegacyJson()['dynamics'], payload['dynamics']);
+    });
+
+    test('search text includes lyrics, artist and tags', () {
+      final song = Song.fromJson({
+        'id': 'legacy-3',
+        'title': 'Ночь',
+        'artist': 'Группа',
+        'tags': ['баллада'],
+        'lyrics': 'Свет в окне',
+      });
+
+      expect(song.searchableText, contains('группа'));
+      expect(song.searchableText, contains('баллада'));
+      expect(song.searchableText, contains('свет в окне'));
+    });
+
+    test('rejects payloads without a legacy id', () {
+      expect(
+        () => Song.fromJson({'title': 'Без id'}),
+        throwsFormatException,
+      );
+    });
+  });
+}
