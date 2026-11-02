@@ -39,7 +39,9 @@ List<EventOccurrence> expandEventOccurrences(List<GroupEvent> events,DateTime fr
         // monthly steps to reach that stable day before arithmetic fast-forwarding.
         if(current.day>28){
           final originalDay=current.day;
-          for(var i=0;i<13&&current.day==originalDay;i++){
+          for(var i=0;i<13&&current.day==originalDay&&current.isBefore(start);i++){
+            // WHY: do not jump past the requested range while searching for the
+            // eventual overflow day; those earlier monthly occurrences are visible.
             current=DateTime(current.year,current.month+1,current.day);
           }
         }

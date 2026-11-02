@@ -69,6 +69,17 @@ void main(){
     expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30)).map((x)=>x.date),
       ['2026-11-02']);
   });
+  test('monthly fast-forward keeps occurrences inside the stabilization window',(){
+    final e=GroupEvent.fromJson({
+      'id':'monthly-near-anchor','title':'Monthly','date':'2024-01-29',
+      'repeat':'monthly','repeatUntil':'2025-12-31',
+    });
+    // The first requested date is before the day-29 series overflows in Feb 2025.
+    // Earlier occurrences must not be skipped while finding the later stable day.
+    expect(expandEventOccurrences([e],DateTime(2024,2,1),DateTime(2024,4,30)).map((x)=>x.date),
+      ['2024-02-29','2024-03-29','2024-04-29']);
+  });
+
   test('old monthly series fast-forwards after a later February overflow',(){
     final e=GroupEvent.fromJson({
       'id':'old-monthly-29','title':'Monthly 29','date':'2024-01-29',
