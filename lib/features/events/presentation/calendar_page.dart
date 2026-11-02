@@ -237,15 +237,9 @@ class CalendarPage extends ConsumerWidget {
                     status:status,repeat:repeat,repeatUntil:until.text.trim(),setlistId:setlist):
                     old.withEdits(title:title.text.trim(),date:date.text,type:type,time:time.text.trim(),end:end.text.trim(),
                       location:place.text.trim(),notes:notes.text.trim(),status:status,repeat:repeat,repeatUntil:until.text.trim(),setlistId:setlist);
-                  final event=occurrenceDate==null?edited:GroupEvent.fromJson({
-                    ...old!.raw,
-                    'overrides':{
-                      if(old.raw['overrides'] is Map)...Map<String,dynamic>.from(old.raw['overrides'] as Map),
-                      occurrenceDate:{
-                        'title':edited.title,'type':edited.type,'time':edited.time,'end':edited.end,
-                        'location':edited.location,'notes':edited.notes,'status':edited.status,'setlistId':edited.setlistId,
-                      },
-                    },
+                  final event=occurrenceDate==null?edited:old!.withOccurrenceOverride(occurrenceDate,{
+                    'title':edited.title,'type':edited.type,'time':edited.time,'end':edited.end,
+                    'location':edited.location,'notes':edited.notes,'status':edited.status,'setlistId':edited.setlistId,
                   });
                   await repo.saveGroupEvent(group.id,event);ref.invalidate(groupEventsProvider);if(sheet.mounted)Navigator.pop(sheet);
                 }catch(error){setState(()=>saving=false);if(sheet.mounted)ScaffoldMessenger.of(sheet).showSnackBar(SnackBar(content:Text('Не удалось сохранить: $error')));}

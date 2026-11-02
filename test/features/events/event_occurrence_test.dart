@@ -92,6 +92,27 @@ void main(){
     expect(r[1].series.title,'Original');
     expect(r[1].series.raw['legacyField'],'keep');
   });
+  test('editing one occurrence preserves unknown override metadata',(){
+    final base=GroupEvent.fromJson({
+      'id':'e1','title':'Original','date':'2026-11-02','repeat':'weekly',
+      'repeatUntil':'2026-11-16',
+      'overrides':{
+        '2026-11-09':{'title':'Old title','legacyFlag':'preserve','customPayload':{'x':1}},
+        '2026-11-16':{'title':'Other occurrence'},
+      },
+      'legacyEventField':'also preserve',
+    });
+    final edited=base.withOccurrenceOverride('2026-11-09',{'title':'New title','time':'20:00'});
+    final overrides=edited.raw['overrides'] as Map;
+    final changed=overrides['2026-11-09'] as Map;
+    expect(changed['title'],'New title');
+    expect(changed['time'],'20:00');
+    expect(changed['legacyFlag'],'preserve');
+    expect(changed['customPayload'],{'x':1});
+    expect(overrides['2026-11-16'],{'title':'Other occurrence'});
+    expect(edited.raw['legacyEventField'],'also preserve');
+    expect(base.raw['overrides'],isNot(equals(overrides)));
+  });
   test('cancelled one-off override hides only its date',(){
     final base=GroupEvent.fromJson({
       'id':'e1','title':'Original','date':'2026-11-02','repeat':'weekly','repeatUntil':'2026-11-16',

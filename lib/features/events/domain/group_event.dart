@@ -34,6 +34,19 @@ class GroupEvent {
   }) => GroupEvent.fromJson({...raw, 'title': title, 'date': date, 'type': type, 'time': time,
     'end': end, 'location': location, 'notes': notes, 'status': status, 'repeat': repeat,
     'repeatUntil': repeatUntil, 'setlistId': setlistId});
+  /// Updates one occurrence without discarding unknown legacy override fields.
+  GroupEvent withOccurrenceOverride(String date, Map<String, dynamic> edits) {
+    final stored = raw['overrides'];
+    final overrides = stored is Map
+        ? Map<String, dynamic>.from(stored)
+        : <String, dynamic>{};
+    final previous = overrides[date];
+    overrides[date] = {
+      if (previous is Map) ...Map<String, dynamic>.from(previous),
+      ...edits,
+    };
+    return GroupEvent.fromJson({...raw, 'overrides': overrides});
+  }
   Map<String, dynamic> toLegacyJson() => Map<String, dynamic>.from(raw);
   static String _string(Object? value) => value?.toString().trim() ?? '';
   static List<String> _stringList(Object? value) =>
