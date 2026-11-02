@@ -36,7 +36,6 @@ class SongDocumentLine {
     final text = StringBuffer();
     final anchors = <SongChordAnchor>[];
     var sourceOffset = 0;
-    var lyricOffset = 0;
 
     for (final match in matches) {
       final before = source.substring(sourceOffset, match.start);
@@ -80,10 +79,10 @@ class SongDocumentLine {
   final String? sectionLabel;
 
   static (int, int) _wordPosition(String text) {
-    final words = RegExp(r'\\S+').allMatches(text).toList(growable: false);
+    final words = RegExp(r'\S+').allMatches(text).toList(growable: false);
     for (var i = 0; i < words.length; i++) {
       final word = words[i];
-      if (text.length < word.end) {
+      if (text.length <= word.end) {
         return (i, text.length - word.start);
       }
     }
