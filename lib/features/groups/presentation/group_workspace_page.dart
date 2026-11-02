@@ -291,15 +291,27 @@ class _GroupTile extends StatelessWidget {
                   }
                 } else if (action == 'rename') {
                   final controller = TextEditingController(text: name);
+                  final formKey = GlobalKey<FormState>();
                   final renamed = await showDialog<String>(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
                       title: const Text('Переименовать группу'),
-                      content: TextField(
-                        controller: controller,
-                        autofocus: true,
-                        maxLength: 50,
-                        decoration: const InputDecoration(labelText: 'Название группы'),
+                      content: Form(
+                        key: formKey,
+                        child: TextFormField(
+                          controller: controller,
+                          autofocus: true,
+                          maxLength: 50,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(labelText: 'Название группы'),
+                          validator: (value) {
+                            final length = (value ?? '').trim().length;
+                            if (length < 3 || length > 50) {
+                              return 'Название должно содержать от 3 до 50 символов';
+                            }
+                            return null;
+                          },
+                        ),
                       ),
                       actions: [
                         TextButton(
@@ -308,10 +320,8 @@ class _GroupTile extends StatelessWidget {
                         ),
                         FilledButton(
                           onPressed: () {
-                            final value = controller.text.trim();
-                            if (value.length >= 3 && value.length <= 50) {
-                              Navigator.pop(dialogContext, value);
-                            }
+                            if (formKey.currentState?.validate() != true) return;
+                            Navigator.pop(dialogContext, controller.text.trim());
                           },
                           child: const Text('Сохранить'),
                         ),
