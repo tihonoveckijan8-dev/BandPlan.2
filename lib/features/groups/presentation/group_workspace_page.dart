@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/application/auth_providers.dart';
 import '../application/group_providers.dart';
 import '../data/group_repository.dart';
+import '../domain/group_summary.dart';
 
 class GroupWorkspacePage extends ConsumerWidget {
   const GroupWorkspacePage({super.key});
@@ -12,6 +13,12 @@ class GroupWorkspacePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final groups = ref.watch(myGroupsProvider);
+    final activeGroup = ref.watch(activeGroupProvider);
+    final activeGroupId = activeGroup.when(
+      data: (group) => group?.id,
+      loading: () => null,
+      error: (_, __) => null,
+    );
     final repository = ref.watch(groupRepositoryProvider);
 
     return Scaffold(
@@ -33,11 +40,7 @@ class GroupWorkspacePage extends ConsumerWidget {
             onRetry: () => ref.invalidate(myGroupsProvider),
           ),
           data: (value) {
-            final items = value is List
-                ? value.whereType<Map>().map(
-                    (item) => Map<String, dynamic>.from(item),
-                  ).toList()
-                : <Map<String, dynamic>>[];
+            final items = value;
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -84,7 +87,15 @@ class GroupWorkspacePage extends ConsumerWidget {
                     _GroupTile(
                       group: group,
                       repository: repository,
-                      onChanged: () => ref.invalidate(myGroupsProvider),
+                      isActive: group.id == activeGroupId,
+                      onChanged: () {
+                        ref.invalidate(myGroupsProvider);
+                        ref.invalidate(activeGroupProvider);
+                      },
+                      onActivated: () {
+                        ref.invalidate(activeGroupProvider);
+                        ref.invalidate(myGroupsProvider);
+                      },
                     ),
               ],
             );
@@ -180,17 +191,21 @@ class _GroupTile extends StatelessWidget {
   const _GroupTile({
     required this.group,
     required this.repository,
+    required this.isActive,
     required this.onChanged,
+    required this.onActivated,
   });
 
-  final Map<String, dynamic> group;
+  final GroupSummary group;
   final GroupRepository? repository;
+  final bool isActive;
   final VoidCallback onChanged;
+  final VoidCallback onActivated;
 
   @override
   Widget build(BuildContext context) {
-    final id = group['group_id']?.toString() ?? '';
-    final name = group['group_name']?.toString() ?? 'Группа';
+    final id = group.id;
+    final name = group.name;
     final repo = repository;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -205,10 +220,25 @@ class _GroupTile extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      )),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          )),
+                  if (isActive) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      'Активная группа',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                ],
+              ),
             ),
             if (repo != null)
               PopupMenuButton<String>(
@@ -216,6 +246,7 @@ class _GroupTile extends StatelessWidget {
                 if (action == 'activate') {
                   try {
                     await repo.setActiveGroup(id);
+                    onActivated();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Активная группа: $name')),
