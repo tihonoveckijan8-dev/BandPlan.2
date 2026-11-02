@@ -27,15 +27,20 @@ class SongRepository {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Требуется авторизация.');
 
-    await _client.from('bandplan_songs').upsert(
-      {
-        'group_id': groupId,
-        'id': song.id,
-        'data': song.toLegacyJson(),
-        'updated_by': user.id,
-      },
-      onConflict: 'group_id,id',
-    );
+    // WHY: request the saved row so RLS/permission failures cannot look like a successful save.
+    await _client
+        .from('bandplan_songs')
+        .upsert(
+          {
+            'group_id': groupId,
+            'id': song.id,
+            'data': song.toLegacyJson(),
+            'updated_by': user.id,
+          },
+          onConflict: 'group_id,id',
+        )
+        .select('id')
+        .single();
   }
 
   Future<List<Song>> getPersonalSongs() async {

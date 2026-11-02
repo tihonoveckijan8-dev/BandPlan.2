@@ -377,3 +377,34 @@ The available Supabase project/database tools do not expose the Auth URL configu
 - Apple provider enabled state, Services ID / bundle association, and key configuration.
 
 Do not copy secrets into the repository. Store only non-secret public client identifiers in platform configuration and keep provider secrets in Supabase Auth settings. Until these values are verified, OAuth must be treated as not yet configured for native builds.
+
+
+## 12. Live write-permission correction (2026-11-02)
+
+A live catalog check found that `authenticated` had SELECT privileges on
+`bandplan_songs`, `bandplan_events`, and `bandplan_setlists`, but did not
+have INSERT, UPDATE, or DELETE privileges. The corresponding member-only RLS
+policies already existed, so client upserts and deletes were rejected before
+those policies could authorize a row.
+
+The missing table privileges were granted to `authenticated` for these three
+tables only. RLS remains enabled and the existing membership policies remain
+the row-level authorization boundary. A follow-up query verified SELECT,
+INSERT, UPDATE, and DELETE privileges are all present while RLS is enabled.
+
+The Flutter repositories now request the saved row after each upsert
+(`.select('id').single()`) and verify delete results. This makes a rejected or
+empty write surface as an error instead of allowing the editor to close as if
+the operation succeeded. The song, event, and setlist screens already
+invalidate their respective Riverpod providers after successful writes, so
+the updated records are reloaded into the UI.
+
+The group RPCs were separately checked in the live catalog: create, join,
+leave, active-group selection, and group-list RPCs are executable by
+`authenticated`; they are SECURITY DEFINER functions with server-side
+membership/authentication checks. The Flutter group repository now validates
+that create, join, and leave RPCs return a group identifier, and validates the
+active-group selection result before treating the action as successful.
+
+No table structure, RLS policy, authentication flow, or RPC definition was
+changed by this correction.

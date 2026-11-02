@@ -1,33 +1,31 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Thin adapter over the existing BandPlan group RPC contract.
-///
-/// RPC responses are kept dynamic here because the legacy functions return
-/// JSON whose exact envelope varies by operation. Parsing belongs in models.
 class GroupRepository {
   const GroupRepository(this._client);
 
   final SupabaseClient _client;
 
-  Future<dynamic> getMyGroups() =>
-      _client.rpc('bandplan_get_my_groups');
+  Future<dynamic> getMyGroups() => _client.rpc('bandplan_get_my_groups');
 
-  Future<dynamic> getMyGroup() =>
-      _client.rpc('bandplan_get_my_group');
+  Future<dynamic> getMyGroup() => _client.rpc('bandplan_get_my_group');
 
   Future<void> setActiveGroup(String groupId) async {
-    await _client.rpc(
+    final result = await _client.rpc(
       'bandplan_set_active_group',
       params: {'p_group_id': groupId},
     );
+    if (result?.toString() != groupId) {
+      throw StateError('Сервер не подтвердил выбор активной группы.');
+    }
   }
 
-  Future<dynamic> createGroup({
+  Future<void> createGroup({
     required String name,
     required String displayName,
     required List<String> roles,
-  }) {
-    return _client.rpc(
+  }) async {
+    final response = await _client.rpc(
       'bandplan_create_group',
       params: {
         'p_name': name,
@@ -35,14 +33,15 @@ class GroupRepository {
         'p_roles': roles,
       },
     );
+    _requireGroupRow(response, 'создания группы');
   }
 
-  Future<dynamic> joinGroup({
+  Future<void> joinGroup({
     required String inviteCode,
     required String displayName,
     required List<String> roles,
-  }) {
-    return _client.rpc(
+  }) async {
+    final response = await _client.rpc(
       'bandplan_join_group',
       params: {
         'p_code': inviteCode,
@@ -50,6 +49,7 @@ class GroupRepository {
         'p_roles': roles,
       },
     );
+    _requireGroupRow(response, 'вступления в группу');
   }
 
   /// This RPC may create a group and invite when the user has no group.
@@ -58,10 +58,11 @@ class GroupRepository {
       _client.rpc('bandplan_get_invite_code');
 
   Future<void> leaveGroup(String groupId) async {
-    await _client.rpc(
+    final response = await _client.rpc(
       'bandplan_leave_group',
       params: {'p_group_id': groupId},
     );
+    _requireGroupRow(response, 'выхода из группы');
   }
 
   Future<void> renameGroup({
@@ -75,5 +76,17 @@ class GroupRepository {
         'p_group_id': groupId,
       },
     );
+  }
+
+  Map<String, dynamic> _requireGroupRow(dynamic response, String operation) {
+    final row = response is List
+        ? (response.isEmpty ? null : response.first)
+        : response;
+    if (row is! Map ||
+        (row['group_id'] ?? row['id'])?.toString().trim().isNotEmpty != true) {
+      // WHY: a void/empty RPC response must not be mistaken for a completed group action.
+      throw FormatException('Сервер не подтвердил $operation.');
+    }
+    return Map<String, dynamic>.from(row);
   }
 }

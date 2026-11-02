@@ -25,22 +25,32 @@ class SetlistRepository {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Требуется авторизация.');
 
-    await _client.from('bandplan_setlists').upsert(
-      {
-        'group_id': groupId,
-        'id': setlist.id,
-        'data': setlist.toLegacyJson(),
-        'updated_by': user.id,
-      },
-      onConflict: 'group_id,id',
-    );
+    // WHY: confirm the upsert returned the saved record before closing the editor.
+    await _client
+        .from('bandplan_setlists')
+        .upsert(
+          {
+            'group_id': groupId,
+            'id': setlist.id,
+            'data': setlist.toLegacyJson(),
+            'updated_by': user.id,
+          },
+          onConflict: 'group_id,id',
+        )
+        .select('id')
+        .single();
   }
 
   Future<void> deleteGroupSetlist(String groupId, String setlistId) async {
-    await _client
+    // WHY: don't report a successful removal when no row was actually deleted.
+    final deleted = await _client
         .from('bandplan_setlists')
         .delete()
         .eq('group_id', groupId)
-        .eq('id', setlistId);
+        .eq('id', setlistId)
+        .select('id');
+    if (deleted.isEmpty) {
+      throw StateError('Сет-лист не найден или нет прав на его удаление.');
+    }
   }
 }
