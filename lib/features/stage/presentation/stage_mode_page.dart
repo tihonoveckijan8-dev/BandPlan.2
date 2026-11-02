@@ -46,6 +46,7 @@ class _StageModePageState extends State<StageModePage> {
   double _speed = 24;
   bool _isScrolling = false;
   bool _showChords = true;
+  int _liveSemitones = 0;
 
   StageModeTrack get _track => widget.queue.isEmpty
       ? StageModeTrack(
@@ -55,7 +56,9 @@ class _StageModePageState extends State<StageModePage> {
         )
       : widget.queue[_trackIndex];
 
-  Song get _song => _track.song.transposedBy(_track.semitones);
+  int get _effectiveSemitones => _track.semitones + _liveSemitones;
+
+  Song get _song => _track.song.transposedBy(_effectiveSemitones);
 
   @override
   void initState() {
@@ -81,6 +84,7 @@ class _StageModePageState extends State<StageModePage> {
     _pauseScroll();
     setState(() {
       _trackIndex = next;
+      _liveSemitones = 0;
       // WHY: each song starts at its first line instead of inheriting the prior song's offset.
       _scrollController.jumpTo(0);
     });
@@ -159,11 +163,29 @@ class _StageModePageState extends State<StageModePage> {
                   Wrap(
                     spacing: 8,
                     children: [
-                      if (song.key.isNotEmpty) _StageChip(label: song.key),
+                      if (song.key.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Понизить тональность на полтона',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => setState(() => _liveSemitones--),
+                              icon: const Icon(Icons.remove_circle_outline_rounded),
+                            ),
+                            _StageChip(label: song.key),
+                            IconButton(
+                              tooltip: 'Повысить тональность на полтона',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => setState(() => _liveSemitones++),
+                              icon: const Icon(Icons.add_circle_outline_rounded),
+                            ),
+                          ],
+                        ),
                       if (song.bpm != null) _StageChip(label: '${song.bpm} BPM'),
-                      if (_track.semitones != 0)
+                      if (_effectiveSemitones != 0)
                         _StageChip(
-                          label: '${_track.semitones > 0 ? '+' : ''}${_track.semitones} пт.',
+                          label: '${_effectiveSemitones > 0 ? '+' : ''}${_effectiveSemitones} пт.',
                         ),
                     ],
                   ),
