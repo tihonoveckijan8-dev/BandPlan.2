@@ -230,7 +230,7 @@ class _GroupTile extends StatelessWidget {
                   }
                 } else if (action == 'invite') {
                   try {
-                    await repository.setActiveGroup(id);
+                    await repo.setActiveGroup(id);
                     final result = await repo.getOrCreateInviteCode();
                     if (!context.mounted) return;
                     final code = result is Map
