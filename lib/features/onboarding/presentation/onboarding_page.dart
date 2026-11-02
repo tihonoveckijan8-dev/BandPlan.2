@@ -77,14 +77,17 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       );
 
       final client = Supabase.instance.client;
-      final result = await client.auth.updateUser(
-        UserAttributes(data: {
-          'bandplan_onboarding_done': true,
-          'bandplan_onboarding_required': false,
-        }),
-      );
-      if (result.user == null) {
-        throw StateError('Группа создана, но не удалось подтвердить профиль аккаунта.');
+      // WHY: the account row created by the RPC is authoritative. Auth metadata
+      // is an additional cross-device marker and must not block a valid setup.
+      try {
+        await client.auth.updateUser(
+          UserAttributes(data: {
+            'bandplan_onboarding_done': true,
+            'bandplan_onboarding_required': false,
+          }),
+        );
+      } catch (_) {
+        // The account row already exists, so onboarding can safely finish.
       }
 
       ref.invalidate(myProfileProvider);
