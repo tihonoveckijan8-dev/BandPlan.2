@@ -29,11 +29,13 @@ class Setlist {
     required String name,
     required String note,
     required List<SetlistItem> items,
+    String eventId = '',
   }) =>
       Setlist._({
         ...raw,
         'name': name,
         'note': note,
+        'eventId': eventId,
         'items': items.map((item) => item.toJson()).toList(growable: false),
         'updatedAt': DateTime.now().toUtc().toIso8601String(),
       });

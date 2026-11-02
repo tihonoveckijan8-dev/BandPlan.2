@@ -8,6 +8,7 @@ void main() {
         'id': 'sl-1',
         'name': 'Old name',
         'note': 'Note',
+        'eventId': 'event-old',
         'customFlag': true,
         'items': [
           {'id': 'item-1', 'songId': 'song-1', 'shift': -2, 'note': 'Intro', 'customItem': 42},
@@ -18,9 +19,11 @@ void main() {
         name: 'New name',
         note: 'Updated',
         items: [setlist.items.single.withEdits(shift: 1)],
+        eventId: 'event-new',
       );
 
       expect(edited.toLegacyJson()['customFlag'], isTrue);
+      expect(edited.eventId, 'event-new');
       final item = (edited.toLegacyJson()['items'] as List).single as Map;
       expect(item['customItem'], 42);
       expect(item['shift'], 1);

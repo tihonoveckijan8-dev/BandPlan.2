@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../groups/application/group_providers.dart';
 import '../../songs/application/song_providers.dart';
 import '../../songs/domain/song.dart';
+import '../../events/application/event_providers.dart';
+import '../../events/domain/group_event.dart';
 import '../application/setlist_providers.dart';
 import '../domain/setlist.dart';
 
@@ -14,10 +16,11 @@ class SetlistsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final setlists = ref.watch(groupSetlistsProvider);
     final songs = ref.watch(groupSongsProvider);
+    final events = ref.watch(groupEventsProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Сет-листы')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: songs.hasValue ? () => _editSetlist(context, ref, songs.value!) : null,
+        onPressed: songs.hasValue ? () => _editSetlist(context, ref, songs.value!, events.asData?.value ?? const <GroupEvent>[]) : null,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Новый сет-лист'),
       ),
@@ -69,7 +72,7 @@ class SetlistsPage extends ConsumerWidget {
                       if (setlist.note.isNotEmpty) setlist.note,
                     ].join(' · '), maxLines: 2, overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => _editSetlist(context, ref, songs.asData?.value ?? const <Song>[], setlist),
+                    onTap: () => _editSetlist(context, ref, songs.asData?.value ?? const <Song>[], events.asData?.value ?? const <GroupEvent>[], setlist),
                   ),
                 );
               },
@@ -83,7 +86,8 @@ class SetlistsPage extends ConsumerWidget {
   Future<void> _editSetlist(
     BuildContext context,
     WidgetRef ref,
-    List<Song> songs, [
+    List<Song> songs,
+    List<GroupEvent> events, [
     Setlist? existing,
   ]) async {
     final group = await ref.read(activeGroupProvider.future);
@@ -94,6 +98,10 @@ class SetlistsPage extends ConsumerWidget {
     final nameController = TextEditingController(text: existing?.name ?? '');
     final noteController = TextEditingController(text: existing?.note ?? '');
     final items = List<SetlistItem>.of(existing?.items ?? const []);
+    final inferredEvent = events.where((event) => event.setlistId == existing?.id).firstOrNull;
+    var linkedEventId = existing?.eventId.isNotEmpty == true
+        ? existing!.eventId
+        : (inferredEvent?.id ?? '');
     var saving = false;
     final formKey = GlobalKey<FormState>();
 
@@ -121,6 +129,19 @@ class SetlistsPage extends ConsumerWidget {
                       maxLength: 90,
                       decoration: const InputDecoration(labelText: 'Название программы', border: OutlineInputBorder()),
                       validator: (value) => (value?.trim().isEmpty ?? true) ? 'Введите название' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: linkedEventId.isEmpty ? null : linkedEventId,
+                      decoration: const InputDecoration(labelText: 'Связанное событие', border: OutlineInputBorder()),
+                      items: [
+                        const DropdownMenuItem<String>(value: '', child: Text('Без события')),
+                        ...events.map((event) => DropdownMenuItem<String>(
+                          value: event.id,
+                          child: Text('${event.title} · ${event.date}', overflow: TextOverflow.ellipsis),
+                        )),
+                      ],
+                      onChanged: (value) => setSheetState(() => linkedEventId = value ?? ''),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -204,6 +225,7 @@ class SetlistsPage extends ConsumerWidget {
                             name: nameController.text.trim(),
                             note: noteController.text.trim(),
                             items: items,
+                            eventId: linkedEventId,
                           );
                           await repository.saveGroupSetlist(group.id, edited);
                           ref.invalidate(groupSetlistsProvider);
