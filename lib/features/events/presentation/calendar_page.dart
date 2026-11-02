@@ -274,7 +274,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   static String? _timeValidator(String? value){
     final time=value?.trim()??'';
     if(time.isEmpty)return null;
-    return RegExp(r'^(?:[01]\\d|2[0-3]):[0-5]\\d'rehearsal'=>Icons.music_note_rounded,'service'=>Icons.church_outlined,'gig'=>Icons.mic_external_on_rounded,_=>Icons.event_rounded};
+    return RegExp(r'^(?:[01][0-9]|2[0-3]):[0-5][0-9]$').hasMatch(time)
+      ?null:'Введите время в формате ЧЧ:ММ';
+  }
+
   static String _iso(DateTime d)=>'${d.year.toString().padLeft(4,'0')}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
   static String _date(String value){final d=DateTime.tryParse(value);if(d==null)return value;const m=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return '${d.day} ${m[d.month-1]} ${d.year}';}
 }
