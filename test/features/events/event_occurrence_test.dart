@@ -22,6 +22,21 @@ void main(){
     expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,3)).map((x)=>x.date),
       ['2026-11-01','2026-11-02','2026-11-03']);
   });
+  test('old weekly fast-forward still honors excluded dates',(){
+    final e=GroupEvent.fromJson({
+      'id':'old-weekly-except','title':'Weekly','date':'2024-01-01',
+      'repeat':'weekly','repeatUntil':'2026-12-31','except':['2026-11-02'],
+    });
+    expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,15)).map((x)=>x.date),
+      ['2026-11-09']);
+  });
+  test('recurring series ending before visible range produces no occurrences',(){
+    final e=GroupEvent.fromJson({
+      'id':'ended-series','title':'Ended','date':'2024-01-01',
+      'repeat':'weekly','repeatUntil':'2024-12-31',
+    });
+    expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30)),isEmpty);
+  });
   test('monthly recurrence preserves legacy Date.setMonth overflow behavior',(){
     final e=GroupEvent.fromJson({
       'id':'month-end','title':'Month end','date':'2027-01-31',
