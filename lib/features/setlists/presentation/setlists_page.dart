@@ -216,6 +216,7 @@ class SetlistsPage extends ConsumerWidget {
                                             if (item.shift != 0) '${item.shift > 0 ? '+' : ''}${item.shift} пт.',
                                             if (item.note.isNotEmpty) item.note,
                                           ].where((value) => value.isNotEmpty).join(' · ')),
+                                    // WHY: keep the drag handle and per-song actions in one compact row on mobile.
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
@@ -254,8 +255,6 @@ class SetlistsPage extends ConsumerWidget {
                                             PopupMenuItem(value: 'remove', child: Text('Убрать из программы')),
                                           ],
                                         ),
-                                      ],
-                                    ),
                                       ],
                                     ),
                                   ),
