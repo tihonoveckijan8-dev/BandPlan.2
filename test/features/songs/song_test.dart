@@ -206,6 +206,42 @@ void main() {
       expect(document.lines[2].sectionLabel, 'Припев');
     });
 
+    test('inserts a chord at the cursor without manual spacing', () {
+      expect(
+        SongDocument.insertChordToken(
+          source: 'До после',
+          selectionStart: 3,
+          selectionEnd: 3,
+          chord: 'Am7',
+        ),
+        'До [Am7]после',
+      );
+    });
+
+    test('replaces selected lyric text with a chord and normalizes reversed ranges', () {
+      expect(
+        SongDocument.insertChordToken(
+          source: 'До этого слова',
+          selectionStart: 8,
+          selectionEnd: 3,
+          chord: 'D/F#',
+        ),
+        'До [D/F#]слова',
+      );
+    });
+
+    test('rejects invalid chord symbols instead of corrupting lyric markup', () {
+      expect(
+        () => SongDocument.insertChordToken(
+          source: 'Текст',
+          selectionStart: 0,
+          selectionEnd: 0,
+          chord: '[Am]',
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('round-trips original whitespace and line breaks exactly', () {
       const source = '[Куплет]\r\n[Am]Слова   строки\n\n[G]Финал  ';
       final document = SongDocument.fromLegacyLyrics(source);
