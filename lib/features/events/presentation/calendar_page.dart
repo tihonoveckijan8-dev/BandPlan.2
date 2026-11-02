@@ -286,17 +286,3 @@ class _Error extends StatelessWidget{
   @override Widget build(BuildContext context)=>Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
     const Icon(Icons.cloud_off_rounded,size:40),const SizedBox(height:12),Text(message,textAlign:TextAlign.center),
     const SizedBox(height:16),OutlinedButton(onPressed:retry,child:const Text('Повторить'))])));
-}).hasMatch(time)
-      ?null:'Введите время в формате ЧЧ:ММ';
-  }
-
-  static IconData _icon(String type)=>switch(type){'rehearsal'=>Icons.music_note_rounded,'service'=>Icons.church_outlined,'gig'=>Icons.mic_external_on_rounded,_=>Icons.event_rounded};
-  static String _iso(DateTime d)=>'${d.year.toString().padLeft(4,'0')}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
-  static String _date(String value){final d=DateTime.tryParse(value);if(d==null)return value;const m=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return '${d.day} ${m[d.month-1]} ${d.year}';}
-}
-class _Error extends StatelessWidget{
-  const _Error({required this.message,required this.retry});final String message;final VoidCallback retry;
-  @override Widget build(BuildContext context)=>Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
-    const Icon(Icons.cloud_off_rounded,size:40),const SizedBox(height:12),Text(message,textAlign:TextAlign.center),
-    const SizedBox(height:16),OutlinedButton(onPressed:retry,child:const Text('Повторить'))])));
-}
