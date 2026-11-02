@@ -22,7 +22,6 @@ class GroupWorkspacePage extends ConsumerWidget {
       error: (_, __) => null,
     );
     final repository = ref.watch(groupRepositoryProvider);
-    final profile = ref.watch(myProfileProvider);
 
     return Scaffold(
       appBar: AppBar(
