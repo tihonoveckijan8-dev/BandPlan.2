@@ -89,7 +89,55 @@ class Song {
 
   static String? _transposeChord(String value, int semitones) {
     final match = RegExp(
-      r'^([A-G](?:#|b)?)(?:(?:maj|min|m|M|dim|aug|sus[24]?|add\d+|\d+|ø|°|\+|-)*)(?:/([A-G](?:#|b)?))?$'
+      r'^([A-G](?:#|b)?)(?:(?:maj|min|m|M|dim|aug|sus[24]?|add\d+|no\d+|omit\d+|\d+|[b#]\d+|ø|°|\+|-)*)(?:/([A-G](?:#|b)?))?
+    ).firstMatch(value);
+    if (match == null) return null;
+    final root = _transposeNote(match.group(1)!, semitones);
+    final slash = match.group(2);
+    final suffixStart = match.group(1)!.length;
+    final suffixEnd = slash == null ? value.length : value.lastIndexOf('/');
+    final suffix = value.substring(suffixStart, suffixEnd);
+    return root + suffix + (slash == null ? '' : '/' + _transposeNote(slash, semitones));
+  }
+
+  static String _transposeNote(String note, int semitones) {
+    const sharpNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const flatNotes = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+    const pitch = {
+      'C': 0, 'B#': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
+      'E': 4, 'Fb': 4, 'E#': 5, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7,
+      'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11, 'Cb': 11,
+    };
+    final value = pitch[note];
+    if (value == null) return note;
+    final normalized = (value + semitones) % 12;
+    final index = (normalized + 12) % 12;
+    return note.contains('b') ? flatNotes[index] : sharpNotes[index];
+  }
+
+  /// Returns the unchanged legacy payload, including unknown fields.
+  Map<String, dynamic> toLegacyJson() => Map<String, dynamic>.from(raw);
+
+  String get searchableText =>
+      '$title $artist ${tags.join(' ')} $lyrics'.toLowerCase();
+
+  static String _string(Object? value) => value?.toString().trim() ?? '';
+
+  static int? _integer(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  static List<String> _stringList(Object? value) {
+    if (value is! List) return const [];
+    return value
+        .map((item) => item?.toString().trim() ?? '')
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+}
+
     ).firstMatch(value);
     if (match == null) return null;
     final root = _transposeNote(match.group(1)!, semitones);

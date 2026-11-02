@@ -126,6 +126,39 @@ void main() {
       expect(raised.lyrics, '[Cmaj7] [Am7] [E/G]');
     });
 
+
+    test('transposes altered extensions and slash bass notes', () {
+      final song = Song.fromJson({
+        'id': 'transpose-altered',
+        'title': 'Тест',
+        'key': 'F#m',
+        'lyrics': '[Am7b5] [G7#5] [Cadd9/E] [D7sus4/A]',
+      });
+
+      final raised = song.transposedBy(2);
+      expect(raised.key, 'G#m');
+      expect(
+        raised.lyrics,
+        '[Bm7b5] [A7#5] [Dadd9/F#] [E7sus4/B]',
+      );
+      expect(song.key, 'F#m');
+      expect(song.lyrics, '[Am7b5] [G7#5] [Cadd9/E] [D7sus4/A]');
+    });
+
+    test('supports downward and multi-octave transposition', () {
+      final song = Song.fromJson({
+        'id': 'transpose-down',
+        'title': 'Тест',
+        'key': 'Bb',
+        'lyrics': 'Bb       F',
+      });
+
+      expect(song.transposedBy(-1).key, 'A');
+      expect(song.transposedBy(-1).lyrics, 'A       E');
+      expect(song.transposedBy(14).key, 'C');
+      expect(song.transposedBy(14).lyrics, 'C       G');
+    });
+
     test('rejects payloads without a legacy id', () {
       expect(
         () => Song.fromJson({'title': 'Без id'}),
