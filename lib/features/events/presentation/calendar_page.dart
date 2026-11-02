@@ -31,7 +31,7 @@ class CalendarPage extends ConsumerWidget {
           final selectedItems=items.where((o)=>o.date==selectedDate).toList();
           return ListView(padding:const EdgeInsets.fromLTRB(12,12,12,100),children:[
             _monthCalendar(context,visibleMonth,selectedDate,items,
-              (month)=>setCalendarState(()=>visibleMonth=month),
+              (month)=>setCalendarState((){visibleMonth=month;selectedDate=_iso(month);}),
               (day)=>setCalendarState(()=>selectedDate=_iso(day))),
             Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
               _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
@@ -112,8 +112,23 @@ class CalendarPage extends ConsumerWidget {
             icon:const Icon(Icons.queue_music_rounded),label:const Text('Сет-листы')),
           const Spacer(),
           TextButton(onPressed:()=>Navigator.pop(sheet),child:const Text('Закрыть')),
-          FilledButton.icon(onPressed:(){Navigator.pop(sheet);_edit(context,ref,programs,e);},
-            icon:const Icon(Icons.edit_rounded),label:const Text('Изменить'))])
+          FilledButton.icon(onPressed:()async{
+            final recurring=e.repeat.isNotEmpty&&e.repeat!='none';
+            if(recurring){
+              final confirmed=await showDialog<bool>(context:context,builder:(dialog)=>AlertDialog(
+                title:const Text('Изменить всю серию?'),
+                content:const Text('Изменения будут применены к событию целиком: исходной дате и всем его повторениям. Отдельное изменение одной даты пока не поддерживается.'),
+                actions:[
+                  TextButton(onPressed:()=>Navigator.pop(dialog,false),child:const Text('Отмена')),
+                  FilledButton(onPressed:()=>Navigator.pop(dialog,true),child:const Text('Изменить серию')),
+                ],
+              ));
+              if(confirmed!=true||!context.mounted)return;
+            }
+            if(sheet.mounted)Navigator.pop(sheet);
+            await _edit(context,ref,programs,e);
+          },
+            icon:const Icon(Icons.edit_rounded),label:Text(e.repeat.isNotEmpty&&e.repeat!='none'?'Изменить серию':'Изменить'))])
       ])));
   }
 
