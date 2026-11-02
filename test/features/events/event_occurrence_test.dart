@@ -153,16 +153,19 @@ void main(){
     expect(r[1].event.except,isEmpty);
   });
 
-  test('cancelled one-off override hides only its date',(){
+  test('cancelled one-off override remains visible only on its date',(){
     final base=GroupEvent.fromJson({
       'id':'e1','title':'Original','date':'2026-11-02','repeat':'weekly','repeatUntil':'2026-11-16',
       'overrides':{'2026-11-09':{'status':'cancelled'}},
     });
-    expect(expandEventOccurrences([base],DateTime(2026,11,1),DateTime(2026,11,30)).map((x)=>x.date),
-      ['2026-11-02','2026-11-16']);
+    final occurrences=expandEventOccurrences([base],DateTime(2026,11,1),DateTime(2026,11,30));
+    expect(occurrences.map((x)=>x.date),['2026-11-02','2026-11-09','2026-11-16']);
+    expect(occurrences[1].event.status,'cancelled');
   });
-  test('cancelled series are hidden',(){
+  test('cancelled series remain visible for group awareness',(){
     final e=GroupEvent.fromJson({...make().raw,'status':'cancelled'});
-    expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30)),isEmpty);
+    final occurrences=expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30));
+    expect(occurrences.map((x)=>x.date),['2026-11-02','2026-11-09','2026-11-16','2026-11-23','2026-11-30']);
+    expect(occurrences.every((x)=>x.event.status=='cancelled'),isTrue);
   });
 }
