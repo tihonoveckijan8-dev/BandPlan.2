@@ -191,6 +191,8 @@ class GroupWorkspacePage extends ConsumerWidget {
                 if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
                 ref.invalidate(myGroupsProvider);
+                // WHY: create/join may change the server-selected active group.
+                ref.invalidate(activeGroupProvider);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(create ? 'Группа создана.' : 'Вы вступили в группу.'),
@@ -335,6 +337,8 @@ class _GroupTile extends StatelessWidget {
                 } else if (action == 'invite') {
                   try {
                     await repo.setActiveGroup(id);
+                    // WHY: invite generation switches the active group on the server.
+                    onActivated();
                     final result = await repo.getOrCreateInviteCode();
                     if (!context.mounted) return;
                     final code = result is Map
