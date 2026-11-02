@@ -69,7 +69,7 @@ void main() {
         'title': 'Старая версия',
         'artist': 'Исполнитель',
         'key': 'Am',
-        'lyrics': 'Am      F\\nТекст',
+        'lyrics': 'Am      F\nТекст',
         'chordAnchors': [{'line': 0, 'offset': 0, 'chord': 'Am'}],
         'dynamics': {'sections': ['Куплет'], 'notes': {'guitar': 'тише'}},
         'legacyExtension': {'keep': true},
@@ -81,14 +81,14 @@ void main() {
         key: 'C',
         bpm: 112,
         tags: ['live'],
-        lyrics: 'C       G\\nНовый текст',
+        lyrics: 'C       G\nНовый текст',
       );
 
       expect(edited.title, 'Новая версия');
       expect(edited.artist, 'Другой исполнитель');
       expect(edited.key, 'C');
       expect(edited.bpm, 112);
-      expect(edited.lyrics, 'C       G\\nНовый текст');
+      expect(edited.lyrics, 'C       G\nНовый текст');
       expect(edited.toLegacyJson()['chordAnchors'], song.toLegacyJson()['chordAnchors']);
       expect(edited.toLegacyJson()['dynamics'], song.toLegacyJson()['dynamics']);
       expect(edited.toLegacyJson()['legacyExtension'], {'keep': true});
@@ -196,7 +196,7 @@ void main() {
 
     test('keeps section labels separate from chord anchors', () {
       final document = SongDocument.fromLegacyLyrics(
-        '[Куплет 1]\\n[Am]Первая строка\\n[Припев]',
+        '[Куплет 1]\n[Am]Первая строка\n[Припев]',
       );
 
       expect(document.lines[0].sectionLabel, 'Куплет 1');
@@ -207,7 +207,7 @@ void main() {
     });
 
     test('round-trips original whitespace and line breaks exactly', () {
-      const source = '[Куплет]\\r\\n[Am]Слова   строки\\n\\n[G]Финал  ';
+      const source = '[Куплет]\r\n[Am]Слова   строки\n\n[G]Финал  ';
       final document = SongDocument.fromLegacyLyrics(source);
 
       expect(document.toLegacyLyrics(), source);
