@@ -28,8 +28,26 @@ void main() {
     });
 
     await tester.pumpWidget(MaterialApp(
-      home: SetlistRunPage(setlist: setlist, songs: [firstSong, secondSong]),
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => SetlistRunPage(
+                    setlist: setlist,
+                    songs: [firstSong, secondSong],
+                  ),
+                ),
+              ),
+              child: const Text('Open setlist'),
+            ),
+          ),
+        ),
+      ),
     ));
+    await tester.tap(find.text('Open setlist'));
+    await tester.pumpAndSettle();
 
     expect(find.text('First song'), findsOneWidget);
     expect(find.text('Тональность: A#m'), findsOneWidget);
@@ -47,7 +65,7 @@ void main() {
 
     await tester.tap(find.text('Завершить'));
     await tester.pumpAndSettle();
-    expect(find.byType(SetlistRunPage), findsNothing);
+    expect(find.text('Open setlist'), findsOneWidget);
   });
 
   testWidgets('shows a clear fallback when a referenced song is missing', (tester) async {
