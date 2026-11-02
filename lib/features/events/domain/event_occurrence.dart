@@ -16,7 +16,6 @@ List<EventOccurrence> expandEventOccurrences(List<GroupEvent> events,DateTime fr
   final start=DateTime(from.year,from.month,from.day),end=DateTime(to.year,to.month,to.day);
   final result=<EventOccurrence>[];
   for(final event in events){
-    if(event.status=='cancelled')continue;
     final parsed=DateTime.tryParse(event.date);if(parsed==null)continue;
     final first=DateTime(parsed.year,parsed.month,parsed.day);
     final repeating=event.repeat.isNotEmpty&&event.repeat!='none';
@@ -77,7 +76,7 @@ void _addOccurrence(List<EventOccurrence> result,GroupEvent series,String date,D
       ?GroupEvent.fromJson({...series.raw,...Map<String,dynamic>.from(overrides),'id':series.id,'date':date,
         'repeat':series.repeat,'repeatUntil':series.repeatUntil,'except':series.except})
       :GroupEvent.fromJson({...series.raw,'date':date});
-  if(effective.status=='cancelled')return;
+  // WHY: cancelled events remain visible so the group can see the cancellation and edit it.
   result.add(EventOccurrence(event:effective,series:series,date:date));
 }
 
