@@ -122,7 +122,7 @@ class GroupWorkspacePage extends ConsumerWidget {
     final codeController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     final userEmail = ref.read(authRepositoryProvider)?.currentUser?.email ?? '';
-    final profile = ref.read(myProfileProvider).valueOrNull;
+    final profile = ref.read(myProfileProvider).asData?.value;
     final displayName = profile?.displayName.trim().isNotEmpty == true
         ? profile!.displayName.trim()
         : userEmail.split('@').first;
