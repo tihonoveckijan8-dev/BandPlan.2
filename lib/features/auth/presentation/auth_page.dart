@@ -60,6 +60,28 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    final repository = ref.read(authRepositoryProvider);
+    if (repository == null) {
+      _showMessage('Сервис авторизации не настроен. Обратитесь к администратору.');
+      return;
+    }
+
+    setState(() => _isBusy = true);
+    try {
+      final started = await repository.signInWithGoogle();
+      if (!started && mounted) {
+        _showMessage('Не удалось открыть авторизацию Google. Проверьте настройки OAuth в Supabase.');
+      }
+    } on AuthException catch (error) {
+      if (mounted) _showMessage('Ошибка Google: ${error.message}');
+    } catch (error) {
+      if (mounted) _showMessage('Не удалось войти через Google: $error');
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
   Future<void> _resetPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
