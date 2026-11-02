@@ -34,9 +34,15 @@ List<EventOccurrence> expandEventOccurrences(List<GroupEvent> events,DateTime fr
         final steps=(elapsed+interval-1)~/interval;
         current=current.add(Duration(days:steps*interval));
       }else if(event.repeat=='monthly'){
-        // WHY: perform one legacy month step first so Jan 29-31 overflow is
-        // preserved; after that, the resulting day is stable for arithmetic skipping.
-        current=DateTime(current.year,current.month+1,current.day);
+        // WHY: legacy JS setMonth() can overflow in a later February or a
+        // 30-day month, permanently changing the day. Simulate up to 13
+        // monthly steps to reach that stable day before arithmetic fast-forwarding.
+        if(current.day>28){
+          final originalDay=current.day;
+          for(var i=0;i<13&&current.day==originalDay;i++){
+            current=DateTime(current.year,current.month+1,current.day);
+          }
+        }
         if(current.isBefore(start)){
           final months=(start.year-current.year)*12+start.month-current.month;
           if(months>0)current=DateTime(current.year,current.month+months,current.day);

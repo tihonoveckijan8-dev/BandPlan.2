@@ -54,6 +54,16 @@ void main(){
     expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30)).map((x)=>x.date),
       ['2026-11-02']);
   });
+  test('old monthly series fast-forwards after a later February overflow',(){
+    final e=GroupEvent.fromJson({
+      'id':'old-monthly-29','title':'Monthly 29','date':'2024-01-29',
+      'repeat':'monthly','repeatUntil':'2026-12-31',
+    });
+    // Jan 2024 -> Feb 29 is valid; Feb 2025 then overflows to Mar 1.
+    // All later monthly dates therefore stay on day 1.
+    expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30)).map((x)=>x.date),
+      ['2026-11-01']);
+  });
   test('one-off overrides affect only their occurrence and preserve the series',(){
     final base=GroupEvent.fromJson({
       'id':'e1','title':'Original','date':'2026-11-02','repeat':'weekly','repeatUntil':'2026-11-16',
