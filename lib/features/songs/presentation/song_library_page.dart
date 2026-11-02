@@ -391,7 +391,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
           content: TextField(
             controller: controller,
             autofocus: true,
-            textCapitalization: TextCapitalization.characters,
+            textCapitalization: TextCapitalization.none,
             decoration: const InputDecoration(
               labelText: 'Аккорд',
               hintText: 'Например, Am7 или D/F#',
