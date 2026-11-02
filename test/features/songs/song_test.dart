@@ -166,4 +166,40 @@ void main() {
       );
     });
   });
+
+  group('SongDocument legacy parser', () {
+    test('extracts inline chord anchors by lyric-text offset', () {
+      final document = SongDocument.fromLegacyLyrics('До [Am]после [G]конец');
+
+      expect(document.lines.single.lyricText, 'До после конец');
+      expect(
+        document.lines.single.anchors
+            .map((anchor) => [anchor.offset, anchor.chord]).toList(),
+        [
+          [3, 'Am'],
+          [9, 'G'],
+        ],
+      );
+    });
+
+    test('keeps section labels separate from chord anchors', () {
+      final document = SongDocument.fromLegacyLyrics(
+        '[Куплет 1]\\n[Am]Первая строка\\n[Припев]',
+      );
+
+      expect(document.lines[0].sectionLabel, 'Куплет 1');
+      expect(document.lines[0].anchors, isEmpty);
+      expect(document.lines[1].sectionLabel, isNull);
+      expect(document.lines[1].anchors.single.chord, 'Am');
+      expect(document.lines[2].sectionLabel, 'Припев');
+    });
+
+    test('round-trips original whitespace and line breaks exactly', () {
+      const source = '[Куплет]\\r\\n[Am]Слова   строки\\n\\n[G]Финал  ';
+      final document = SongDocument.fromLegacyLyrics(source);
+
+      expect(document.toLegacyLyrics(), source);
+    });
+  });
+
 }
