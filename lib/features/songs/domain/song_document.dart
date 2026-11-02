@@ -41,18 +41,17 @@ class SongDocumentLine {
     for (final match in matches) {
       final before = source.substring(sourceOffset, match.start);
       text.write(before);
-      lyricOffset += before.length;
-
       final token = match.group(1)!;
       if (_isChord(token)) {
+        final position = _wordPosition(text.toString());
         anchors.add(SongChordAnchor(
-          offset: lyricOffset,
+          wordIndex: position.$1,
+          characterOffset: position.$2,
           chord: token,
         ));
       } else {
         // Section labels and unknown bracketed text remain ordinary text.
         text.write(match.group(0)!);
-        lyricOffset += match.group(0)!.length;
       }
       sourceOffset = match.end;
     }
@@ -80,15 +79,33 @@ class SongDocumentLine {
   final List<SongChordAnchor> anchors;
   final String? sectionLabel;
 
+  static (int, int) _wordPosition(String text) {
+    final words = RegExp(r'\\S+').allMatches(text).toList(growable: false);
+    for (var i = 0; i < words.length; i++) {
+      final word = words[i];
+      if (text.length < word.end) {
+        return (i, text.length - word.start);
+      }
+    }
+    return (words.length, 0);
+  }
+
   static bool _isChord(String value) => RegExp(
         r'^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus[24]?|add\d+|no\d+|omit\d+|\d+|[b#]\d+|ø|°|\+|-)*(?:/[A-G](?:#|b)?)?$',
       ).hasMatch(value);
 }
 
 class SongChordAnchor {
-  const SongChordAnchor({required this.offset, required this.chord});
+  const SongChordAnchor({
+    required this.wordIndex,
+    required this.characterOffset,
+    required this.chord,
+  });
 
-  /// Character offset in lyric text after inline chord tokens are removed.
-  final int offset;
+  /// Index of the lyric word preceding this chord, ignoring whitespace width.
+  final int wordIndex;
+
+  /// Character offset inside that word (zero when anchored between words).
+  final int characterOffset;
   final String chord;
 }
