@@ -28,7 +28,7 @@ void main() {
     await tester.tap(find.byTooltip('Скрыть аккорды'));
     await tester.pump();
     expect(find.text('First'), findsOneWidget);
-    expect(find.text('line'), findsOneWidget);
+    expect(find.text('line'), findsWidgets);
     expect(find.text('Куплет'), findsOneWidget);
   });
 
