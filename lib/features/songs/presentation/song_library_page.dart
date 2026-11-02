@@ -337,60 +337,99 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
   }
 
   Future<void> _showSong(BuildContext context, Song song) {
+    var semitones = 0;
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: FractionallySizedBox(
-          heightFactor: 0.88,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(song.title,
-                        style: Theme.of(context).textTheme.headlineSmall),
-                    if (song.artist.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(song.artist,
-                          style: Theme.of(context).textTheme.bodyMedium),
-                    ],
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final displayedSong = song.transposedBy(semitones);
+          return SafeArea(
+            child: FractionallySizedBox(
+              heightFactor: 0.88,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (song.key.isNotEmpty) _SongMeta(label: 'Тональность', value: song.key),
-                        if (song.bpm != null) _SongMeta(label: 'BPM', value: '${song.bpm}'),
-                        for (final tag in song.tags) _SongMeta(label: 'Тег', value: tag),
+                        Text(song.title, style: Theme.of(context).textTheme.headlineSmall),
+                        if (song.artist.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(song.artist, style: Theme.of(context).textTheme.bodyMedium),
+                        ],
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Text('Тональность', style: Theme.of(context).textTheme.labelLarge),
+                            const Spacer(),
+                            IconButton(
+                              tooltip: 'Понизить на полутон',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => setSheetState(() => semitones--),
+                              icon: const Icon(Icons.remove_circle_outline_rounded),
+                            ),
+                            Text(
+                              displayedSong.key.isEmpty ? '—' : displayedSong.key,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            IconButton(
+                              tooltip: 'Повысить на полутон',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => setSheetState(() => semitones++),
+                              icon: const Icon(Icons.add_circle_outline_rounded),
+                            ),
+                            if (semitones != 0)
+                              TextButton(
+                                onPressed: () => setSheetState(() => semitones = 0),
+                                child: const Text('Сбросить'),
+                              ),
+                          ],
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (song.bpm != null) _SongMeta(label: 'BPM', value: song.bpm.toString()),
+                            for (final tag in song.tags) _SongMeta(label: 'Тег', value: tag),
+                          ],
+                        ),
+                        if (semitones != 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              'Транспонирование применяется только к просмотру и не меняет сохранённую песню.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: SelectableText(
-                    song.lyrics.isEmpty ? 'Текст песни пока не добавлен.' : song.lyrics,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: SelectableText(
+                        displayedSong.lyrics.isEmpty ? 'Текст песни пока не добавлен.' : displayedSong.lyrics,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontFamily: 'monospace',
                           height: 1.65,
                         ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
+
 }
 
 class _SongTile extends StatelessWidget {

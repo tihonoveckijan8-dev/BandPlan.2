@@ -93,6 +93,39 @@ void main() {
       expect(edited.toLegacyJson()['legacyExtension'], {'keep': true});
     });
 
+
+    test('transposes inline and chord-only rows without changing section labels or spacing', () {
+      final song = Song.fromJson({
+        'id': 'transpose-1',
+        'title': 'Тест',
+        'key': 'Am',
+        'lyrics': '[Куплет 1]\nAm       G\n[C]слово [D/F#]текст\n[Припев]',
+        'chordAnchors': [{'line': 1, 'offset': 0, 'chord': 'Am'}],
+        'dynamics': {'keep': true},
+      });
+
+      final raised = song.transposedBy(2);
+      expect(raised.key, 'Bm');
+      expect(raised.lyrics, '[Куплет 1]\nBm       A\n[D]слово [E/G#]текст\n[Припев]');
+      expect(raised.toLegacyJson()['chordAnchors'], song.toLegacyJson()['chordAnchors']);
+      expect(raised.toLegacyJson()['dynamics'], song.toLegacyJson()['dynamics']);
+      expect(song.key, 'Am');
+      expect(song.lyrics, '[Куплет 1]\nAm       G\n[C]слово [D/F#]текст\n[Припев]');
+    });
+
+    test('transposes flat chord roots while retaining chord qualities', () {
+      final song = Song.fromJson({
+        'id': 'transpose-2',
+        'title': 'Тест',
+        'key': 'Bb',
+        'lyrics': '[Bbmaj7] [Gm7] [D/F]',
+      });
+
+      final raised = song.transposedBy(2);
+      expect(raised.key, 'C');
+      expect(raised.lyrics, '[Cmaj7] [Am7] [E/G]');
+    });
+
     test('rejects payloads without a legacy id', () {
       expect(
         () => Song.fromJson({'title': 'Без id'}),
