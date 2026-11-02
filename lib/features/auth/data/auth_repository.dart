@@ -48,5 +48,19 @@ class AuthRepository {
     );
   }
 
+  Future<bool> signInWithGoogle() {
+    final redirectTo = Uri(
+      scheme: Uri.base.scheme,
+      host: Uri.base.host,
+      port: Uri.base.hasPort ? Uri.base.port : null,
+      path: Uri.base.path,
+    ).toString();
+
+    return _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: redirectTo,
+    );
+  }
+
   Future<void> signOut() => _client.auth.signOut();
 }
