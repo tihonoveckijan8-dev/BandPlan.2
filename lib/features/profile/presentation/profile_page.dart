@@ -13,7 +13,7 @@ class ProfilePage extends ConsumerStatefulWidget {
 class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _nameController = TextEditingController();
   final _rolesController = TextEditingController();
-  bool _initialized = false;
+  String? _loadedUserId;
   bool _saving = false;
 
   @override
@@ -86,10 +86,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ),
           data: (value) {
-            if (!_initialized) {
+            // WHY: a long-lived profile page must not show the previous account's
+            // controllers after the authenticated user changes.
+            if (_loadedUserId != value.userId) {
               _nameController.text = value.displayName;
               _rolesController.text = value.roles.join(', ');
-              _initialized = true;
+              _loadedUserId = value.userId;
             }
 
             return ListView(

@@ -12,13 +12,19 @@ class AccountProfile {
   final List<String> roles;
 
   factory AccountProfile.fromJson(Map<String, dynamic> json) {
+    final rawRoles = json['roles'];
+    // WHY: tolerate malformed legacy JSON without breaking the whole profile screen.
+    final roles = rawRoles is List
+        ? rawRoles
+            .map((role) => role.toString().trim())
+            .where((role) => role.isNotEmpty)
+            .toList(growable: false)
+        : const <String>[];
+
     return AccountProfile(
       userId: json['user_id']?.toString() ?? '',
       displayName: json['display_name']?.toString() ?? '',
-      roles: (json['roles'] as List<dynamic>? ?? const [])
-          .map((role) => role.toString())
-          .where((role) => role.trim().isNotEmpty)
-          .toList(growable: false),
+      roles: roles,
     );
   }
 }
