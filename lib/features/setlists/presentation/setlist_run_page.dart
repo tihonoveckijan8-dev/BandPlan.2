@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../songs/domain/song.dart';
 import '../domain/setlist.dart';
 import '../../stage/presentation/stage_mode_page.dart';
+import '../../songs/presentation/song_lyrics_view.dart';
 
 /// Read-only performance view. Per-item transposition is applied to a temporary
 /// Song view so the original repertoire record is never modified.
@@ -161,17 +162,19 @@ class _SetlistRunPageState extends State<SetlistRunPage> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-                child: SelectableText(
-                  source == null
-                      ? 'Эта песня больше не доступна в репертуаре группы.'
-                      : song!.lyrics.isEmpty
-                          ? 'Текст песни пока не добавлен.'
-                          : song.lyrics,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontFamily: 'monospace',
-                        height: 1.7,
-                      ),
-                ),
+                child: source == null
+                    ? const Text('Эта песня больше не доступна в репертуаре группы.')
+                    : song!.lyrics.isEmpty
+                        ? const Text('Текст песни пока не добавлен.')
+                        : SongLyricsView(
+                            // WHY: setlist execution must render chord anchors like Stage mode,
+                            // not expose the stored [Chord] tokens as plain lyric text.
+                            lyrics: song.lyrics,
+                            textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  fontFamily: 'monospace',
+                                  height: 1.7,
+                                ),
+                          ),
               ),
             ),
             const Divider(height: 1),
