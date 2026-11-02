@@ -49,40 +49,48 @@ class AuthGatePage extends ConsumerWidget {
       data: (complete) => complete
           ? Scaffold(
               body: navigationShell,
-              bottomNavigationBar: SafeArea(
-                top: false,
-                child: NavigationBar(
-                  selectedIndex: navigationShell.currentIndex,
-                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                  onDestinationSelected: (index) {
-                    navigationShell.goBranch(
-                      index,
-                      initialLocation: index == navigationShell.currentIndex,
-                    );
-                  },
-                  destinations: const [
-                    NavigationDestination(
-                      icon: Icon(Icons.calendar_month_outlined),
-                      selectedIcon: Icon(Icons.calendar_month_rounded),
-                      label: 'Календарь',
+              bottomNavigationBar: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = MediaQuery.sizeOf(context).width < 700;
+                  if (isMobile) {
+                    return _TelegramStyleNavigationBar(shell: navigationShell);
+                  }
+
+                  return SafeArea(
+                    top: false,
+                    child: NavigationBar(
+                      selectedIndex: navigationShell.currentIndex,
+                      onDestinationSelected: (index) {
+                        navigationShell.goBranch(
+                          index,
+                          initialLocation: index == navigationShell.currentIndex,
+                        );
+                      },
+                      destinations: const [
+                        NavigationDestination(
+                          icon: Icon(Icons.calendar_month_outlined),
+                          selectedIcon: Icon(Icons.calendar_month_rounded),
+                          label: 'Календарь',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.library_music_outlined),
+                          selectedIcon: Icon(Icons.library_music_rounded),
+                          label: 'Песни',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.queue_music_outlined),
+                          selectedIcon: Icon(Icons.queue_music_rounded),
+                          label: 'Сет-листы',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.person_outline_rounded),
+                          selectedIcon: Icon(Icons.person_rounded),
+                          label: 'Профиль',
+                        ),
+                      ],
                     ),
-                    NavigationDestination(
-                      icon: Icon(Icons.library_music_outlined),
-                      selectedIcon: Icon(Icons.library_music_rounded),
-                      label: 'Песни',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.queue_music_outlined),
-                      selectedIcon: Icon(Icons.queue_music_rounded),
-                      label: 'Сет-листы',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.person_outline_rounded),
-                      selectedIcon: Icon(Icons.person_rounded),
-                      label: 'Профиль',
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             )
           : const OnboardingPage(),
@@ -123,6 +131,137 @@ class _ConfigurationRequiredPage extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _TelegramStyleNavigationBar extends StatelessWidget {
+  const _TelegramStyleNavigationBar({required this.shell});
+
+  final StatefulNavigationShell shell;
+
+  static const _items = [
+    (Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Календарь'),
+    (Icons.library_music_outlined, Icons.library_music_rounded, 'Песни'),
+    (Icons.queue_music_outlined, Icons.queue_music_rounded, 'Сет-листы'),
+    (Icons.person_outline_rounded, Icons.person_rounded, 'Профиль'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(12, 5, 12, 9),
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withOpacity(
+                theme.brightness == Brightness.dark ? 0.24 : 0.10,
+              ),
+              blurRadius: 22,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: colors.onSurface.withOpacity(
+                theme.brightness == Brightness.dark ? 0.06 : 0.035,
+              ),
+              blurRadius: 1,
+              offset: const Offset(0, -1),
+            ),
+          ],
+        ),
+        child: Row(
+          children: List.generate(_items.length, (index) {
+            final item = _items[index];
+            final selected = shell.currentIndex == index;
+            final foreground = selected
+                ? colors.onSecondaryContainer
+                : colors.onSurfaceVariant;
+
+            return Expanded(
+              child: Semantics(
+                button: true,
+                selected: selected,
+                label: item.$3,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => shell.goBranch(
+                      index,
+                      initialLocation: index == shell.currentIndex,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      constraints: const BoxConstraints(minHeight: 58),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 3,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? colors.secondaryContainer
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            transitionBuilder: (child, animation) =>
+                                ScaleTransition(
+                              scale: animation,
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            ),
+                            child: Icon(
+                              selected ? item.$2 : item.$1,
+                              key: ValueKey(selected),
+                              size: selected ? 23 : 22,
+                              color: foreground,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOut,
+                            style: theme.textTheme.labelSmall!.copyWith(
+                              color: foreground,
+                              fontSize: selected ? 11 : 10.5,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                            child: Text(
+                              item.$3,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.fade,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
         ),
       ),
     );
