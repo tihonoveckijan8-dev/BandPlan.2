@@ -13,6 +13,7 @@ dependencies:
   flutter_riverpod: ^3.4.3
   go_router: ^18.1.2
   supabase_flutter: ^2.18.3
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
