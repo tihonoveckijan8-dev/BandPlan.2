@@ -32,6 +32,20 @@ void main(){
     expect(expandEventOccurrences([e],DateTime(2027,1,1),DateTime(2027,4,30)).map((x)=>x.date),
       ['2027-01-31','2027-03-03','2027-04-03']);
   });
+  test('old weekly and biweekly series fast-forward without changing cadence',(){
+    final weekly=GroupEvent.fromJson({
+      'id':'old-weekly','title':'Weekly','date':'2024-01-01',
+      'repeat':'weekly','repeatUntil':'2026-12-31',
+    });
+    final biweekly=GroupEvent.fromJson({
+      'id':'old-biweekly','title':'Biweekly','date':'2024-01-01',
+      'repeat':'biweekly','repeatUntil':'2026-12-31',
+    });
+    expect(expandEventOccurrences([weekly],DateTime(2026,11,1),DateTime(2026,11,15)).map((x)=>x.date),
+      ['2026-11-02','2026-11-09']);
+    expect(expandEventOccurrences([biweekly],DateTime(2026,11,1),DateTime(2026,11,15)).map((x)=>x.date),
+      ['2026-11-02','2026-11-16'].where((d)=>d.compareTo('2026-11-15')<=0));
+  });
   test('old monthly series fast-forwards while preserving legacy overflow phase',(){
     final e=GroupEvent.fromJson({
       'id':'old-monthly','title':'Monthly','date':'2024-01-31',
