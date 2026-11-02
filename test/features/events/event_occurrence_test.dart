@@ -32,6 +32,14 @@ void main(){
     expect(expandEventOccurrences([e],DateTime(2027,1,1),DateTime(2027,4,30)).map((x)=>x.date),
       ['2027-01-31','2027-03-03','2027-04-03']);
   });
+  test('old monthly series fast-forwards while preserving legacy overflow phase',(){
+    final e=GroupEvent.fromJson({
+      'id':'old-monthly','title':'Monthly','date':'2024-01-31',
+      'repeat':'monthly','repeatUntil':'2026-12-31',
+    });
+    expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30)).map((x)=>x.date),
+      ['2026-11-02']);
+  });
   test('one-off overrides affect only their occurrence and preserve the series',(){
     final base=GroupEvent.fromJson({
       'id':'e1','title':'Original','date':'2026-11-02','repeat':'weekly','repeatUntil':'2026-11-16',

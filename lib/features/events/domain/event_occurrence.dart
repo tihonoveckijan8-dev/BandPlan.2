@@ -33,6 +33,15 @@ List<EventOccurrence> expandEventOccurrences(List<GroupEvent> events,DateTime fr
         final elapsed=start.difference(current).inDays;
         final steps=(elapsed+interval-1)~/interval;
         current=current.add(Duration(days:steps*interval));
+      }else if(event.repeat=='monthly'){
+        // WHY: perform one legacy month step first so Jan 29-31 overflow is
+        // preserved; after that, the resulting day is stable for arithmetic skipping.
+        current=DateTime(current.year,current.month+1,current.day);
+        if(current.isBefore(start)){
+          final months=(start.year-current.year)*12+start.month-current.month;
+          if(months>0)current=DateTime(current.year,current.month+months,current.day);
+          if(current.isBefore(start))current=DateTime(current.year,current.month+1,current.day);
+        }
       }
     }
     var guard=0;
