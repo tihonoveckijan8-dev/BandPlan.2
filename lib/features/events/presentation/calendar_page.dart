@@ -104,12 +104,46 @@ class CalendarPage extends ConsumerWidget {
         if(e.notes.isNotEmpty)Text(e.notes),
         if(sl!=null)ListTile(contentPadding:EdgeInsets.zero,leading:const Icon(Icons.queue_music_rounded),title:Text(sl.name),
           subtitle:Text('${sl.items.length} песен'),onTap:(){Navigator.pop(sheet);context.push('/setlists');}),
-        Row(children:[if(sl==null)TextButton.icon(onPressed:(){Navigator.pop(sheet);context.push('/setlists');},
-          icon:const Icon(Icons.queue_music_rounded),label:const Text('Сет-листы')),const Spacer(),
+        Row(children:[
+          IconButton(tooltip:'Удалить событие',color:Theme.of(context).colorScheme.error,
+            onPressed:()=>_deleteEvent(context,sheet,ref,e),icon:const Icon(Icons.delete_outline_rounded)),
+          if(sl==null)TextButton.icon(onPressed:(){Navigator.pop(sheet);context.push('/setlists');},
+            icon:const Icon(Icons.queue_music_rounded),label:const Text('Сет-листы')),
+          const Spacer(),
           TextButton(onPressed:()=>Navigator.pop(sheet),child:const Text('Закрыть')),
           FilledButton.icon(onPressed:(){Navigator.pop(sheet);_edit(context,ref,programs,e);},
             icon:const Icon(Icons.edit_rounded),label:const Text('Изменить'))])
       ])));
+  }
+
+  Future<void> _deleteEvent(BuildContext context,BuildContext sheet,WidgetRef ref,GroupEvent event) async {
+    final recurring=event.repeat.isNotEmpty&&event.repeat!='none';
+    final confirmed=await showDialog<bool>(context:context,builder:(dialog)=>AlertDialog(
+      icon:Icon(Icons.delete_outline_rounded,color:Theme.of(dialog).colorScheme.error),
+      title:Text(recurring?'Удалить серию событий?':'Удалить событие?'),
+      content:Text(recurring
+        ?'Будет удалено «${event.title}» вместе со всеми повторениями. Это действие нельзя отменить.'
+        :'«${event.title}» будет удалено. Это действие нельзя отменить.'),
+      actions:[
+        TextButton(onPressed:()=>Navigator.pop(dialog,false),child:const Text('Отмена')),
+        FilledButton.tonal(onPressed:()=>Navigator.pop(dialog,true),
+          child:const Text('Удалить')),
+      ],
+    ));
+    if(confirmed!=true||!context.mounted)return;
+    try{
+      final group=await ref.read(activeGroupProvider.future);
+      final repo=ref.read(eventRepositoryProvider);
+      if(group==null||repo==null)throw StateError('Не удалось определить активную группу.');
+      await repo.deleteGroupEvent(group.id,event.id);
+      ref.invalidate(groupEventsProvider);
+      if(sheet.mounted)Navigator.pop(sheet);
+      if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('Событие удалено.')));
+    }catch(error){
+      if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('Не удалось удалить событие: $error')));
+    }
   }
 
   Future<void> _edit(BuildContext context,WidgetRef ref,List<Setlist> programs,[GroupEvent? old]) async {
