@@ -208,14 +208,54 @@ class SetlistsPage extends ConsumerWidget {
                                       child: Text('${index + 1}', style: const TextStyle(fontSize: 12)),
                                     ),
                                     title: Text(song?.title ?? 'Песня не найдена'),
-                                    subtitle: Text(song == null ? 'Ссылка сохранена, но песни нет в репертуаре' :
-                                      [song.artist, song.key].where((value) => value.isNotEmpty).join(' · ')),
+                                    subtitle: Text(song == null
+                                        ? 'Ссылка сохранена, но песни нет в репертуаре'
+                                        : [
+                                            song.artist,
+                                            song.transposedBy(item.shift).key,
+                                            if (item.shift != 0) '${item.shift > 0 ? '+' : ''}${item.shift} пт.',
+                                            if (item.note.isNotEmpty) item.note,
+                                          ].where((value) => value.isNotEmpty).join(' · ')),
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(Icons.drag_handle_rounded),
                                         IconButton(
+                                          tooltip: 'Понизить на полутон',
+                                          visualDensity: VisualDensity.compact,
+                                          onPressed: () => setSheetState(() {
+                                            items[index] = item.withEdits(shift: item.shift - 1);
+                                          }),
+                                          icon: const Icon(Icons.remove_circle_outline_rounded),
+                                        ),
+                                        Text(
+                                          item.shift > 0 ? '+${item.shift}' : item.shift.toString(),
+                                          style: Theme.of(context).textTheme.labelMedium,
+                                        ),
+                                        IconButton(
+                                          tooltip: 'Повысить на полутон',
+                                          visualDensity: VisualDensity.compact,
+                                          onPressed: () => setSheetState(() {
+                                            items[index] = item.withEdits(shift: item.shift + 1);
+                                          }),
+                                          icon: const Icon(Icons.add_circle_outline_rounded),
+                                        ),
+                                        IconButton(
+                                          tooltip: item.note.isEmpty ? 'Добавить заметку к песне' : 'Изменить заметку',
+                                          visualDensity: VisualDensity.compact,
+                                          onPressed: () async {
+                                            final updatedNote = await _editItemNote(context, item.note);
+                                            if (updatedNote != null) {
+                                              setSheetState(() {
+                                                items[index] = item.withEdits(note: updatedNote);
+                                              });
+                                            }
+                                          },
+                                          icon: Icon(item.note.isEmpty ? Icons.note_add_outlined : Icons.sticky_note_2_outlined),
+                                        ),
+                                        IconButton(
                                           tooltip: 'Убрать из программы',
+                                          visualDensity: VisualDensity.compact,
                                           onPressed: () => setSheetState(() => items.removeAt(index)),
                                           icon: const Icon(Icons.close_rounded),
                                         ),
@@ -270,6 +310,41 @@ class SetlistsPage extends ConsumerWidget {
     } finally {
       nameController.dispose();
       noteController.dispose();
+    }
+  }
+
+  Future<String?> _editItemNote(BuildContext context, String initialNote) async {
+    final controller = TextEditingController(text: initialNote);
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Заметка к песне'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            minLines: 2,
+            maxLines: 5,
+            maxLength: 300,
+            decoration: const InputDecoration(
+              hintText: 'Например: начать после вступления',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Отмена'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+              child: const Text('Сохранить'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
     }
   }
 
