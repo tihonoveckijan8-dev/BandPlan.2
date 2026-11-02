@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bandplan/features/songs/domain/song.dart';
+import 'package:bandplan/features/songs/domain/song_document.dart';
 
 void main() {
   group('Song legacy payload', () {
