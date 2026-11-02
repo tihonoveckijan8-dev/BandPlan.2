@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/song_providers.dart';
 import '../../groups/application/group_providers.dart';
 import '../domain/song.dart';
+import '../domain/song_document.dart';
 import 'song_lyrics_view.dart';
 import '../../stage/presentation/stage_mode_page.dart';
 
@@ -251,6 +252,36 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final chord = await _promptChord(context);
+                          if (chord == null) return;
+                          final selection = lyricsController.selection;
+                          final start = selection.isValid
+                              ? selection.start
+                              : lyricsController.text.length;
+                          final end = selection.isValid
+                              ? selection.end
+                              : lyricsController.text.length;
+                          final updated = SongDocument.insertChordToken(
+                            source: lyricsController.text,
+                            selectionStart: start,
+                            selectionEnd: end,
+                            chord: chord,
+                          );
+                          final cursor = (start < end ? start : end) + chord.length + 2;
+                          lyricsController.value = TextEditingValue(
+                            text: updated,
+                            selection: TextSelection.collapsed(offset: cursor),
+                          );
+                        },
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text('Вставить аккорд'),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     TextFormField(
                       controller: lyricsController,
                       minLines: 10,
@@ -263,7 +294,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                       decoration: const InputDecoration(
                         labelText: 'Текст и аккорды',
                         alignLabelWithHint: true,
-                        helperText: 'Расположение строк и аккордов сохраняется как введено.',
+                        helperText: 'Поставьте курсор перед нужным слогом и вставьте аккорд — пробелы вручную не нужны.',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -347,6 +378,50 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
       bpmController.dispose();
       tagsController.dispose();
       lyricsController.dispose();
+    }
+  }
+
+  Future<String?> _promptChord(BuildContext context) async {
+    final controller = TextEditingController(text: 'Am');
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Добавить аккорд'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              labelText: 'Аккорд',
+              hintText: 'Например, Am7 или D/F#',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) {
+              if (SongDocument.isChordSymbol(value.trim())) {
+                Navigator.of(dialogContext).pop(value.trim());
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Отмена'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                if (SongDocument.isChordSymbol(value)) {
+                  Navigator.of(dialogContext).pop(value);
+                }
+              },
+              child: const Text('Вставить'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
     }
   }
 
