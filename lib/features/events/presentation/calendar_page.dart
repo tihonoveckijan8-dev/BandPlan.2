@@ -6,6 +6,7 @@ import '../../setlists/application/setlist_providers.dart';
 import '../../setlists/domain/setlist.dart';
 import '../application/event_providers.dart';
 import '../domain/group_event.dart';
+import '../domain/event_occurrence.dart';
 
 class CalendarPage extends ConsumerWidget {
   const CalendarPage({super.key});
@@ -25,9 +26,9 @@ class CalendarPage extends ConsumerWidget {
         loading:()=>const Center(child:CircularProgressIndicator()),
         error:(e,_)=>_Error(message:e.toString(),retry:()=>ref.invalidate(groupEventsProvider)),
         data:(values){
-          final items=[...values]..sort((a,b){final d=a.date.compareTo(b.date);return d==0?a.time.compareTo(b.time):d;});
+          final items=expandEventOccurrences(values, DateTime(visibleMonth.year,visibleMonth.month,1), DateTime(visibleMonth.year,visibleMonth.month+1,0));
           final map={for(final s in programs)s.id:s};
-          final selectedItems=items.where((e){final d=DateTime.tryParse(e.date);return d!=null&&_iso(d)==selectedDate;}).toList();
+          final selectedItems=items.where((o)=>o.date==selectedDate).toList();
           return ListView(padding:const EdgeInsets.fromLTRB(12,12,12,100),children:[
             _monthCalendar(context,visibleMonth,selectedDate,items,
               (month)=>setCalendarState(()=>visibleMonth=month),
@@ -35,7 +36,7 @@ class CalendarPage extends ConsumerWidget {
             Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
               _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
             if(selectedItems.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(18),child:Text('На этот день событий нет.'))),
-            ...selectedItems.map((e){final sl=map[e.setlistId];return Padding(padding:const EdgeInsets.only(bottom:10),
+            ...selectedItems.map((occurrence){final e=occurrence.event;final sl=map[e.setlistId];return Padding(padding:const EdgeInsets.only(bottom:10),
               child:Card(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
                 leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
                 title:Text(e.title,style:const TextStyle(fontWeight:FontWeight.w700)),
@@ -43,13 +44,13 @@ class CalendarPage extends ConsumerWidget {
                   if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено',if(e.status=='cancelled')'Отменено'].join(' · '),
                   maxLines:3,overflow:TextOverflow.ellipsis),
                 trailing:const Icon(Icons.chevron_right_rounded),
-                onTap:()=>_details(context,ref,e,sl,programs))));}),
+                onTap:()=>_details(context,ref,e,sl,programs,occurrenceDate:occurrence.date))));}),
           ]);
         })),
     ));
   }
 
-  Widget _monthCalendar(BuildContext context,DateTime month,String selectedDate,List<GroupEvent> events,
+  Widget _monthCalendar(BuildContext context,DateTime month,String selectedDate,List<EventOccurrence> events,
       ValueChanged<DateTime> onMonthChanged,ValueChanged<DateTime> onDaySelected) {
     const monthNames=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
     const weekdays=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
@@ -58,7 +59,7 @@ class CalendarPage extends ConsumerWidget {
     final days=DateTime(month.year,month.month+1,0).day;
     final cells=((offset+days+6)~/7)*7;
     final counts=<String,int>{};
-    for(final event in events){final parsed=DateTime.tryParse(event.date);if(parsed!=null){final key=_iso(parsed);counts.update(key,(v)=>v+1,ifAbsent:()=>1);}}
+    for(final occurrence in events){counts.update(occurrence.date,(v)=>v+1,ifAbsent:()=>1);}
     final scheme=Theme.of(context).colorScheme;
     return Card(child:Padding(padding:const EdgeInsets.fromLTRB(12,10,12,12),child:Column(children:[
       Row(children:[
@@ -96,17 +97,17 @@ class CalendarPage extends ConsumerWidget {
     ])));
   }
 
-  Future<void> _details(BuildContext context,WidgetRef ref,GroupEvent e,Setlist? sl,List<Setlist> programs) async {
+  Future<void> _details(BuildContext context,WidgetRef ref,GroupEvent e,Setlist? sl,List<Setlist> programs,{required String occurrenceDate}) async {
     await showModalBottomSheet<void>(context:context,useSafeArea:true,showDragHandle:true,
       builder:(sheet)=>Padding(padding:const EdgeInsets.all(20),child:Wrap(runSpacing:12,children:[
         Text(e.title,style:Theme.of(context).textTheme.headlineSmall),
-        Text([_date(e.date),if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location].join(' · ')),
+        Text([_date(occurrenceDate),if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location].join(' · ')),
         if(e.notes.isNotEmpty)Text(e.notes),
         if(sl!=null)ListTile(contentPadding:EdgeInsets.zero,leading:const Icon(Icons.queue_music_rounded),title:Text(sl.name),
           subtitle:Text('${sl.items.length} песен'),onTap:(){Navigator.pop(sheet);context.push('/setlists');}),
         Row(children:[
           IconButton(tooltip:'Удалить событие',color:Theme.of(context).colorScheme.error,
-            onPressed:()=>_deleteEvent(context,sheet,ref,e),icon:const Icon(Icons.delete_outline_rounded)),
+            onPressed:()=>_deleteEvent(context,sheet,ref,e,occurrenceDate),icon:const Icon(Icons.delete_outline_rounded)),
           if(sl==null)TextButton.icon(onPressed:(){Navigator.pop(sheet);context.push('/setlists');},
             icon:const Icon(Icons.queue_music_rounded),label:const Text('Сет-листы')),
           const Spacer(),
@@ -116,30 +117,33 @@ class CalendarPage extends ConsumerWidget {
       ])));
   }
 
-  Future<void> _deleteEvent(BuildContext context,BuildContext sheet,WidgetRef ref,GroupEvent event) async {
+  Future<void> _deleteEvent(BuildContext context,BuildContext sheet,WidgetRef ref,GroupEvent event,String occurrenceDate) async {
     final recurring=event.repeat.isNotEmpty&&event.repeat!='none';
-    final confirmed=await showDialog<bool>(context:context,builder:(dialog)=>AlertDialog(
+    final action=await showDialog<String>(context:context,builder:(dialog)=>AlertDialog(
       icon:Icon(Icons.delete_outline_rounded,color:Theme.of(dialog).colorScheme.error),
-      title:Text(recurring?'Удалить серию событий?':'Удалить событие?'),
+      title:Text(recurring?'Удалить повторение?':'Удалить событие?'),
       content:Text(recurring
-        ?'Будет удалено «${event.title}» вместе со всеми повторениями. Это действие нельзя отменить.'
+        ?'Удалить «${event.title}» за ${_date(occurrenceDate)} или всю серию?'
         :'«${event.title}» будет удалено. Это действие нельзя отменить.'),
       actions:[
-        TextButton(onPressed:()=>Navigator.pop(dialog,false),child:const Text('Отмена')),
-        FilledButton.tonal(onPressed:()=>Navigator.pop(dialog,true),
-          child:const Text('Удалить')),
+        TextButton(onPressed:()=>Navigator.pop(dialog,'cancel'),child:const Text('Отмена')),
+        if(recurring)TextButton(onPressed:()=>Navigator.pop(dialog,'one'),child:const Text('Только это повторение')),
+        FilledButton.tonal(onPressed:()=>Navigator.pop(dialog,'all'),child:Text(recurring?'Всю серию':'Удалить')),
       ],
     ));
-    if(confirmed!=true||!context.mounted)return;
+    if(action==null||action=='cancel'||!context.mounted)return;
     try{
       final group=await ref.read(activeGroupProvider.future);
       final repo=ref.read(eventRepositoryProvider);
       if(group==null||repo==null)throw StateError('Не удалось определить активную группу.');
-      await repo.deleteGroupEvent(group.id,event.id);
+      if(action=='one'){
+        final excluded={...event.except,occurrenceDate}.toList()..sort();
+        await repo.saveGroupEvent(group.id,GroupEvent.fromJson({...event.raw,'except':excluded}));
+      }else{await repo.deleteGroupEvent(group.id,event.id);}
       ref.invalidate(groupEventsProvider);
       if(sheet.mounted)Navigator.pop(sheet);
       if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content:Text('Событие удалено.')));
+        SnackBar(content:Text(action=='one'?'Повторение удалено.':'Событие удалено.')));
     }catch(error){
       if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content:Text('Не удалось удалить событие: $error')));
@@ -188,7 +192,7 @@ class CalendarPage extends ConsumerWidget {
                     DropdownMenuItem(value:'cancelled',child:Text('Отменено'))],onChanged:(v)=>setState(()=>status=v??'upcoming')),
                 const SizedBox(height:8),DropdownButtonFormField<String>(value:repeat,decoration:const InputDecoration(labelText:'Повторение',border:OutlineInputBorder()),
                   items:const [DropdownMenuItem(value:'none',child:Text('Не повторять')),DropdownMenuItem(value:'daily',child:Text('Каждый день')),
-                    DropdownMenuItem(value:'weekly',child:Text('Каждую неделю')),DropdownMenuItem(value:'monthly',child:Text('Каждый месяц'))],
+                    DropdownMenuItem(value:'weekly',child:Text('Каждую неделю')),DropdownMenuItem(value:'biweekly',child:Text('Раз в две недели')),DropdownMenuItem(value:'monthly',child:Text('Каждый месяц'))],
                   onChanged:(v)=>setState(()=>repeat=v??'none')),
                 if(repeat!='none')...[
                   const SizedBox(height:8),TextFormField(controller:until,readOnly:true,decoration:const InputDecoration(labelText:'Повторять до',border:OutlineInputBorder()),
