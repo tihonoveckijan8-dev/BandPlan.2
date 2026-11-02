@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../songs/domain/song.dart';
+import '../../songs/presentation/song_lyrics_view.dart';
 
 /// A setlist-specific song view; the source repertoire record remains untouched.
 class StageModeTrack {
@@ -214,15 +215,17 @@ class _StageModePageState extends State<StageModePage> {
                   key: ValueKey('stage-lyrics-${_trackIndex}'),
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(22, 22, 22, 36),
-                  child: SelectableText(
-                    _lyrics.isEmpty ? 'Текст песни пока не добавлен.' : _lyrics,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: _fontSize,
-                      height: 1.65,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
+                  child: _lyrics.isEmpty
+                      ? const Text('Текст песни пока не добавлен.')
+                      : SongLyricsView(
+                          lyrics: _lyrics,
+                          textStyle: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: _fontSize,
+                            height: 1.65,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
                 ),
               ),
             ),
