@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/song_providers.dart';
+import '../../groups/application/group_providers.dart';
 import '../domain/song.dart';
 
 enum _SongLibrary { group, personal }
