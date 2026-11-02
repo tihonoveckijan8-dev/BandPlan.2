@@ -8,16 +8,31 @@ import '../application/event_providers.dart';
 import '../domain/group_event.dart';
 import '../domain/event_occurrence.dart';
 
-class CalendarPage extends ConsumerWidget {
+class CalendarPage extends ConsumerStatefulWidget {
   const CalendarPage({super.key});
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CalendarPage> createState() => _CalendarPageState();
+}
+
+class _CalendarPageState extends ConsumerState<CalendarPage> {
+  late DateTime visibleMonth;
+  late String selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    visibleMonth = DateTime(now.year, now.month);
+    selectedDate = _iso(now);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final events=ref.watch(groupEventsProvider);
     final setlists=ref.watch(groupSetlistsProvider);
     final programs=setlists.asData?.value??const <Setlist>[];
-    var visibleMonth = DateTime(DateTime.now().year, DateTime.now().month);
-    var selectedDate = _iso(DateTime.now());
-    return StatefulBuilder(builder:(context,setCalendarState)=>Scaffold(
+    return Scaffold(
       appBar:AppBar(title:const Text('Календарь'),actions:[
         IconButton(tooltip:'Сет-листы',onPressed:()=>context.push('/setlists'),icon:const Icon(Icons.queue_music_rounded))]),
       floatingActionButton:FloatingActionButton.extended(onPressed:()=>_edit(context,ref,programs),
@@ -31,8 +46,8 @@ class CalendarPage extends ConsumerWidget {
           final selectedItems=items.where((o)=>o.date==selectedDate).toList();
           return ListView(padding:const EdgeInsets.fromLTRB(12,12,12,100),children:[
             _monthCalendar(context,visibleMonth,selectedDate,items,
-              (month)=>setCalendarState((){visibleMonth=month;selectedDate=_iso(month);}),
-              (day)=>setCalendarState(()=>selectedDate=_iso(day))),
+              (month)=>setState((){visibleMonth=month;selectedDate=_iso(month);}),
+              (day)=>setState(()=>selectedDate=_iso(day))),
             Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
               _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
             if(selectedItems.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(18),child:Text('На этот день событий нет.'))),
@@ -47,7 +62,7 @@ class CalendarPage extends ConsumerWidget {
                 onTap:()=>_details(context,ref,e,sl,programs,occurrenceDate:occurrence.date,seriesEvent:occurrence.series))));}),
           ]);
         })),
-    ));
+    );
   }
 
   Widget _monthCalendar(BuildContext context,DateTime month,String selectedDate,List<EventOccurrence> events,
