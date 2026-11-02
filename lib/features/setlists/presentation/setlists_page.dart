@@ -8,6 +8,7 @@ import '../../events/application/event_providers.dart';
 import '../../events/domain/group_event.dart';
 import '../application/setlist_providers.dart';
 import '../domain/setlist.dart';
+import 'setlist_run_page.dart';
 
 class SetlistsPage extends ConsumerWidget {
   const SetlistsPage({super.key});
@@ -74,7 +75,20 @@ class SetlistsPage extends ConsumerWidget {
                         'Событие: ${_linkedEventLabel(setlist, eventMap)}',
                       if (setlist.note.isNotEmpty) setlist.note,
                     ].join(' · '), maxLines: 3, overflow: TextOverflow.ellipsis),
-                    trailing: const Icon(Icons.chevron_right_rounded),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Начать исполнение',
+                          // WHY: execution is a separate read-only flow; editing remains on card tap.
+                          onPressed: songs.hasValue && setlist.items.isNotEmpty
+                              ? () => _startSetlist(context, setlist, songs.value!)
+                              : null,
+                          icon: const Icon(Icons.play_arrow_rounded),
+                        ),
+                        const Icon(Icons.chevron_right_rounded),
+                      ],
+                    ),
                     onTap: () => _editSetlist(context, ref, songs.asData?.value ?? const <Song>[], events.asData?.value ?? const <GroupEvent>[], setlist),
                   ),
                 );
@@ -82,6 +96,14 @@ class SetlistsPage extends ConsumerWidget {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Future<void> _startSetlist(BuildContext context, Setlist setlist, List<Song> songs) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => SetlistRunPage(setlist: setlist, songs: songs),
       ),
     );
   }
