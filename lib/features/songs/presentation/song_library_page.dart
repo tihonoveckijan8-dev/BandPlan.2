@@ -285,11 +285,12 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                                   throw StateError('Supabase не настроен.');
                                 }
                                 final bpmText = bpmController.text.trim();
+                                // WHY: editing a song must not silently discard legacy tags
+                                // or rewrite their capitalization when the user only edits lyrics.
                                 final tags = tagsController.text
                                     .split(',')
-                                    .map((tag) => tag.trim().toLowerCase())
+                                    .map((tag) => tag.trim())
                                     .where((tag) => tag.isNotEmpty)
-                                    .take(8)
                                     .toList(growable: false);
                                 final base = existing ?? Song.fromJson({
                                   'id': DateTime.now().microsecondsSinceEpoch.toString(),
