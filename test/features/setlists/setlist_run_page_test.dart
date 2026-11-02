@@ -82,4 +82,47 @@ void main() {
     expect(find.text('Песня не найдена'), findsOneWidget);
     expect(find.text('Эта песня больше не доступна в репертуаре группы.'), findsOneWidget);
   });
+
+  testWidgets('opens stage mode on the selected track when earlier setlist songs are missing', (tester) async {
+    final setlist = Setlist.fromJson({
+      'id': 'set-gap',
+      'name': 'Set with missing song',
+      'items': [
+        {'id': 'item-1', 'songId': 'song-1'},
+        {'id': 'item-missing', 'songId': 'deleted-song'},
+        {'id': 'item-2', 'songId': 'song-2'},
+        {'id': 'item-3', 'songId': 'song-3'},
+      ],
+    });
+    Song makeSong(String id, String title) => Song.fromJson({
+          'id': id,
+          'title': title,
+          'key': 'C',
+          'lyrics': '$title lyrics',
+        });
+
+    await tester.pumpWidget(MaterialApp(
+      home: SetlistRunPage(
+        setlist: setlist,
+        songs: [
+          makeSong('song-1', 'First song'),
+          makeSong('song-2', 'Selected song'),
+          makeSong('song-3', 'Following song'),
+        ],
+      ),
+    ));
+
+    await tester.tap(find.text('Следующая'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Следующая'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selected song'), findsOneWidget);
+    await tester.tap(find.byTooltip('Сценический режим'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selected song lyrics'), findsOneWidget);
+    expect(find.text('Following song lyrics'), findsNothing);
+  });
+
 }
