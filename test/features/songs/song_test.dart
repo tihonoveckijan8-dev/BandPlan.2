@@ -175,12 +175,23 @@ void main() {
       expect(document.lines.single.lyricText, 'До после конец');
       expect(
         document.lines.single.anchors
-            .map((anchor) => [anchor.offset, anchor.chord]).toList(),
+            .map((anchor) => [anchor.wordIndex, anchor.characterOffset, anchor.chord]).toList(),
         [
-          [3, 'Am'],
-          [9, 'G'],
+          [1, 0, 'Am'],
+          [2, 0, 'G'],
         ],
       );
+    });
+
+
+    test('keeps chord anchors stable when lyric spacing changes', () {
+      final compact = SongDocument.fromLegacyLyrics('До [Am]после');
+      final spaced = SongDocument.fromLegacyLyrics('До       [Am]после');
+
+      expect(compact.lines.single.anchors.single.wordIndex, 1);
+      expect(spaced.lines.single.anchors.single.wordIndex, 1);
+      expect(compact.lines.single.anchors.single.characterOffset, 0);
+      expect(spaced.lines.single.anchors.single.characterOffset, 0);
     });
 
     test('keeps section labels separate from chord anchors', () {
