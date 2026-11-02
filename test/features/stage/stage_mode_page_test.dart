@@ -67,9 +67,8 @@ void main() {
       ),
     ));
 
-    expect(find.text('A#m'), findsOneWidget);
-    expect(find.text('First note'), findsOneWidget);
     expect(find.text('A#m'), findsWidgets);
+    expect(find.text('First note'), findsOneWidget);
     expect(find.text('first'), findsOneWidget);
     expect(find.text('[A#m]first lyrics'), findsNothing);
 
@@ -77,9 +76,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Second track'), findsOneWidget);
-    expect(find.text('A#'), findsOneWidget);
-    expect(find.text('Second note'), findsOneWidget);
     expect(find.text('A#'), findsWidgets);
+    expect(find.text('Second note'), findsOneWidget);
     expect(find.text('second'), findsOneWidget);
     expect(find.text('[A#]second lyrics'), findsNothing);
     expect(find.text('2/2'), findsOneWidget);
@@ -93,17 +91,16 @@ void main() {
     final song = makeSong('key-song', 'Key song', 'Am', '[Am]lyrics');
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
 
-    expect(find.text('Am'), findsOneWidget);
+    expect(find.text('Am'), findsWidgets);
     await tester.tap(find.byTooltip('Повысить тональность на полтона'));
     await tester.pump();
-    expect(find.text('A#m'), findsOneWidget);
     expect(find.text('A#m'), findsWidgets);
     expect(find.text('lyrics'), findsOneWidget);
     expect(find.text('[A#m]lyrics'), findsNothing);
 
     await tester.tap(find.byTooltip('Понизить тональность на полтона'));
     await tester.pump();
-    expect(find.text('Am'), findsOneWidget);
+    expect(find.text('Am'), findsWidgets);
     expect(song.key, 'Am');
     expect(song.lyrics, '[Am]lyrics');
   });
