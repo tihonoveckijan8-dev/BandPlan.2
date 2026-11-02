@@ -546,7 +546,7 @@ class _StructuredSongWord extends StatelessWidget {
     final pieces = <Widget>[];
     var offset = 0;
     for (final anchor in ordered) {
-      final position = anchor.characterOffset.clamp(offset, word.length);
+      final position = anchor.characterOffset.clamp(offset, word.length).toInt();
       if (position > offset) {
         pieces.add(_SongWordPiece(
           text: word.substring(offset, position),
