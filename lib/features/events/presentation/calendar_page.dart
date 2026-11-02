@@ -52,7 +52,7 @@ class CalendarPage extends ConsumerWidget {
         Text([_date(e.date),if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location].join(' · ')),
         if(e.notes.isNotEmpty)Text(e.notes),
         if(sl!=null)ListTile(contentPadding:EdgeInsets.zero,leading:const Icon(Icons.queue_music_rounded),title:Text(sl.name),
-          subtitle:Text('\${sl.items.length} песен'),onTap:(){Navigator.pop(sheet);context.push('/setlists');}),
+          subtitle:Text('${sl.items.length} песен'),onTap:(){Navigator.pop(sheet);context.push('/setlists');}),
         Row(children:[if(sl==null)TextButton.icon(onPressed:(){Navigator.pop(sheet);context.push('/setlists');},
           icon:const Icon(Icons.queue_music_rounded),label:const Text('Сет-листы')),const Spacer(),
           TextButton(onPressed:()=>Navigator.pop(sheet),child:const Text('Закрыть')),
@@ -135,8 +135,8 @@ class CalendarPage extends ConsumerWidget {
   }
 
   static IconData _icon(String type)=>switch(type){'rehearsal'=>Icons.music_note_rounded,'service'=>Icons.church_outlined,'gig'=>Icons.mic_external_on_rounded,_=>Icons.event_rounded};
-  static String _iso(DateTime d)=>'\${d.year.toString().padLeft(4,'0')}-\${d.month.toString().padLeft(2,'0')}-\${d.day.toString().padLeft(2,'0')}';
-  static String _date(String value){final d=DateTime.tryParse(value);if(d==null)return value;const m=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return '\${d.day} \${m[d.month-1]} \${d.year}';}
+  static String _iso(DateTime d)=>'${d.year.toString().padLeft(4,'0')}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
+  static String _date(String value){final d=DateTime.tryParse(value);if(d==null)return value;const m=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return '${d.day} ${m[d.month-1]} ${d.year}';}
 }
 class _Error extends StatelessWidget{
   const _Error({required this.message,required this.retry});final String message;final VoidCallback retry;
