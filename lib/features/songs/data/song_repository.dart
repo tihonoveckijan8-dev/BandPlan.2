@@ -21,6 +21,23 @@ class SongRepository {
         .toList(growable: false);
   }
 
+  /// Writes one group song using the existing RLS-protected table contract.
+  /// The original JSON payload is retained, including chord/dynamics metadata.
+  Future<void> saveGroupSong(String groupId, Song song) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw StateError('Требуется авторизация.');
+
+    await _client.from('bandplan_songs').upsert(
+      {
+        'group_id': groupId,
+        'id': song.id,
+        'data': song.toLegacyJson(),
+        'updated_by': user.id,
+      },
+      onConflict: 'group_id,id',
+    );
+  }
+
   Future<List<Song>> getPersonalSongs() async {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Требуется авторизация.');

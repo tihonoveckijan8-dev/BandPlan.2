@@ -32,6 +32,13 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Каталог песен')),
+      floatingActionButton: _library == _SongLibrary.group
+          ? FloatingActionButton.extended(
+              onPressed: () => _editSong(context),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Новая песня'),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -108,6 +115,9 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                     itemBuilder: (context, index) => _SongTile(
                       song: filtered[index],
                       onTap: () => _showSong(context, filtered[index]),
+                      onEdit: _library == _SongLibrary.group
+                          ? () => _editSong(context, filtered[index])
+                          : null,
                     ),
                   );
                 },
@@ -117,6 +127,212 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _editSong(BuildContext context, [Song? existing]) async {
+    if (_library != _SongLibrary.group) return;
+
+    final titleController = TextEditingController(text: existing?.title ?? '');
+    final artistController = TextEditingController(text: existing?.artist ?? '');
+    final bpmController = TextEditingController(
+      text: existing?.bpm?.toString() ?? '',
+    );
+    final tagsController = TextEditingController(
+      text: existing?.tags.join(', ') ?? '',
+    );
+    final lyricsController = TextEditingController(text: existing?.lyrics ?? '');
+    var selectedKey = existing?.key.isNotEmpty == true ? existing!.key : 'Am';
+    var saving = false;
+    final formKey = GlobalKey<FormState>();
+
+    try {
+      final saved = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (context, setSheetState) => Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              8,
+              20,
+              MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      existing == null ? 'Новая песня' : 'Редактировать песню',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: titleController,
+                      autofocus: existing == null,
+                      maxLength: 90,
+                      decoration: const InputDecoration(
+                        labelText: 'Название *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) => (value?.trim().isEmpty ?? true)
+                          ? 'Введите название песни'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: artistController,
+                      decoration: const InputDecoration(
+                        labelText: 'Исполнитель',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: selectedKey,
+                      decoration: const InputDecoration(
+                        labelText: 'Тональность',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        'C','Cm','C#','C#m','D','Dm','D#','D#m',
+                        'E','Em','F','Fm','F#','F#m','G','Gm',
+                        'G#','G#m','A','Am','A#','A#m','B','Bm',
+                      ].map((key) => DropdownMenuItem(
+                        value: key,
+                        child: Text(key),
+                      )).toList(),
+                      onChanged: (value) {
+                        if (value != null) setSheetState(() => selectedKey = value);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: bpmController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Темп (BPM)',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final text = value?.trim() ?? '';
+                        if (text.isEmpty) return null;
+                        final bpm = int.tryParse(text);
+                        if (bpm == null || bpm < 20 || bpm > 300) {
+                          return 'Укажите темп от 20 до 300 BPM';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: tagsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Теги через запятую',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: lyricsController,
+                      minLines: 10,
+                      maxLines: 18,
+                      keyboardType: TextInputType.multiline,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        height: 1.55,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Текст и аккорды',
+                        alignLabelWithHint: true,
+                        helperText: 'Расположение строк и аккордов сохраняется как введено.',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (!(formKey.currentState?.validate() ?? false)) {
+                                return;
+                              }
+                              setSheetState(() => saving = true);
+                              try {
+                                final group = await ref.read(activeGroupProvider.future);
+                                if (group == null) {
+                                  throw StateError('Сначала выберите музыкальную группу.');
+                                }
+                                final repository = ref.read(songRepositoryProvider);
+                                if (repository == null) {
+                                  throw StateError('Supabase не настроен.');
+                                }
+                                final bpmText = bpmController.text.trim();
+                                final tags = tagsController.text
+                                    .split(',')
+                                    .map((tag) => tag.trim().toLowerCase())
+                                    .where((tag) => tag.isNotEmpty)
+                                    .take(8)
+                                    .toList(growable: false);
+                                final base = existing ?? Song.fromJson({
+                                  'id': DateTime.now().microsecondsSinceEpoch.toString(),
+                                  'title': titleController.text.trim(),
+                                  'lyrics': '',
+                                });
+                                final edited = base.withEdits(
+                                  title: titleController.text.trim(),
+                                  artist: artistController.text.trim(),
+                                  key: selectedKey,
+                                  bpm: bpmText.isEmpty ? null : int.parse(bpmText),
+                                  tags: tags,
+                                  lyrics: lyricsController.text,
+                                );
+                                await repository.saveGroupSong(group.id, edited);
+                                ref.invalidate(groupSongsProvider);
+                                if (sheetContext.mounted) {
+                                  Navigator.of(sheetContext).pop(true);
+                                }
+                              } catch (error) {
+                                setSheetState(() => saving = false);
+                                if (sheetContext.mounted) {
+                                  ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                    SnackBar(content: Text('Не удалось сохранить: $error')),
+                                  );
+                                }
+                              }
+                            },
+                      icon: saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_rounded),
+                      label: Text(saving ? 'Сохранение…' : 'Сохранить песню'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      if (saved == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Песня сохранена в репертуаре группы')),
+        );
+      }
+    } finally {
+      titleController.dispose();
+      artistController.dispose();
+      bpmController.dispose();
+      tagsController.dispose();
+      lyricsController.dispose();
+    }
   }
 
   Future<void> _showSong(BuildContext context, Song song) {
@@ -177,10 +393,11 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
 }
 
 class _SongTile extends StatelessWidget {
-  const _SongTile({required this.song, required this.onTap});
+  const _SongTile({required this.song, required this.onTap, this.onEdit});
 
   final Song song;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -198,9 +415,21 @@ class _SongTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: song.isFavorite
-            ? const Icon(Icons.star_rounded, color: Colors.amber)
-            : const Icon(Icons.chevron_right_rounded),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onEdit != null)
+              IconButton(
+                tooltip: 'Редактировать песню',
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined),
+              ),
+            if (song.isFavorite)
+              const Icon(Icons.star_rounded, color: Colors.amber)
+            else
+              const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
       ),
     );
   }

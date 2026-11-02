@@ -61,6 +61,38 @@ void main() {
       expect(song.searchableText, contains('свет в окне'));
     });
 
+
+    test('edits visible fields but preserves unknown chord and dynamics data', () {
+      final song = Song.fromJson({
+        'id': 'legacy-edit',
+        'title': 'Старая версия',
+        'artist': 'Исполнитель',
+        'key': 'Am',
+        'lyrics': 'Am      F\\nТекст',
+        'chordAnchors': [{'line': 0, 'offset': 0, 'chord': 'Am'}],
+        'dynamics': {'sections': ['Куплет'], 'notes': {'guitar': 'тише'}},
+        'legacyExtension': {'keep': true},
+      });
+
+      final edited = song.withEdits(
+        title: 'Новая версия',
+        artist: 'Другой исполнитель',
+        key: 'C',
+        bpm: 112,
+        tags: ['live'],
+        lyrics: 'C       G\\nНовый текст',
+      );
+
+      expect(edited.title, 'Новая версия');
+      expect(edited.artist, 'Другой исполнитель');
+      expect(edited.key, 'C');
+      expect(edited.bpm, 112);
+      expect(edited.lyrics, 'C       G\\nНовый текст');
+      expect(edited.toLegacyJson()['chordAnchors'], song.toLegacyJson()['chordAnchors']);
+      expect(edited.toLegacyJson()['dynamics'], song.toLegacyJson()['dynamics']);
+      expect(edited.toLegacyJson()['legacyExtension'], {'keep': true});
+    });
+
     test('rejects payloads without a legacy id', () {
       expect(
         () => Song.fromJson({'title': 'Без id'}),

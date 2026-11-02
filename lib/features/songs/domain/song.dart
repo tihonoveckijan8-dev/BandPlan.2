@@ -33,6 +33,26 @@ class Song {
     return Song._(copy);
   }
 
+  /// Creates an edited view while retaining legacy fields this UI does not know.
+  Song withEdits({
+    required String title,
+    required String artist,
+    required String key,
+    required int? bpm,
+    required List<String> tags,
+    required String lyrics,
+  }) {
+    return Song._({
+      ...raw,
+      'title': title,
+      'artist': artist,
+      'key': key,
+      'bpm': bpm,
+      'tags': tags,
+      'lyrics': lyrics,
+    });
+  }
+
   /// Returns the unchanged legacy payload, including unknown fields.
   Map<String, dynamic> toLegacyJson() => Map<String, dynamic>.from(raw);
 
