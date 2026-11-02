@@ -184,13 +184,14 @@ class _GroupTile extends StatelessWidget {
   });
 
   final Map<String, dynamic> group;
-  final GroupRepository repository;
+  final GroupRepository? repository;
   final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {
     final id = group['group_id']?.toString() ?? '';
     final name = group['group_name']?.toString() ?? 'Группа';
+    final repo = repository;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
@@ -209,11 +210,12 @@ class _GroupTile extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       )),
             ),
-            PopupMenuButton<String>(
+            if (repo != null)
+              PopupMenuButton<String>(
               onSelected: (action) async {
                 if (action == 'activate') {
                   try {
-                    await repository.setActiveGroup(id);
+                    await repo.setActiveGroup(id);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Активная группа: $name')),
@@ -229,7 +231,7 @@ class _GroupTile extends StatelessWidget {
                 } else if (action == 'invite') {
                   try {
                     await repository.setActiveGroup(id);
-                    final result = await repository.getOrCreateInviteCode();
+                    final result = await repo.getOrCreateInviteCode();
                     if (!context.mounted) return;
                     final code = result is Map
                         ? (result['invite_code'] ?? result['code'])?.toString()
@@ -271,7 +273,7 @@ class _GroupTile extends StatelessWidget {
                   );
                   if (confirmed == true) {
                     try {
-                      await repository.leaveGroup(id);
+                      await repo.leaveGroup(id);
                       onChanged();
                     } catch (error) {
                       if (context.mounted) {
