@@ -35,7 +35,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     return Scaffold(
       appBar:AppBar(title:const Text('Календарь'),actions:[
         IconButton(tooltip:'Сет-листы',onPressed:()=>context.push('/setlists'),icon:const Icon(Icons.queue_music_rounded))]),
-      floatingActionButton:FloatingActionButton.extended(onPressed:()=>_edit(context,ref,programs),
+      floatingActionButton:FloatingActionButton.extended(onPressed:()=>_edit(context,ref,programs,initialDate:selectedDate),
         icon:const Icon(Icons.add_rounded),label:const Text('Событие')),
       body:SafeArea(child:events.when(
         loading:()=>const Center(child:CircularProgressIndicator()),
@@ -184,12 +184,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     }
   }
 
-  Future<void> _edit(BuildContext context,WidgetRef ref,List<Setlist> programs,{GroupEvent? old,String? occurrenceDate,GroupEvent? initial}) async {
+  Future<void> _edit(BuildContext context,WidgetRef ref,List<Setlist> programs,{GroupEvent? old,String? occurrenceDate,GroupEvent? initial,String? initialDate}) async {
     final group=await ref.read(activeGroupProvider.future);if(group==null||!context.mounted)return;
     final repo=ref.read(eventRepositoryProvider);if(repo==null)return;
     final source=initial??old;
     final title=TextEditingController(text:source?.title??'');
-    final date=TextEditingController(text:occurrenceDate??source?.date??_iso(DateTime.now()));
+    final date=TextEditingController(text:occurrenceDate??source?.date??initialDate??_iso(DateTime.now()));
     final time=TextEditingController(text:source?.time??'19:00');
     final end=TextEditingController(text:source?.end??'');
     final place=TextEditingController(text:source?.location??'');
