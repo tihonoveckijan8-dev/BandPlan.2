@@ -63,7 +63,7 @@ class SongDocumentLine {
       final before = source.substring(sourceOffset, match.start);
       text.write(before);
       final token = match.group(1)!;
-      if (_isChord(token)) {
+      if (isChordSymbol(token)) {
         final position = _wordPosition(text.toString());
         anchors.add(SongChordAnchor(
           wordIndex: position.$1,
