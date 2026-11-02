@@ -38,7 +38,7 @@ class SongDocument {
       throw ArgumentError.value(chord, 'chord', 'Invalid chord symbol');
     }
     final lower = (selectionStart < selectionEnd ? selectionStart : selectionEnd)
-        .clamp(0, source.length);
+        .clamp(0, source.length).toInt();
     final upper = (selectionStart > selectionEnd ? selectionStart : selectionEnd)
         .clamp(0, source.length);
     return source.replaceRange(lower, upper, '[$normalizedChord]');
