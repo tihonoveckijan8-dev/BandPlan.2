@@ -56,7 +56,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
                 title:Text(e.title,style:const TextStyle(fontWeight:FontWeight.w700)),
                 subtitle:Text([if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location,
-                  if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено'].join(' · '),
+                  if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено',if(e.status=='cancelled')'Отменено'].join(' · '),
                   maxLines:3,overflow:TextOverflow.ellipsis),
                 trailing:const Icon(Icons.chevron_right_rounded),
                 onTap:()=>_details(context,ref,e,sl,programs,occurrenceDate:occurrence.date,seriesEvent:occurrence.series))));}),
