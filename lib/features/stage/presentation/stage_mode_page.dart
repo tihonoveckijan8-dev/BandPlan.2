@@ -213,22 +213,27 @@ class _StageModePageState extends State<StageModePage> {
                   if (hasQueue)
                     Row(
                       children: [
+                        // WHY: icon-only navigation preserves 48px touch targets without
+                        // forcing long labels into the narrow phone control bar.
+                        IconButton.filledTonal(
+                          tooltip: 'Предыдущая песня',
+                          onPressed: _trackIndex > 0 ? () => _moveTrack(-1) : null,
+                          icon: const Icon(Icons.skip_previous_rounded),
+                        ),
                         Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _trackIndex > 0 ? () => _moveTrack(-1) : null,
-                            icon: const Icon(Icons.skip_previous_rounded),
-                            label: const Text('Предыдущая'),
+                          child: Center(
+                            child: Text(
+                              'Песня ${_trackIndex + 1} из ${widget.queue.length}',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: _trackIndex < widget.queue.length - 1
-                                ? () => _moveTrack(1)
-                                : null,
-                            icon: const Icon(Icons.skip_next_rounded),
-                            label: const Text('Следующая'),
-                          ),
+                        IconButton.filledTonal(
+                          tooltip: 'Следующая песня',
+                          onPressed: _trackIndex < widget.queue.length - 1
+                              ? () => _moveTrack(1)
+                              : null,
+                          icon: const Icon(Icons.skip_next_rounded),
                         ),
                       ],
                     ),
@@ -237,7 +242,6 @@ class _StageModePageState extends State<StageModePage> {
                       const Icon(Icons.text_fields_rounded, size: 20),
                       IconButton(
                         tooltip: 'Уменьшить текст',
-                        visualDensity: VisualDensity.compact,
                         onPressed: () => _changeFont(-2),
                         icon: const Icon(Icons.remove_rounded),
                       ),
