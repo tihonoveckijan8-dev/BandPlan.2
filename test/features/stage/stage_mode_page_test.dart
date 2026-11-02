@@ -80,6 +80,23 @@ void main() {
     expect(find.text('First track'), findsOneWidget);
     expect(find.text('First note'), findsOneWidget);
   });
+  testWidgets('changes the live key without modifying the source song', (tester) async {
+    final song = makeSong('key-song', 'Key song', 'Am', '[Am]lyrics');
+    await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
+
+    expect(find.text('Am'), findsOneWidget);
+    await tester.tap(find.byTooltip('Повысить тональность на полтона'));
+    await tester.pump();
+    expect(find.text('A#m'), findsOneWidget);
+    expect(find.text('[A#m]lyrics'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Понизить тональность на полтона'));
+    await tester.pump();
+    expect(find.text('Am'), findsOneWidget);
+    expect(song.key, 'Am');
+    expect(song.lyrics, '[Am]lyrics');
+  });
+
   testWidgets('keeps setlist navigation usable on a phone-sized screen', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
