@@ -46,7 +46,7 @@ class SetlistsPage extends ConsumerWidget {
                 ),
               );
             }
-            final songMap = {for (final song in songs.valueOrNull ?? const <Song>[]) song.id: song};
+            final songMap = {for (final song in songs.asData?.value ?? const <Song>[]) song.id: song};
             return ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
               itemCount: items.length,
@@ -54,7 +54,7 @@ class SetlistsPage extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final setlist = items[index];
                 final duration = setlist.items.fold<int>(0, (total, item) =>
-                    total + (songMap[item.songId]?.durationSeconds ?? 0));
+                    total + (songMap[item.songId]?.durationSeconds ?? 0).toInt());
                 return Card(
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
@@ -69,7 +69,7 @@ class SetlistsPage extends ConsumerWidget {
                       if (setlist.note.isNotEmpty) setlist.note,
                     ].join(' · '), maxLines: 2, overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => _editSetlist(context, ref, songs.valueOrNull ?? const [], setlist),
+                    onTap: () => _editSetlist(context, ref, songs.asData?.value ?? const <Song>[], setlist),
                   ),
                 );
               },
