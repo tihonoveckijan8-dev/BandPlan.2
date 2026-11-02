@@ -40,14 +40,22 @@ class _SetlistRunPageState extends State<SetlistRunPage> {
   }
 
   void _openStage(BuildContext context) {
-    final song = _sourceSong;
-    if (song == null) return;
+    final queue = <StageModeTrack>[];
+    var currentTrackIndex = 0;
+    for (var i = 0; i < widget.setlist.items.length; i++) {
+      final item = widget.setlist.items[i];
+      final song = _songById[item.songId];
+      if (song == null) continue;
+      if (i < _index) currentTrackIndex++;
+      queue.add(StageModeTrack(song: song, semitones: item.shift, note: item.note));
+    }
+    if (queue.isEmpty) return;
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => StageModePage(
-          song: song,
-          initialSemitones: _item.shift,
-          performanceNote: _item.note,
+          song: queue[currentTrackIndex].song,
+          queue: queue,
+          initialTrackIndex: currentTrackIndex,
         ),
       ),
     );

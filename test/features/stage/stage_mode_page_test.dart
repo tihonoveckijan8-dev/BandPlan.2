@@ -4,17 +4,18 @@ import 'package:bandplan/features/songs/domain/song.dart';
 import 'package:bandplan/features/stage/presentation/stage_mode_page.dart';
 
 void main() {
-  Song makeSong() => Song.fromJson({
-        'id': 'song-1',
-        'title': 'Stage song',
+  Song makeSong(String id, String title, String key, String lyrics) => Song.fromJson({
+        'id': id,
+        'title': title,
         'artist': 'Band',
-        'key': 'Am',
+        'key': key,
         'bpm': 96,
-        'lyrics': '[Am]First line\n[Куплет]\nSecond line',
+        'lyrics': lyrics,
       });
 
   testWidgets('shows song details and hides chord tokens while keeping section labels', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: StageModePage(song: makeSong())));
+    final song = makeSong('song-1', 'Stage song', 'Am', '[Am]First line\n[Куплет]\nSecond line');
+    await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
 
     expect(find.text('Stage song'), findsOneWidget);
     expect(find.text('Am'), findsOneWidget);
@@ -23,7 +24,6 @@ void main() {
 
     await tester.tap(find.byTooltip('Скрыть аккорды'));
     await tester.pump();
-
     expect(find.text('First line\n[Куплет]\nSecond line'), findsOneWidget);
   });
 
@@ -33,20 +33,51 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(home: StageModePage(song: makeSong())));
+    await tester.pumpWidget(MaterialApp(home: StageModePage(song: makeSong('song-1', 'Stage song', 'Am', 'Line'))));
     expect(find.text('30 px'), findsOneWidget);
-    expect(find.text('Автопрокрутка'), findsOneWidget);
+    expect(find.text('24'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Увеличить текст'));
     await tester.pump();
     expect(find.text('32 px'), findsOneWidget);
 
-    await tester.tap(find.text('Автопрокрутка'));
+    await tester.tap(find.byTooltip('Автопрокрутка'));
     await tester.pump();
-    expect(find.text('Пауза'), findsOneWidget);
+    expect(find.byTooltip('Пауза'), findsOneWidget);
+    await tester.tap(find.byTooltip('Пауза'));
+    await tester.pump();
+    expect(find.byTooltip('Автопрокрутка'), findsOneWidget);
+  });
 
-    await tester.tap(find.text('Пауза'));
-    await tester.pump();
-    expect(find.text('Автопрокрутка'), findsOneWidget);
+  testWidgets('navigates through setlist tracks with each track transpose and note', (tester) async {
+    final first = makeSong('one', 'First track', 'Am', '[Am]first lyrics');
+    final second = makeSong('two', 'Second track', 'C', '[C]second lyrics');
+    await tester.pumpWidget(MaterialApp(
+      home: StageModePage(
+        song: first,
+        queue: [
+          StageModeTrack(song: first, semitones: 1, note: 'First note'),
+          StageModeTrack(song: second, semitones: -2, note: 'Second note'),
+        ],
+      ),
+    ));
+
+    expect(find.text('A#m'), findsOneWidget);
+    expect(find.text('First note'), findsOneWidget);
+    expect(find.text('[A#m]first lyrics'), findsOneWidget);
+
+    await tester.tap(find.text('Следующая'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Second track'), findsOneWidget);
+    expect(find.text('A#'), findsOneWidget);
+    expect(find.text('Second note'), findsOneWidget);
+    expect(find.text('[A#]second lyrics'), findsOneWidget);
+    expect(find.text('2/2'), findsOneWidget);
+
+    await tester.tap(find.text('Предыдущая'));
+    await tester.pumpAndSettle();
+    expect(find.text('First track'), findsOneWidget);
+    expect(find.text('First note'), findsOneWidget);
   });
 }
