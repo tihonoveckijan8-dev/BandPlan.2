@@ -405,11 +405,13 @@ class _GroupTile extends StatelessWidget {
                   }
                 }
               },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'activate', child: Text('Сделать активной')),
-                PopupMenuItem(value: 'rename', child: Text('Переименовать')),
-                PopupMenuItem(value: 'invite', child: Text('Получить код приглашения')),
-                PopupMenuItem(value: 'leave', child: Text('Покинуть группу')),
+              itemBuilder: (context) => [
+                // WHY: don't offer an action that cannot change the current active group.
+                if (!isActive)
+                  const PopupMenuItem(value: 'activate', child: Text('Сделать активной')),
+                const PopupMenuItem(value: 'rename', child: Text('Переименовать')),
+                const PopupMenuItem(value: 'invite', child: Text('Получить код приглашения')),
+                const PopupMenuItem(value: 'leave', child: Text('Покинуть группу')),
               ],
             ),
           ],
