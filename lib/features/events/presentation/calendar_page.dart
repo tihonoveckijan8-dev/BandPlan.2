@@ -220,8 +220,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   onTap:occurrenceDate!=null?null:()async{final d=DateTime.tryParse(date.text)??DateTime.now();final p=await showDatePicker(context:context,initialDate:d,firstDate:DateTime(2000),lastDate:DateTime(2100));if(p!=null)date.text=_iso(p);},
                   validator:(v)=>DateTime.tryParse(v??'')==null?'Выберите дату':null),
                 const SizedBox(height:8),Row(children:[
-                  Expanded(child:TextFormField(controller:time,decoration:const InputDecoration(labelText:'Начало',hintText:'19:00',border:OutlineInputBorder()))),
-                  const SizedBox(width:8),Expanded(child:TextFormField(controller:end,decoration:const InputDecoration(labelText:'Окончание',hintText:'21:00',border:OutlineInputBorder())))]),
+                  Expanded(child:TextFormField(controller:time,keyboardType:TextInputType.datetime,
+                    decoration:const InputDecoration(labelText:'Начало',hintText:'19:00',border:OutlineInputBorder()),
+                    validator:_timeValidator)),
+                  const SizedBox(width:8),Expanded(child:TextFormField(controller:end,keyboardType:TextInputType.datetime,
+                    decoration:const InputDecoration(labelText:'Окончание',hintText:'21:00',border:OutlineInputBorder()),
+                    validator:_timeValidator))]),
                 const SizedBox(height:8),TextFormField(controller:place,maxLength:120,decoration:const InputDecoration(labelText:'Место',border:OutlineInputBorder())),
                 const SizedBox(height:8),DropdownButtonFormField<String>(value:status,decoration:const InputDecoration(labelText:'Статус',border:OutlineInputBorder()),
                   items:const [DropdownMenuItem(value:'upcoming',child:Text('Запланировано')),DropdownMenuItem(value:'done',child:Text('Проведено')),
@@ -264,6 +268,23 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 label:Text(saving?'Сохранение…':'Сохранить событие')),
             ]))))));
     }finally{title.dispose();date.dispose();time.dispose();end.dispose();place.dispose();notes.dispose();until.dispose();}
+  }
+
+  // WHY: free-form time fields otherwise accept values the calendar cannot display consistently.
+  static String? _timeValidator(String? value){
+    final time=value?.trim()??'';
+    if(time.isEmpty)return null;
+    return RegExp(r'^(?:[01]\\d|2[0-3]):[0-5]\\d'rehearsal'=>Icons.music_note_rounded,'service'=>Icons.church_outlined,'gig'=>Icons.mic_external_on_rounded,_=>Icons.event_rounded};
+  static String _iso(DateTime d)=>'${d.year.toString().padLeft(4,'0')}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
+  static String _date(String value){final d=DateTime.tryParse(value);if(d==null)return value;const m=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return '${d.day} ${m[d.month-1]} ${d.year}';}
+}
+class _Error extends StatelessWidget{
+  const _Error({required this.message,required this.retry});final String message;final VoidCallback retry;
+  @override Widget build(BuildContext context)=>Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
+    const Icon(Icons.cloud_off_rounded,size:40),const SizedBox(height:12),Text(message,textAlign:TextAlign.center),
+    const SizedBox(height:16),OutlinedButton(onPressed:retry,child:const Text('Повторить'))])));
+}).hasMatch(time)
+      ?null:'Введите время в формате ЧЧ:ММ';
   }
 
   static IconData _icon(String type)=>switch(type){'rehearsal'=>Icons.music_note_rounded,'service'=>Icons.church_outlined,'gig'=>Icons.mic_external_on_rounded,_=>Icons.event_rounded};
