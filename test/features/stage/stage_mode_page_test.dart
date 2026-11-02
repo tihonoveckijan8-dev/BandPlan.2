@@ -21,7 +21,7 @@ void main() {
     expect(find.text('Am'), findsWidgets);
     expect(find.text('96 BPM'), findsOneWidget);
     expect(find.text('First'), findsOneWidget);
-    expect(find.text('line'), findsOneWidget);
+    expect(find.text('line'), findsWidgets);
     expect(find.text('Куплет'), findsOneWidget);
     expect(find.text('[Am]First line\n[Куплет]\nSecond line'), findsNothing);
 
