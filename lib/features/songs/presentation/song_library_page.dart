@@ -200,10 +200,21 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                         labelText: 'Тональность',
                         border: OutlineInputBorder(),
                       ),
-                      items: const [
-                        'C','Cm','C#','C#m','D','Dm','D#','D#m',
-                        'E','Em','F','Fm','F#','F#m','G','Gm',
-                        'G#','G#m','A','Am','A#','A#m','B','Bm',
+                      // WHY: legacy songs may use flat spellings (Bb, Eb, Ab, etc.).
+                      // Keep those values selectable so opening an existing song never
+                      // triggers DropdownButton's missing-value assertion.
+                      items: [
+                        ...const [
+                          'C','Cm','C#','C#m','Db','Dbm','D','Dm','D#','D#m','Eb','Ebm',
+                          'E','Em','F','Fm','F#','F#m','Gb','Gbm','G','Gm','G#','G#m',
+                          'Ab','Abm','A','Am','A#','A#m','Bb','Bbm','B','Bm',
+                        ],
+                        if (![
+                          'C','Cm','C#','C#m','Db','Dbm','D','Dm','D#','D#m','Eb','Ebm',
+                          'E','Em','F','Fm','F#','F#m','Gb','Gbm','G','Gm','G#','G#m',
+                          'Ab','Abm','A','Am','A#','A#m','Bb','Bbm','B','Bm',
+                        ].contains(selectedKey))
+                          selectedKey,
                       ].map((key) => DropdownMenuItem(
                         value: key,
                         child: Text(key),
