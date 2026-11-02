@@ -64,7 +64,9 @@ void main() {
 
     expect(find.text('A#m'), findsOneWidget);
     expect(find.text('First note'), findsOneWidget);
-    expect(find.text('[A#m]first lyrics'), findsOneWidget);
+    expect(find.text('A#m'), findsWidgets);
+    expect(find.text('first'), findsOneWidget);
+    expect(find.text('[A#m]first lyrics'), findsNothing);
 
     await tester.tap(find.byTooltip('Следующая песня'));
     await tester.pumpAndSettle();
@@ -72,7 +74,9 @@ void main() {
     expect(find.text('Second track'), findsOneWidget);
     expect(find.text('A#'), findsOneWidget);
     expect(find.text('Second note'), findsOneWidget);
-    expect(find.text('[A#]second lyrics'), findsOneWidget);
+    expect(find.text('A#'), findsWidgets);
+    expect(find.text('second'), findsOneWidget);
+    expect(find.text('[A#]second lyrics'), findsNothing);
     expect(find.text('2/2'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Предыдущая песня'));
@@ -88,7 +92,9 @@ void main() {
     await tester.tap(find.byTooltip('Повысить тональность на полтона'));
     await tester.pump();
     expect(find.text('A#m'), findsOneWidget);
-    expect(find.text('[A#m]lyrics'), findsOneWidget);
+    expect(find.text('A#m'), findsWidgets);
+    expect(find.text('lyrics'), findsOneWidget);
+    expect(find.text('[A#m]lyrics'), findsNothing);
 
     await tester.tap(find.byTooltip('Понизить тональность на полтона'));
     await tester.pump();
