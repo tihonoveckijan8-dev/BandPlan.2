@@ -86,6 +86,24 @@ class SetlistsPage extends ConsumerWidget {
                               : null,
                           icon: const Icon(Icons.play_arrow_rounded),
                         ),
+                        PopupMenuButton<String>(
+                          tooltip: 'Действия с сет-листом',
+                          onSelected: (action) {
+                            if (action == 'delete') {
+                              _confirmDeleteSetlist(context, ref, setlist);
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem<String>(
+                              value: 'delete',
+                              child: ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: Icon(Icons.delete_outline_rounded),
+                                title: Text('Удалить сет-лист'),
+                              ),
+                            ),
+                          ],
+                        ),
                         const Icon(Icons.chevron_right_rounded),
                       ],
                     ),
@@ -98,6 +116,52 @@ class SetlistsPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteSetlist(
+    BuildContext context,
+    WidgetRef ref,
+    Setlist setlist,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Удалить сет-лист?'),
+        content: Text('«${setlist.name}» будет удалён. Песни из репертуара останутся без изменений.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final group = await ref.read(activeGroupProvider.future);
+      final repository = ref.read(setlistRepositoryProvider);
+      if (group == null || repository == null) {
+        throw StateError('Не удалось определить активную группу.');
+      }
+      await repository.deleteGroupSetlist(group.id, setlist.id);
+      ref.invalidate(groupSetlistsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Сет-лист «${setlist.name}» удалён.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось удалить сет-лист: $error')),
+        );
+      }
+    }
   }
 
   Future<void> _startSetlist(BuildContext context, Setlist setlist, List<Song> songs) async {
