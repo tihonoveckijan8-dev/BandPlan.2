@@ -52,7 +52,10 @@ void main() {
     expect(find.text('First song'), findsOneWidget);
     expect(find.text('Тональность: A#m'), findsOneWidget);
     expect(find.text('Start after intro'), findsOneWidget);
-    expect(find.text('[A#m]First line'), findsOneWidget);
+    expect(find.text('[A#m]First line'), findsNothing);
+    expect(find.text('A#m'), findsWidgets);
+    expect(find.text('First'), findsOneWidget);
+    expect(find.text('line'), findsOneWidget);
     expect(firstSong.key, 'Am');
     expect(firstSong.lyrics, '[Am]First line');
 
@@ -60,7 +63,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Second song'), findsOneWidget);
-    expect(find.text('Second lyrics'), findsOneWidget);
+    expect(find.text('Second'), findsOneWidget);
+    expect(find.text('lyrics'), findsOneWidget);
     expect(find.text('2 / 2'), findsOneWidget);
 
     await tester.tap(find.text('Завершить'));
