@@ -113,6 +113,35 @@ void main(){
     expect(edited.raw['legacyEventField'],'also preserve');
     expect(base.raw['overrides'],isNot(equals(overrides)));
   });
+  test('excluded occurrence cannot be revived by an override',(){
+    final e=GroupEvent.fromJson({
+      'id':'excluded','title':'Series','date':'2026-11-02',
+      'repeat':'weekly','repeatUntil':'2026-11-16',
+      'except':['2026-11-09'],
+      'overrides':{'2026-11-09':{'title':'Should stay excluded','status':'upcoming'}},
+    });
+    expect(expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30)).map((x)=>x.date),
+      ['2026-11-02','2026-11-16']);
+  });
+  test('one-off override cannot move the date or rewrite series recurrence metadata',(){
+    final e=GroupEvent.fromJson({
+      'id':'protected-series','title':'Series','date':'2026-11-02',
+      'repeat':'weekly','repeatUntil':'2026-11-16',
+      'overrides':{
+        '2026-11-09':{
+          'date':'2026-11-10','repeat':'daily','repeatUntil':'2099-01-01',
+          'except':['2026-11-16'],'title':'Edited occurrence',
+        },
+      },
+    });
+    final r=expandEventOccurrences([e],DateTime(2026,11,1),DateTime(2026,11,30));
+    expect(r.map((x)=>x.date),['2026-11-02','2026-11-09','2026-11-16']);
+    expect(r[1].event.date,'2026-11-09');
+    expect(r[1].event.repeat,'weekly');
+    expect(r[1].event.repeatUntil,'2026-11-16');
+    expect(r[1].event.except,isEmpty);
+  });
+
   test('cancelled one-off override hides only its date',(){
     final base=GroupEvent.fromJson({
       'id':'e1','title':'Original','date':'2026-11-02','repeat':'weekly','repeatUntil':'2026-11-16',
