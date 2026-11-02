@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_providers.dart';
 import '../application/group_providers.dart';
@@ -25,6 +26,11 @@ class GroupWorkspacePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Рабочие группы'),
         actions: [
+          IconButton(
+            tooltip: 'Мой профиль',
+            onPressed: () => context.push('/profile'),
+            icon: const Icon(Icons.person_outline_rounded),
+          ),
           IconButton(
             tooltip: 'Выйти из аккаунта',
             onPressed: () => ref.read(authRepositoryProvider)?.signOut(),
