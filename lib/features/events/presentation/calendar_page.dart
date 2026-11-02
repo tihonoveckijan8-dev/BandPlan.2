@@ -47,7 +47,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           return ListView(padding:const EdgeInsets.fromLTRB(12,12,12,100),children:[
             _monthCalendar(context,visibleMonth,selectedDate,items,
               (month)=>setState((){visibleMonth=month;selectedDate=_iso(month);}),
-              (day)=>setState(()=>selectedDate=_iso(day))),
+              (day)=>setState((){
+                // WHY: the Today shortcut must bring the visible month along with the selected date.
+                visibleMonth=DateTime(day.year,day.month);selectedDate=_iso(day);
+              })),
             Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
               _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
             if(selectedItems.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(18),child:Text('На этот день событий нет.'))),
