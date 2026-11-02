@@ -23,7 +23,19 @@ List<EventOccurrence> expandEventOccurrences(List<GroupEvent> events,DateTime fr
     if(!repeating){_addOccurrence(result,event,_key(first),start,end);continue;}
     final until=event.repeatUntil.isEmpty?end:DateTime.tryParse(event.repeatUntil);
     if(until==null)continue;
-    final stop=until.isBefore(end)?until:end;var current=first;var guard=0;
+    final stop=until.isBefore(end)?until:end;
+    var current=first;
+    // WHY: older daily/weekly series must fast-forward to the visible range;
+    // otherwise the 500-step safety guard can hide every recent occurrence.
+    if(current.isBefore(start)){
+      final interval=switch(event.repeat){'daily'=>1,'weekly'=>7,'biweekly'=>14,_=>0};
+      if(interval>0){
+        final elapsed=start.difference(current).inDays;
+        final steps=(elapsed+interval-1)~/interval;
+        current=current.add(Duration(days:steps*interval));
+      }
+    }
+    var guard=0;
     while(!current.isAfter(stop)&&guard++<500){
       _addOccurrence(result,event,_key(current),start,end);
       switch(event.repeat){
