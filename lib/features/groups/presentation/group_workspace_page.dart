@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_providers.dart';
 import '../application/group_providers.dart';
@@ -10,7 +9,9 @@ import '../../profile/application/profile_providers.dart';
 import '../domain/group_summary.dart';
 
 class GroupWorkspacePage extends ConsumerWidget {
-  const GroupWorkspacePage({super.key});
+  const GroupWorkspacePage({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,36 +25,7 @@ class GroupWorkspacePage extends ConsumerWidget {
     final repository = ref.watch(groupRepositoryProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Рабочие группы'),
-        actions: [
-          IconButton(
-            tooltip: 'Календарь',
-            onPressed: () => context.push('/calendar'),
-            icon: const Icon(Icons.calendar_month_rounded),
-          ),
-          IconButton(
-            tooltip: 'Каталог песен',
-            onPressed: () => context.push('/songs'),
-            icon: const Icon(Icons.library_music_outlined),
-          ),
-          IconButton(
-            tooltip: 'Сет-листы',
-            onPressed: () => context.push('/setlists'),
-            icon: const Icon(Icons.queue_music_rounded),
-          ),
-          IconButton(
-            tooltip: 'Мой профиль',
-            onPressed: () => context.push('/profile'),
-            icon: const Icon(Icons.person_outline_rounded),
-          ),
-          IconButton(
-            tooltip: 'Выйти из аккаунта',
-            onPressed: () => ref.read(authRepositoryProvider)?.signOut(),
-            icon: const Icon(Icons.logout_rounded),
-          ),
-        ],
-      ),
+      appBar: embedded ? null : AppBar(title: const Text('Группы')),
       body: SafeArea(
         child: groups.when(
           loading: () => const Center(child: CircularProgressIndicator()),
