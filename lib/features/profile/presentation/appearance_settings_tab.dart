@@ -181,7 +181,7 @@ class _ThemeChoiceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final highlight = Theme.of(context).brightness == Brightness.light
-        ? Colors.white
+        ? Colors.white.withValues(alpha: 0.8)
         : Colors.white.withValues(alpha: 0.035);
     return Material(
       color: Colors.transparent,
@@ -195,7 +195,7 @@ class _ThemeChoiceCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(color: colors.shadow.withValues(alpha: 0.07), blurRadius: 12, offset: const Offset(3, 4)),
-              BoxShadow(color: highlight.withValues(alpha: 0.8), blurRadius: 10, offset: const Offset(-3, -3)),
+              BoxShadow(color: highlight, blurRadius: 10, offset: const Offset(-3, -3)),
             ],
           ),
           child: Column(
@@ -306,12 +306,16 @@ class _AppearancePreview extends StatelessWidget {
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerRight,
-            child: FilledButton(
-              onPressed: null,
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius * 0.72)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: appearance.accentColor,
+                borderRadius: BorderRadius.circular(radius * 0.72),
               ),
-              child: const Text('Кнопка'),
+              child: const Text(
+                'Кнопка',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
         ],
