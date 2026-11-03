@@ -231,10 +231,6 @@ try {
     'Flutter startup with a persisted signed-in session',
   );
   await waitFor(
-    'localStorage.getItem(' + JSON.stringify('sb-' + projectRef + '-auth-token') + ') !== null && !!document.querySelector("flt-glass-pane")',
-    'Flutter startup with a persisted signed-in session',
-  );
-  await waitFor(
     'document.querySelectorAll("flt-semantics").length > 0',
     'Flutter accessibility semantics for the signed-in app',
     10000,
@@ -242,6 +238,17 @@ try {
   await waitFor(
     'document.readyState === "complete" && !!document.querySelector("flt-glass-pane")',
     'Flutter app shell on first online launch',
+  );
+
+  // WHY: Checking the accessibility tree distinguishes the signed-in app
+  // from a Flutter shell that merely rendered the email/password screen.
+  const signedInTree = await command('Accessibility.getFullAXTree');
+  const signedInNames = signedInTree.nodes
+    .map((node) => node.name?.value ?? '')
+    .filter(Boolean);
+  assert.ok(
+    signedInNames.includes('Календарь'),
+    'The persisted session must pass AuthGate and expose the calendar navigation',
   );
   await evaluate('navigator.serviceWorker.ready.then(() => true)');
   const registration = await evaluate(
@@ -276,6 +283,15 @@ try {
   await waitFor(
     '!!navigator.serviceWorker.controller && !!document.querySelector("flt-glass-pane") && performance.getEntriesByType("resource").some(e => e.name.endsWith("/main.dart.js"))',
     'Flutter to relaunch from the installed PWA cache while offline',
+  );
+
+  const offlineTree = await command('Accessibility.getFullAXTree');
+  const offlineNames = offlineTree.nodes
+    .map((node) => node.name?.value ?? '')
+    .filter(Boolean);
+  assert.ok(
+    offlineNames.includes('Календарь'),
+    'The persisted session must still pass AuthGate after offline relaunch',
   );
   assert.deepEqual(exceptions, [], 'Offline relaunch must not throw browser exceptions');
   console.log('Real Chromium PWA check passed: install, control, and relaunch Flutter from cache with network disabled.');
