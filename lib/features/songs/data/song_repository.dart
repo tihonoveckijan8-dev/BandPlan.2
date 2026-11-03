@@ -36,9 +36,9 @@ class SongRepository {
         do {
           refreshAgain = false;
           final remote = await getGroupSongs(groupId);
-          await _cacheSongs(userId, groupId, remote);
+          await _cacheSongs(userId, 'group_songs', remote, groupId);
           if (!controller.isClosed) {
-            controller.add(await _readCachedSongs(userId, groupId));
+            controller.add(await _readCachedSongs(userId, 'group_songs', groupId));
           }
         } while (refreshAgain && !controller.isClosed);
       } catch (error, stackTrace) {
@@ -56,7 +56,7 @@ class SongRepository {
       onListen: () async {
         try {
           if (_offlineStore != null) {
-            controller.add(await _readCachedSongs(userId, groupId));
+            controller.add(await _readCachedSongs(userId, 'group_songs', groupId));
           }
         } catch (error, stackTrace) {
           controller.addError(error, stackTrace);
