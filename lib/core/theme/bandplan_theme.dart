@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+enum AppSurfaceTone { neutral, cool, warm }
+
 /// Shared visual foundation for the BandPlan Flutter client.
 abstract final class BandPlanTheme {
   static const accent = Color(0xFF1554FF);
@@ -17,6 +19,7 @@ abstract final class BandPlanTheme {
     double depthElevation = 2.0,
     double fontSizeFactor = 1.0,
     double contrastLevel = 0.0,
+    AppSurfaceTone surfaceTone = AppSurfaceTone.neutral,
   }) =>
       _build(
         Brightness.light,
@@ -29,6 +32,7 @@ abstract final class BandPlanTheme {
         depthElevation: depthElevation,
         fontSizeFactor: fontSizeFactor,
         contrastLevel: contrastLevel,
+        surfaceTone: surfaceTone,
       );
 
   static ThemeData dark({
@@ -91,31 +95,48 @@ abstract final class BandPlanTheme {
     required double depthElevation,
     required double fontSizeFactor,
     required double contrastLevel,
+    required AppSurfaceTone surfaceTone,
     bool isAmoled = false,
   }) {
     final isDark = brightness == Brightness.dark;
+    // WHY: Surface tone personalizes neutral UI surfaces without changing accent colors or semantic states.
+    final tonedCanvas = isAmoled ? canvas : switch ((brightness, surfaceTone)) {
+      (Brightness.light, AppSurfaceTone.cool) => const Color(0xFFEEF3FA),
+      (Brightness.light, AppSurfaceTone.warm) => const Color(0xFFF7F2EC),
+      (Brightness.dark, AppSurfaceTone.cool) => const Color(0xFF151C27),
+      (Brightness.dark, AppSurfaceTone.warm) => const Color(0xFF211C1A),
+      _ => canvas,
+    };
     final scheme = ColorScheme.fromSeed(
       seedColor: accentColor,
       brightness: brightness,
-      surface: canvas,
+      surface: tonedCanvas,
       contrastLevel: contrastLevel,
     );
     final cardColor = isAmoled
         ? const Color(0xFF090909)
-        : isDark
-            ? const Color(0xFF222631)
-            : const Color(0xFFF8F9FD);
+        : switch ((brightness, surfaceTone)) {
+            (Brightness.light, AppSurfaceTone.cool) => const Color(0xFFF5F8FD),
+            (Brightness.light, AppSurfaceTone.warm) => const Color(0xFFFCF7F1),
+            (Brightness.dark, AppSurfaceTone.cool) => const Color(0xFF202A37),
+            (Brightness.dark, AppSurfaceTone.warm) => const Color(0xFF2B2522),
+            _ => isDark ? const Color(0xFF222631) : const Color(0xFFF8F9FD),
+          };
     final inputColor = isAmoled
         ? const Color(0xFF111111)
-        : isDark
-            ? const Color(0xFF222631)
-            : const Color(0xFFE9EDF5);
+        : switch ((brightness, surfaceTone)) {
+            (Brightness.light, AppSurfaceTone.cool) => const Color(0xFFE5ECF6),
+            (Brightness.light, AppSurfaceTone.warm) => const Color(0xFFF0E8DE),
+            (Brightness.dark, AppSurfaceTone.cool) => const Color(0xFF202A37),
+            (Brightness.dark, AppSurfaceTone.warm) => const Color(0xFF2B2522),
+            _ => isDark ? const Color(0xFF222631) : const Color(0xFFE9EDF5),
+          };
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: canvas,
+      scaffoldBackgroundColor: tonedCanvas,
       fontFamily: 'Manrope',
       // WHY: Scale theme typography consistently without replacing MediaQuery accessibility scaling.
       textTheme: ThemeData(brightness: brightness, fontFamily: 'Manrope').textTheme.apply(fontSizeFactor: fontSizeFactor),
