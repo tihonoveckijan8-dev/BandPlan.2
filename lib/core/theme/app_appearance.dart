@@ -7,6 +7,7 @@ enum AppCornerStyle { soft, balanced, sharp }
 enum AppElementDensity { compact, standard, comfortable }
 enum AppDepthStyle { soft, balanced, flat }
 enum AppTextSize { standard, large, extraLarge }
+enum AppContrast { standard, high }
 
 class AppAppearance {
   const AppAppearance({
@@ -19,6 +20,7 @@ class AppAppearance {
     this.elementDensity = AppElementDensity.standard,
     this.depthStyle = AppDepthStyle.soft,
     this.textSize = AppTextSize.standard,
+    this.contrast = AppContrast.standard,
   });
   static const defaults = AppAppearance();
   final AppThemeChoice themeChoice;
@@ -30,6 +32,9 @@ class AppAppearance {
   final AppElementDensity elementDensity;
   final AppDepthStyle depthStyle;
   final AppTextSize textSize;
+  final AppContrast contrast;
+  // WHY: A stronger Material color scheme improves distinction without changing the chosen accent.
+  double get contrastLevel => contrast == AppContrast.high ? 0.5 : 0.0;
   // WHY: Typography presets tune the app's baseline while retaining platform accessibility scaling.
   double get textSizeFactor => switch (textSize) {
     AppTextSize.standard => 1.0,
@@ -66,7 +71,7 @@ class AppAppearance {
     AppCornerStyle? cornerStyle, AppCornerStyle? cardCornerStyle,
     AppCornerStyle? buttonCornerStyle, AppCornerStyle? fieldCornerStyle,
     AppElementDensity? elementDensity, AppDepthStyle? depthStyle,
-    AppTextSize? textSize}) => AppAppearance(
+    AppTextSize? textSize, AppContrast? contrast}) => AppAppearance(
       themeChoice: themeChoice ?? this.themeChoice,
       accentColorValue: accentColorValue ?? this.accentColorValue,
       cornerStyle: cornerStyle ?? this.cornerStyle,
@@ -76,6 +81,7 @@ class AppAppearance {
       elementDensity: elementDensity ?? this.elementDensity,
       depthStyle: depthStyle ?? this.depthStyle,
       textSize: textSize ?? this.textSize,
+      contrast: contrast ?? this.contrast,
     );
   Map<String, Object?> toMap() => {
     'themeChoice': themeChoice.name, 'accentColorValue': accentColorValue,
@@ -86,6 +92,7 @@ class AppAppearance {
     'elementDensity': elementDensity.name,
     'depthStyle': depthStyle.name,
     'textSize': textSize.name,
+    'contrast': contrast.name,
   };
   factory AppAppearance.fromMap(Map<String, Object?> values) => AppAppearance(
     themeChoice: _enumValue(AppThemeChoice.values, values['themeChoice'], AppThemeChoice.system),
@@ -105,6 +112,8 @@ class AppAppearance {
     depthStyle: _enumValue(AppDepthStyle.values, values['depthStyle'], AppDepthStyle.soft),
     // WHY: Existing installations keep the current typography until a user changes it.
     textSize: _enumValue(AppTextSize.values, values['textSize'], AppTextSize.standard),
+    // WHY: Legacy preferences retain the existing standard contrast.
+    contrast: _enumValue(AppContrast.values, values['contrast'], AppContrast.standard),
   );
   static T _enumValue<T extends Enum>(List<T> values, Object? rawValue, T fallback) {
     for (final value in values) { if (value.name == rawValue?.toString()) return value; }
