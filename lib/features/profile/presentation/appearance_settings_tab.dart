@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_appearance.dart';
+import '../../../core/theme/bandplan_theme.dart';
 
 class AppearanceSettingsTab extends ConsumerWidget {
   const AppearanceSettingsTab({super.key});
@@ -209,6 +210,28 @@ class AppearanceSettingsTab extends ConsumerWidget {
                   onTap: () => _chooseCustomAccent(context, ref, appearance),
                 ),
               ],
+            ),
+            const SizedBox(height: 28),
+            const _SectionHeading(
+              title: 'Оттенок поверхностей',
+              subtitle: 'Выбери общий тон фона, карточек и полей. Цвет акцента останется прежним.',
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                (AppSurfaceTone.neutral, 'Нейтральный'),
+                (AppSurfaceTone.cool, 'Холодный'),
+                (AppSurfaceTone.warm, 'Тёплый'),
+              ].map((option) => ChoiceChip(
+                label: Text(option.$2),
+                selected: appearance.surfaceTone == option.$1,
+                onSelected: (_) => _apply(
+                  context,
+                  ref,
+                  appearance.copyWith(surfaceTone: option.$1),
+                ),
+              )).toList(growable: false),
             ),
             const SizedBox(height: 28),
             const _SectionHeading(
