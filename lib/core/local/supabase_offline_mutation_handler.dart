@@ -134,6 +134,16 @@ class SupabaseOfflineMutationHandler {
     if (operation == 'delete') {
       // WHY: deleting an already-missing row is an idempotent success.
       if (existing == null) return;
+      if (!baselineCaptured) {
+        final rawRemote = existing['data'];
+        throw OfflineMutationConflict(
+          message: 'Нет сохранённой исходной версии записи "$recordId". Удаление остановлено.',
+          remoteVersionExists: true,
+          remotePayload: rawRemote is Map
+              ? Map<String, Object?>.from(rawRemote)
+              : null,
+        );
+      }
       if (baselineCaptured) {
         final rawRemote = existing['data'];
         final remotePayload = rawRemote is Map
@@ -184,6 +194,17 @@ class SupabaseOfflineMutationHandler {
 
     if (operation != 'upsert') {
       throw UnsupportedError('Неизвестная операция "$operation".');
+    }
+
+    if (!baselineCaptured && existing != null) {
+      final rawRemote = existing['data'];
+      throw OfflineMutationConflict(
+        message: 'Нет сохранённой исходной версии записи "$recordId". Локальная версия сохранена.',
+        remoteVersionExists: true,
+        remotePayload: rawRemote is Map
+            ? Map<String, Object?>.from(rawRemote)
+            : null,
+      );
     }
 
     if (baselineCaptured) {
@@ -252,10 +273,10 @@ class SupabaseOfflineMutationHandler {
       return;
     }
 
-    if (baselineCaptured && rawBaseline == null) {
+    if (baselineCaptured && rawBaseline == null || !baselineCaptured) {
       // WHY: create must not overwrite a row created by another device after
-      // our initial absence check. A unique-key collision is surfaced as a
-      // conflict instead of falling back to an upsert.
+      // our absence check. INSERT plus the unique key turns that race into a
+      // visible conflict instead of silently replacing the remote row.
       try {
         await _client.from(table).insert(values).select('id').single();
       } on PostgrestException catch (error) {
@@ -278,11 +299,7 @@ class SupabaseOfflineMutationHandler {
       return;
     }
 
-    await _client
-        .from(table)
-        .upsert(values, onConflict: 'group_id,id')
-        .select('id')
-        .single();
+    throw StateError('Не удалось безопасно определить исходную версию записи "$recordId".');
   }
 
   static bool _sameJson(Object? left, Object? right) {
