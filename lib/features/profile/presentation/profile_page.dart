@@ -89,6 +89,33 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
+  Future<void> _resolveOfflineConflict(
+    Map<String, Object?> mutation, {
+    required bool keepLocal,
+  }) async {
+    try {
+      final store = await ref.read(offlineStoreProvider.future);
+      final operationId = mutation['operationId']?.toString() ?? '';
+      if (operationId.isEmpty) return;
+      if (keepLocal) {
+        await store.resolveConflictKeepLocal(operationId: operationId);
+        final engine = await ref.read(offlineSyncEngineProvider.future);
+        await engine.syncPending(force: true);
+      } else {
+        await store.resolveConflictUseServer(operationId: operationId);
+      }
+      ref.invalidate(offlineQueueStatusProvider);
+      ref.invalidate(offlineConflictsProvider);
+      if (mounted) {
+        _message(keepLocal
+            ? 'Локальная версия сохранена и отправлена на сервер.'
+            : 'Принята серверная версия. Локальные изменения этой записи удалены.');
+      }
+    } catch (error) {
+      if (mounted) _message('Не удалось разрешить конфликт: $error');
+    }
+  }
+
   Future<void> _openWebApp() async {
     try {
       final opened = await launchUrl(
@@ -127,6 +154,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final profile = ref.watch(myProfileProvider);
     final offlineQueue = ref.watch(offlineQueueStatusProvider);
+    final offlineConflicts = ref.watch(offlineConflictsProvider);
 
     return DefaultTabController(
       length: 3,
@@ -241,7 +269,62 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                       )),
                                     ]),
                                     const SizedBox(height: 6),
-                                    Text('В очереди: ${status.pendingCount} · Ошибок: ${status.failedCount}'),
+                                    Text('В очереди: ${status.pendingCount} · Ошибок: ${status.failedCount} · Конфликтов: ${status.conflictCount}'),
+                                    offlineConflicts.when(
+                                      loading: () => const SizedBox.shrink(),
+                                      error: (error, stack) => const SizedBox.shrink(),
+                                      data: (conflicts) => conflicts.isEmpty
+                                          ? const SizedBox.shrink()
+                                          : Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const SizedBox(height: 14),
+                                                Text(
+                                                  'Нужно выбрать версию записи:',
+                                                  style: Theme.of(context).textTheme.titleSmall,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                ...conflicts.map((mutation) {
+                                                  final recordId = mutation['recordId']?.toString() ?? 'Запись';
+                                                  final remoteExists = mutation['remoteVersionExists'] == true;
+                                                  return Padding(
+                                                    padding: const EdgeInsets.only(bottom: 14),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(recordId, style: Theme.of(context).textTheme.bodyMedium),
+                                                        Text(
+                                                          remoteExists
+                                                              ? 'Серверная и локальная версии различаются.'
+                                                              : 'Запись удалена на сервере, но локальная версия ещё сохранена.',
+                                                          style: Theme.of(context).textTheme.bodySmall,
+                                                        ),
+                                                        const SizedBox(height: 8),
+                                                        Wrap(
+                                                          spacing: 8,
+                                                          runSpacing: 8,
+                                                          children: [
+                                                            OutlinedButton(
+                                                              onPressed: _syncing
+                                                                  ? null
+                                                                  : () => _resolveOfflineConflict(mutation, keepLocal: true),
+                                                              child: const Text('Оставить мою'),
+                                                            ),
+                                                            TextButton(
+                                                              onPressed: _syncing
+                                                                  ? null
+                                                                  : () => _resolveOfflineConflict(mutation, keepLocal: false),
+                                                              child: const Text('Принять серверную'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                }),
+                                              ],
+                                            ),
+                                    ),
                                     const SizedBox(height: 10),
                                     OutlinedButton.icon(
                                       onPressed: _syncing ? null : _retryOfflineSync,
