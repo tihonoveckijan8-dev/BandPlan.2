@@ -3,10 +3,38 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 const workerPath = process.argv[2];
+const manifestPath = process.argv[3];
 if (!workerPath) {
-  throw new Error('Usage: node tool/test_service_worker_upgrade.mjs <built-service-worker.js>');
+  throw new Error('Usage: node tool/test_service_worker_upgrade.mjs <built-service-worker.js> [asset-manifest.json]');
 }
 const workerTemplate = await readFile(workerPath, 'utf8');
+const manifestFixture = manifestPath
+  ? JSON.parse(await readFile(manifestPath, 'utf8'))
+  : {
+      assets: [
+        'index.html',
+        'flutter_bootstrap.js',
+        'manifest.json',
+        'main.dart.js',
+        'canvaskit/canvaskit.js',
+        'canvaskit/canvaskit.wasm',
+        'https://cdn.example.test/external.js',
+        '../outside-project.js',
+      ],
+    };
+
+for (const requiredAsset of [
+  'index.html',
+  'flutter_bootstrap.js',
+  'main.dart.js',
+  'canvaskit/canvaskit.js',
+  'canvaskit/canvaskit.wasm',
+]) {
+  assert.ok(
+    manifestFixture.assets?.includes(requiredAsset),
+    `Built PWA manifest must include ${requiredAsset} for offline startup`,
+  );
+}
 
 const scope = 'https://example.test/BandPlan.2/';
 const origin = new URL(scope).origin;
@@ -66,14 +94,10 @@ function createWorker(buildId) {
     networkCalls += 1;
     const url = typeof input === 'string' ? input : input.url;
     if (url.endsWith('/asset-manifest.json')) {
-      return new Response(JSON.stringify({
-        assets: [
-          'index.html',
-          'main.dart.js',
-          'https://cdn.example.test/external.js',
-          '../outside-project.js',
-        ],
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(manifestFixture), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
     if (navigationOffline) throw new TypeError('Network unavailable in test');
     return new Response('asset:' + new URL(url).pathname, { status: 200 });
@@ -148,17 +172,23 @@ assert.ok(
   await currentCache.match(appIndex),
   'The current app shell must contain index.html for offline navigation',
 );
-assert.ok(
-  await currentCache.match(new URL('main.dart.js', scope).href),
-  'The current app shell must contain the compiled Flutter application',
-);
+for (const requiredAsset of [
+  'flutter_bootstrap.js',
+  'main.dart.js',
+  'canvaskit/canvaskit.js',
+  'canvaskit/canvaskit.wasm',
+]) {
+  assert.ok(
+    await currentCache.match(new URL(requiredAsset, scope).href),
+    `The current app shell must cache ${requiredAsset} for offline startup`,
+  );
+}
 assert.equal(
   await currentCache.match(new URL('../outside-project.js', scope).href),
   undefined,
   'Assets outside the GitHub Pages project path must not be cached',
 );
 
-const beforeNetworkCalls = 0;
 const currentWorker = createWorker('103');
 await currentWorker.dispatch('install', {});
 await currentWorker.dispatch('activate', {});
@@ -201,4 +231,4 @@ assert.equal(
 );
 assert.equal(indexedDbFixture.get('user-a::group-a::song-1').pendingSync, true);
 
-console.log('PWA service-worker upgrade checks passed: cache rotation, offline shell, API bypass, and IndexedDB isolation.');
+console.log('PWA service-worker checks passed: real build manifest, complete offline shell, cache rotation, API bypass, and IndexedDB isolation.');
