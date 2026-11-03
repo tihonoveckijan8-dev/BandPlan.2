@@ -199,7 +199,7 @@ try {
   };
   await command('Page.addScriptToEvaluateOnNewDocument', {
     source: `localStorage.setItem(${JSON.stringify('sb-' + projectRef + '-auth-token')}, ${JSON.stringify(JSON.stringify(fixtureSession))});`,
-  }, false);
+  });
 
   async function evaluate(expression) {
     const result = await command('Runtime.evaluate', {
