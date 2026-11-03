@@ -5,6 +5,7 @@ import '../local/offline_providers.dart';
 enum AppThemeChoice { system, light, dark, amoled }
 enum AppCornerStyle { soft, balanced, sharp }
 enum AppElementDensity { compact, standard, comfortable }
+enum AppDepthStyle { soft, balanced, flat }
 
 class AppAppearance {
   const AppAppearance({
@@ -15,6 +16,7 @@ class AppAppearance {
     this.buttonCornerStyle = AppCornerStyle.soft,
     this.fieldCornerStyle = AppCornerStyle.soft,
     this.elementDensity = AppElementDensity.standard,
+    this.depthStyle = AppDepthStyle.soft,
   });
   static const defaults = AppAppearance();
   final AppThemeChoice themeChoice;
@@ -24,6 +26,7 @@ class AppAppearance {
   final AppCornerStyle buttonCornerStyle;
   final AppCornerStyle fieldCornerStyle;
   final AppElementDensity elementDensity;
+  final AppDepthStyle depthStyle;
   Color get accentColor => Color(accentColorValue);
   // WHY: Component-specific radii let users tune cards, controls and fields independently.
   double get cornerRadius => _radiusFor(cornerStyle);
@@ -32,6 +35,12 @@ class AppAppearance {
   double get fieldCornerRadius => _radiusFor(fieldCornerStyle);
   static double _radiusFor(AppCornerStyle style) => switch (style) {
     AppCornerStyle.soft => 24, AppCornerStyle.balanced => 18, AppCornerStyle.sharp => 12,
+  };
+  // WHY: A single depth preference keeps card and primary-control elevation consistent.
+  double get depthElevation => switch (depthStyle) {
+    AppDepthStyle.soft => 2.0,
+    AppDepthStyle.balanced => 0.8,
+    AppDepthStyle.flat => 0.0,
   };
   VisualDensity get visualDensity => switch (elementDensity) {
     AppElementDensity.compact => VisualDensity.compact,
@@ -47,7 +56,7 @@ class AppAppearance {
   AppAppearance copyWith({AppThemeChoice? themeChoice, int? accentColorValue,
     AppCornerStyle? cornerStyle, AppCornerStyle? cardCornerStyle,
     AppCornerStyle? buttonCornerStyle, AppCornerStyle? fieldCornerStyle,
-    AppElementDensity? elementDensity}) => AppAppearance(
+    AppElementDensity? elementDensity, AppDepthStyle? depthStyle}) => AppAppearance(
       themeChoice: themeChoice ?? this.themeChoice,
       accentColorValue: accentColorValue ?? this.accentColorValue,
       cornerStyle: cornerStyle ?? this.cornerStyle,
@@ -55,6 +64,7 @@ class AppAppearance {
       buttonCornerStyle: buttonCornerStyle ?? (cornerStyle ?? this.buttonCornerStyle),
       fieldCornerStyle: fieldCornerStyle ?? (cornerStyle ?? this.fieldCornerStyle),
       elementDensity: elementDensity ?? this.elementDensity,
+      depthStyle: depthStyle ?? this.depthStyle,
     );
   Map<String, Object?> toMap() => {
     'themeChoice': themeChoice.name, 'accentColorValue': accentColorValue,
@@ -63,6 +73,7 @@ class AppAppearance {
     'buttonCornerStyle': buttonCornerStyle.name,
     'fieldCornerStyle': fieldCornerStyle.name,
     'elementDensity': elementDensity.name,
+    'depthStyle': depthStyle.name,
   };
   factory AppAppearance.fromMap(Map<String, Object?> values) => AppAppearance(
     themeChoice: _enumValue(AppThemeChoice.values, values['themeChoice'], AppThemeChoice.system),
@@ -78,6 +89,8 @@ class AppAppearance {
       _enumValue(AppCornerStyle.values, values['cornerStyle'], AppCornerStyle.soft)),
     // WHY: Existing saved preferences without density retain the standard layout.
     elementDensity: _enumValue(AppElementDensity.values, values['elementDensity'], AppElementDensity.standard),
+    // WHY: Profiles saved before depth controls keep the soft-clay default.
+    depthStyle: _enumValue(AppDepthStyle.values, values['depthStyle'], AppDepthStyle.soft),
   );
   static T _enumValue<T extends Enum>(List<T> values, Object? rawValue, T fallback) {
     for (final value in values) { if (value.name == rawValue?.toString()) return value; }
