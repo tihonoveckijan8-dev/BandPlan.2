@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../local/offline_providers.dart';
+import 'bandplan_theme.dart';
 
 enum AppThemeChoice { system, light, dark, amoled }
 enum AppCornerStyle { soft, balanced, sharp }
@@ -21,6 +22,7 @@ class AppAppearance {
     this.depthStyle = AppDepthStyle.soft,
     this.textSize = AppTextSize.standard,
     this.contrast = AppContrast.standard,
+    this.surfaceTone = AppSurfaceTone.neutral,
   });
   static const defaults = AppAppearance();
   final AppThemeChoice themeChoice;
@@ -33,6 +35,7 @@ class AppAppearance {
   final AppDepthStyle depthStyle;
   final AppTextSize textSize;
   final AppContrast contrast;
+  final AppSurfaceTone surfaceTone;
   // WHY: A stronger Material color scheme improves distinction without changing the chosen accent.
   double get contrastLevel => contrast == AppContrast.high ? 0.5 : 0.0;
   // WHY: Typography presets tune the app's baseline while retaining platform accessibility scaling.
@@ -71,7 +74,8 @@ class AppAppearance {
     AppCornerStyle? cornerStyle, AppCornerStyle? cardCornerStyle,
     AppCornerStyle? buttonCornerStyle, AppCornerStyle? fieldCornerStyle,
     AppElementDensity? elementDensity, AppDepthStyle? depthStyle,
-    AppTextSize? textSize, AppContrast? contrast}) => AppAppearance(
+    AppTextSize? textSize, AppContrast? contrast,
+    AppSurfaceTone? surfaceTone}) => AppAppearance(
       themeChoice: themeChoice ?? this.themeChoice,
       accentColorValue: accentColorValue ?? this.accentColorValue,
       cornerStyle: cornerStyle ?? this.cornerStyle,
@@ -82,6 +86,7 @@ class AppAppearance {
       depthStyle: depthStyle ?? this.depthStyle,
       textSize: textSize ?? this.textSize,
       contrast: contrast ?? this.contrast,
+      surfaceTone: surfaceTone ?? this.surfaceTone,
     );
   Map<String, Object?> toMap() => {
     'themeChoice': themeChoice.name, 'accentColorValue': accentColorValue,
@@ -93,6 +98,7 @@ class AppAppearance {
     'depthStyle': depthStyle.name,
     'textSize': textSize.name,
     'contrast': contrast.name,
+    'surfaceTone': surfaceTone.name,
   };
   factory AppAppearance.fromMap(Map<String, Object?> values) => AppAppearance(
     themeChoice: _enumValue(AppThemeChoice.values, values['themeChoice'], AppThemeChoice.system),
@@ -114,6 +120,8 @@ class AppAppearance {
     textSize: _enumValue(AppTextSize.values, values['textSize'], AppTextSize.standard),
     // WHY: Legacy preferences retain the existing standard contrast.
     contrast: _enumValue(AppContrast.values, values['contrast'], AppContrast.standard),
+    // WHY: Profiles created before surface tones keep the established neutral palette.
+    surfaceTone: _enumValue(AppSurfaceTone.values, values['surfaceTone'], AppSurfaceTone.neutral),
   );
   static T _enumValue<T extends Enum>(List<T> values, Object? rawValue, T fallback) {
     for (final value in values) { if (value.name == rawValue?.toString()) return value; }
