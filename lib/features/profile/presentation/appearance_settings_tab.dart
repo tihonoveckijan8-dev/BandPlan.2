@@ -53,7 +53,83 @@ class AppearanceSettingsTab extends ConsumerWidget {
         builder: (dialogContext) => StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             final raw = controller.text.trim().replaceFirst('#', '');
-            final valid = RegExp(r'^[0-9a-fA-F]{6}
+            final valid = raw.length == 6 &&
+                RegExp(r'^[0-9a-fA-F]+').hasMatch(raw);
+            final parsed = valid ? (0xFF000000 | int.parse(raw, radix: 16)) : null;
+            return AlertDialog(
+              title: const Text('Свой цвет элементов'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Введи HEX-код цвета. Он будет использоваться для кнопок и активных элементов.',
+                    style: Theme.of(dialogContext).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: controller,
+                    maxLength: 6,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'HEX',
+                      prefixText: '#',
+                      helperText: 'Например, 1554FF',
+                      counterText: '',
+                    ),
+                    onChanged: (_) => setDialogState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 120),
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: parsed == null
+                              ? Theme.of(dialogContext).colorScheme.surfaceContainerHighest
+                              : Color(parsed),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        valid ? '#' + raw.toUpperCase() : 'Проверь код цвета',
+                        style: Theme.of(dialogContext).textTheme.labelLarge,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Отмена'),
+                ),
+                FilledButton(
+                  onPressed: parsed == null
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(parsed),
+                  child: const Text('Применить'),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+      if (colorValue != null && context.mounted) {
+        await _apply(
+          context,
+          ref,
+          appearance.copyWith(accentColorValue: colorValue),
+        );
+      }
+    } finally {
+      controller.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appearanceState = ref.watch(appAppearanceProvider);
