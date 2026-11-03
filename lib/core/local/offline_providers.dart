@@ -37,5 +37,19 @@ final offlineQueueStatusProvider = FutureProvider<SyncReport>((ref) async {
   return SyncReport(
     pendingCount: mutations.length,
     failedCount: mutations.where((item) => item['status'] == 'failed').length,
+    conflictCount: mutations.where((item) => item['status'] == 'conflict').length,
   );
+});
+
+/// Current account's unresolved server/device conflicts for profile actions.
+final offlineConflictsProvider =
+    FutureProvider<List<Map<String, Object?>>>((ref) async {
+  final client = Supabase.instance.client;
+  final user = client.auth.currentUser;
+  if (user == null) return const [];
+  final store = await ref.watch(offlineStoreProvider.future);
+  final mutations = await store.readPendingMutations(ownerUserId: user.id);
+  return mutations
+      .where((item) => item['status'] == 'conflict')
+      .toList(growable: false);
 });
