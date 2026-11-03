@@ -61,7 +61,7 @@ class OfflineSyncEngine {
         break;
       }
 
-      if (!force && !_isRetryDue(mutation)) break;
+      if (!force && !retryFailed && !_isRetryDue(mutation)) break;
 
       final operationId = mutation['operationId']?.toString() ?? '';
       if (operationId.isEmpty) {
