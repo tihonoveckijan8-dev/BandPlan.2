@@ -42,6 +42,34 @@ class OfflineStore {
     final now = DateTime.now().toUtc().toIso8601String();
 
     await _database.transaction((transaction) async {
+      // WHY: The first queued edit must retain the last known server snapshot.
+      // Later edits to the same record reuse that original baseline rather
+      // than treating an intermediate local edit as the server version.
+      final queuedForRecord = await _outbox.find(
+        transaction,
+        finder: Finder(
+          filter: Filter.and([
+            Filter.equals('ownerUserId', ownerUserId),
+            Filter.equals('groupId', groupId),
+            Filter.equals('collection', collection),
+            Filter.equals('recordId', recordId),
+          ]),
+          sortOrders: [SortOrder('createdAt')],
+        ),
+      );
+      final firstQueued = queuedForRecord.isEmpty
+          ? null
+          : queuedForRecord.first.value;
+      final cachedBeforeEdit = await _cache.record(cacheKey).get(transaction);
+      final baseVersionCaptured =
+          firstQueued?['baseVersionCaptured'] == true ||
+          (firstQueued == null && cachedBeforeEdit?['pendingSync'] != true);
+      final basePayload = firstQueued != null
+          ? firstQueued['basePayload']
+          : (baseVersionCaptured && cachedBeforeEdit?['isDeleted'] != true
+              ? cachedBeforeEdit?['payload']
+              : null);
+
       // WHY: Keep a tombstone for queued deletes. A later remote refresh must
       // not resurrect the row before Supabase acknowledges the deletion.
       await _cache.record(cacheKey).put(transaction, {
@@ -65,6 +93,10 @@ class OfflineStore {
         'recordId': recordId,
         'operation': operation,
         'payload': payload,
+        // WHY: Store the original server baseline with every queued operation
+        // so sync can detect edits made by another device before applying ours.
+        'basePayload': basePayload,
+        'baseVersionCaptured': baseVersionCaptured,
         'createdAt': now,
         'attemptCount': 0,
         'lastError': null,
