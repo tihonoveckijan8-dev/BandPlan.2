@@ -69,14 +69,24 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(async () => {
-        const cache = await caches.open(CACHE_NAME);
-        return (await cache.match(APP_INDEX)) ||
-          new Response('BandPlan is unavailable offline. Open the app once while online.',
-            { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
-      }),
-    );
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      // WHY: A launch must not wait for GitHub Pages or the network. The
+      // versioned index is installed before this worker can become active.
+      const cachedShell = await cache.match(APP_INDEX) || await cache.match(request);
+      if (cachedShell) return cachedShell;
+
+      // WHY: Network is only a first-visit fallback; an active worker should
+      // always have a complete app shell available for offline relaunches.
+      try {
+        return await fetch(request);
+      } catch (_) {
+        return new Response(
+          'BandPlan is unavailable offline. Open the app once while online.',
+          { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
+        );
+      }
+    })());
     return;
   }
 
