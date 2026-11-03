@@ -10,6 +10,7 @@ abstract final class BandPlanTheme {
   static ThemeData light({
     Color accentColor = accent,
     double cornerRadius = 24,
+    VisualDensity visualDensity = visualDensity,
   }) =>
       _build(
         Brightness.light,
@@ -46,6 +47,7 @@ abstract final class BandPlanTheme {
     Color canvas, {
     required Color accentColor,
     required double cornerRadius,
+    required VisualDensity visualDensity,
     bool isAmoled = false,
   }) {
     final isDark = brightness == Brightness.dark;
@@ -71,7 +73,7 @@ abstract final class BandPlanTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: canvas,
       fontFamily: 'Manrope',
-      visualDensity: VisualDensity.standard,
+      visualDensity: visualDensity,
       appBarTheme: AppBarTheme(
         backgroundColor: canvas,
         foregroundColor: scheme.onSurface,
