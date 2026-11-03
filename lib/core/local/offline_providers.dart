@@ -18,10 +18,10 @@ final offlineStoreProvider = FutureProvider<OfflineStore>((ref) async {
 final offlineSyncEngineProvider = FutureProvider<OfflineSyncEngine>((ref) async {
   final store = await ref.watch(offlineStoreProvider.future);
   final client = Supabase.instance.client;
-  const handler = SupabaseOfflineMutationHandler;
+  final handler = SupabaseOfflineMutationHandler(client);
   return OfflineSyncEngine(
     store: store,
     currentUserId: () => client.auth.currentUser?.id,
-    applyMutation: handler(client).call,
+    applyMutation: handler.call,
   );
 });

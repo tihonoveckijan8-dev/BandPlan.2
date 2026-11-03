@@ -98,10 +98,15 @@ class OfflineSyncEngine {
     final failedCount = remaining
         .where((item) => item['status'] == 'failed')
         .length;
-    lastError ??= remaining
-        .map((item) => item['lastError']?.toString())
-        .whereType<String>()
-        .firstOrNull;
+    if (lastError == null) {
+      for (final item in remaining) {
+        final value = item['lastError']?.toString();
+        if (value != null && value.isNotEmpty) {
+          lastError = value;
+          break;
+        }
+      }
+    }
 
     return SyncReport(
       syncedCount: syncedCount,
@@ -119,7 +124,7 @@ class OfflineSyncEngine {
     );
     if (lastAttempt == null) return true;
     final exponent = attempts > 6 ? 6 : attempts - 1;
-    final delaySeconds = (5 * (1 << exponent)).clamp(5, 300);
+    final delaySeconds = (5 * (1 << exponent)).clamp(5, 300).toInt();
     return DateTime.now().toUtc().isAfter(
       lastAttempt.add(Duration(seconds: delaySeconds)),
     );
