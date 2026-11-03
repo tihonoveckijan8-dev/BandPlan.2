@@ -9,32 +9,39 @@ const ASSET_MANIFEST = new URL('asset-manifest.json', APP_SCOPE).href;
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
-    const manifestResponse = await fetch(ASSET_MANIFEST, { cache: 'no-store' });
-    if (!manifestResponse.ok) {
-      throw new Error('BandPlan PWA asset manifest could not be loaded.');
-    }
-
-    const manifest = await manifestResponse.json();
-    if (!Array.isArray(manifest.assets) || manifest.assets.length === 0) {
-      throw new Error('BandPlan PWA asset manifest is empty.');
-    }
-
-    const cache = await caches.open(CACHE_NAME);
-    for (const path of manifest.assets) {
-      if (typeof path !== 'string') continue;
-      const assetUrl = new URL(path, APP_SCOPE);
-      // WHY: Never cache off-site URLs or requests outside the GitHub Pages project path.
-      if (assetUrl.origin !== self.location.origin ||
-          !assetUrl.href.startsWith(APP_SCOPE)) {
-        continue;
+    try {
+      const manifestResponse = await fetch(ASSET_MANIFEST, { cache: 'no-store' });
+      if (!manifestResponse.ok) {
+        throw new Error('BandPlan PWA asset manifest could not be loaded.');
       }
 
-      const request = new Request(assetUrl.href, { cache: 'reload' });
-      const response = await fetch(request);
-      if (!response.ok) {
-        throw new Error('BandPlan PWA asset failed to cache: ' + path);
+      const manifest = await manifestResponse.json();
+      if (!Array.isArray(manifest.assets) || manifest.assets.length === 0) {
+        throw new Error('BandPlan PWA asset manifest is empty.');
       }
-      await cache.put(request, response);
+
+      const cache = await caches.open(CACHE_NAME);
+      for (const path of manifest.assets) {
+        if (typeof path !== 'string') continue;
+        const assetUrl = new URL(path, APP_SCOPE);
+        // WHY: Never cache off-site URLs or requests outside the GitHub Pages project path.
+        if (assetUrl.origin !== self.location.origin ||
+            !assetUrl.href.startsWith(APP_SCOPE)) {
+          continue;
+        }
+
+        const request = new Request(assetUrl.href, { cache: 'reload' });
+        const response = await fetch(request);
+        if (!response.ok) {
+          throw new Error('BandPlan PWA asset failed to cache: ' + path);
+        }
+        await cache.put(request, response);
+      }
+    } catch (error) {
+      // WHY: A partial update must not occupy a retained-cache slot and
+      // displace the last complete app shell during a later successful update.
+      await caches.delete(CACHE_NAME);
+      throw error;
     }
   })());
 });
