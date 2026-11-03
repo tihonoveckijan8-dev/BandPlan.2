@@ -104,6 +104,8 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
       theme: BandPlanTheme.light(
         accentColor: appearance.accentColor,
         cornerRadius: appearance.cornerRadius,
+              visualDensity: appearance.visualDensity,
+        visualDensity: appearance.visualDensity,
       ),
       darkTheme: appearance.useAmoled
           ? BandPlanTheme.amoled(
