@@ -73,7 +73,10 @@
     <div class="spinner" aria-hidden="true"></div>
     <div id="bandplan-startup-title">Запускаем BandPlan…</div>
     <div id="bandplan-startup-details" class="details">Подготавливаем приложение.</div>
-    <button id="bandplan-startup-retry" type="button" hidden>Перезагрузить</button>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px">
+      <button id="bandplan-startup-retry" type="button" hidden>Перезагрузить</button>
+      <button id="bandplan-startup-recover" type="button" hidden style="background:#303b59">Восстановить загрузку</button>
+    </div>
   </div>
   <script>
     (function () {
@@ -81,6 +84,7 @@
       const title = document.getElementById('bandplan-startup-title');
       const details = document.getElementById('bandplan-startup-details');
       const retry = document.getElementById('bandplan-startup-retry');
+      const recover = document.getElementById('bandplan-startup-recover');
       let firstFrame = false;
 
       function showStartupError(message) {
@@ -88,10 +92,43 @@
         title.textContent = 'Не удалось запустить BandPlan';
         details.textContent = message || 'Проверьте подключение и попробуйте перезагрузить приложение.';
         retry.hidden = false;
+        recover.hidden = false;
       }
 
       retry.addEventListener('click', function () {
         window.location.reload();
+      });
+
+      // WHY: A stale PWA shell can prevent Flutter from starting; remove only
+      // BandPlan's Cache Storage and worker, never IndexedDB or localStorage.
+      recover.addEventListener('click', async function () {
+        recover.disabled = true;
+        recover.textContent = 'Восстанавливаем…';
+        details.textContent = 'Обновляем файлы приложения. Песни, профиль и локальные изменения не удаляются.';
+        try {
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations
+              .filter(function (registration) {
+                return registration.scope === new URL('./', window.location.href).href;
+              })
+              .map(function (registration) { return registration.unregister(); }));
+          }
+          if ('caches' in window) {
+            const names = await caches.keys();
+            await Promise.all(names
+              .filter(function (name) { return name.indexOf('bandplan-pwa-shell-') === 0; })
+              .map(function (name) { return caches.delete(name); }));
+          }
+          const cleanUrl = window.location.pathname + '?bp-recover=' +
+            Date.now() + window.location.hash;
+          window.location.replace(cleanUrl);
+        } catch (error) {
+          console.error('BandPlan cache recovery failed:', error);
+          recover.disabled = false;
+          recover.textContent = 'Повторить восстановление';
+          details.textContent = 'Не удалось обновить кэш автоматически. Можно попробовать ещё раз.';
+        }
       });
 
       // WHY: A failed Flutter bootstrap must show a recoverable message instead of a blank white page.
