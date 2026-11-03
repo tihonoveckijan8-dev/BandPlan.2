@@ -21,6 +21,96 @@ void main() {
     await store.close();
   });
 
+  test('pending edits survive closing and reopening the local database', () async {
+    const databaseName = 'offline-store-restart-survival';
+    final firstStore = OfflineStore(
+      await databaseFactoryMemory.openDatabase(databaseName),
+    );
+    await firstStore.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'id': 'song-1', 'title': 'Server version'},
+    );
+    await firstStore.saveAndQueue(
+      operationId: 'restart-edit-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'id': 'song-1', 'title': 'Offline edit'},
+    );
+    await firstStore.close();
+
+    // WHY: Reopening a named persistent database simulates a fresh app/store
+    // instance after process termination; both cache and outbox must survive.
+    final reopenedStore = OfflineStore(
+      await databaseFactoryMemory.openDatabase(databaseName),
+    );
+    addTearDown(reopenedStore.close);
+
+    final cached = await reopenedStore.readCachedRecords(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+    );
+    final pending = await reopenedStore.readPendingMutations(
+      ownerUserId: 'user-a',
+    );
+
+    expect(cached, hasLength(1));
+    expect((cached.single['payload'] as Map)['title'], 'Offline edit');
+    expect(cached.single['pendingSync'], isTrue);
+    expect(pending, hasLength(1));
+    expect(pending.single['operationId'], 'restart-edit-1');
+    expect(pending.single['status'], 'pending');
+    expect((pending.single['basePayload'] as Map)['title'], 'Server version');
+  });
+
+  test('queued delete tombstone survives store recreation', () async {
+    const databaseName = 'offline-store-delete-restart';
+    final firstStore = OfflineStore(
+      await databaseFactoryMemory.openDatabase(databaseName),
+    );
+    await firstStore.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_events',
+      recordId: 'event-1',
+      payload: {'id': 'event-1', 'title': 'Event'},
+    );
+    await firstStore.saveAndQueue(
+      operationId: 'restart-delete-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_events',
+      recordId: 'event-1',
+      payload: const {},
+      operation: 'delete',
+    );
+    await firstStore.close();
+
+    final reopenedStore = OfflineStore(
+      await databaseFactoryMemory.openDatabase(databaseName),
+    );
+    addTearDown(reopenedStore.close);
+
+    expect(
+      await reopenedStore.readCachedRecords(
+        ownerUserId: 'user-a',
+        groupId: 'group-a',
+        collection: 'group_events',
+      ),
+      isEmpty,
+    );
+    final pending = await reopenedStore.readPendingMutations(
+      ownerUserId: 'user-a',
+    );
+    expect(pending, hasLength(1));
+    expect(pending.single['operation'], 'delete');
+  });
+
   test('cache is isolated by account and group', () async {
     await store.cacheRemoteRecord(
       ownerUserId: 'user-a',
