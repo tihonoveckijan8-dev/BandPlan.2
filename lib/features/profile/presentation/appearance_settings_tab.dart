@@ -128,6 +128,22 @@ class AppearanceSettingsTab extends ConsumerWidget {
                 );
               }).toList(growable: false),
             ),
+            const SizedBox(height: 28),
+            const _SectionHeading(title: 'Плотность интерфейса', subtitle: 'Настрой размеры и расстояния между стандартными элементами.'),
+            ...[
+              (AppElementDensity.compact, 'Компактные', 'Больше элементов на экране', Icons.view_compact_alt_rounded),
+              (AppElementDensity.standard, 'Обычные', 'Сбалансированные отступы', Icons.view_agenda_rounded),
+              (AppElementDensity.comfortable, 'Свободные', 'Больше пространства', Icons.view_day_rounded),
+            ].map((option) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _DensityChoice(
+                title: option.$2,
+                subtitle: option.$3,
+                icon: option.$4,
+                selected: appearance.elementDensity == option.$1,
+                onTap: () => _apply(context, ref, appearance.copyWith(elementDensity: option.$1)),
+              ),
+            )),
             const SizedBox(height: 24),
             _AppearancePreview(appearance: appearance),
             const SizedBox(height: 18),
@@ -346,4 +362,36 @@ class _CornerOption {
   final AppCornerStyle value;
   final String label;
   final String description;
+}
+
+class _DensityChoice extends StatelessWidget {
+  const _DensityChoice({required this.title, required this.subtitle, required this.icon, required this.selected, required this.onTap});
+  final String title, subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: selected ? colors.primaryContainer : colors.surfaceContainer,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          child: Row(children: [
+            Icon(icon, color: selected ? colors.primary : colors.onSurfaceVariant),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: Theme.of(context).textTheme.titleSmall),
+              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+            ])),
+            if (selected) Icon(Icons.check_circle_rounded, color: colors.primary),
+          ]),
+        ),
+      ),
+    );
+  }
 }
