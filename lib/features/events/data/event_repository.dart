@@ -20,6 +20,12 @@ class EventRepository {
         .map((data) => GroupEvent.fromJson(Map<String, dynamic>.from(data))).toList(growable: false);
   }
 
+  /// Refreshes the event snapshot for startup cache warmup.
+  Future<void> refreshAndCacheGroupEvents(String userId, String groupId) async {
+    final remote = await getGroupEvents(groupId);
+    await _cacheEvents(userId, groupId, remote);
+  }
+
   Stream<List<GroupEvent>> watchGroupEvents(String userId, String groupId) {
     late final StreamController<List<GroupEvent>> controller;
     RealtimeChannel? channel;

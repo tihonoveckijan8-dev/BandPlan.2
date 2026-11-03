@@ -122,6 +122,18 @@ class SongRepository {
         .map((data) => Song.fromJson(Map<String, dynamic>.from(data))).toList(growable: false);
   }
 
+  /// Refreshes the group-song snapshot for startup cache warmup.
+  Future<void> refreshAndCacheGroupSongs(String userId, String groupId) async {
+    final remote = await getGroupSongs(groupId);
+    await _cacheSongs(userId, 'group_songs', remote, groupId);
+  }
+
+  /// Refreshes personal songs even when the user has not opened the Songs tab yet.
+  Future<void> refreshAndCachePersonalSongs(String userId) async {
+    final remote = await getPersonalSongs();
+    await _cacheSongs(userId, 'personal_songs', remote, null);
+  }
+
   Stream<List<Song>> watchPersonalSongs(String userId) async* {
     final cached = await _readCachedSongs(userId, 'personal_songs', null);
     yield cached;

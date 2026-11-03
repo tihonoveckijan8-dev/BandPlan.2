@@ -20,6 +20,12 @@ class SetlistRepository {
         .map((data) => Setlist.fromJson(Map<String, dynamic>.from(data))).toList(growable: false);
   }
 
+  /// Refreshes the setlist snapshot for startup cache warmup.
+  Future<void> refreshAndCacheGroupSetlists(String userId, String groupId) async {
+    final remote = await getGroupSetlists(groupId);
+    await _cacheSetlists(userId, groupId, remote);
+  }
+
   Stream<List<Setlist>> watchGroupSetlists(String userId, String groupId) {
     late final StreamController<List<Setlist>> controller;
     RealtimeChannel? channel;
