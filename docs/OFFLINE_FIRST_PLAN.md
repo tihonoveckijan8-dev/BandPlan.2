@@ -30,7 +30,9 @@ This choice is intentionally compatible with the current JSONB data contract and
 - M2 local-first reads are implemented for cached groups/active group, group and personal songs, events, setlists, and profile.
 - Refresh failures fall back only for recognized transport errors. Supabase authorization, RLS, validation, and other server errors remain visible.
 - After a remote refresh, repositories re-read the reconciled cache so a pending local row or delete tombstone cannot disappear behind an older server snapshot.
-- M3 offline mutations are not yet enabled. Existing create/edit/delete writes still use the current online Supabase path until the sync engine can safely own their full lifecycle.
+- M3 is partially implemented: group song/event/setlist upserts and event/setlist deletes plus profile edits are persisted locally and enqueued atomically. The sequential Supabase outbox processor retries transport failures with bounded exponential backoff, records permanent server rejections, and acknowledges only confirmed writes. The app drains on startup/resume and periodically while foregrounded.
+- Personal-song writes and server-authoritative group RPCs remain online-only; their contracts are not yet safe for blind offline replay.
+- A permanent server rejection remains visible in the outbox and must be explicitly retried after the cause is corrected; it is never silently discarded.
 
 ## Milestones
 
@@ -48,15 +50,15 @@ This choice is intentionally compatible with the current JSONB data contract and
 - [x] Never allow one account or group to read another scope's local cache.
 
 ### M3 — offline writes
-- [ ] Save local edits and enqueue their matching Supabase mutation in one local transaction.
-- [ ] Add explicit pending/syncing/synced/failed status.
-- [ ] Keep group creation, joining, leaving, invite operations, and other server-authoritative RPCs online-only unless a safe server contract is defined.
-- [ ] Do not claim an operation synced until Supabase confirms it.
+- [x] Save group song/event/setlist and profile edits plus event/setlist deletes locally and enqueue their matching Supabase mutation in one local transaction.
+- [x] Track pending/failed state and retry metadata; clean cache rows become synced only after server acknowledgement.
+- [x] Keep group creation, joining, leaving, invite operations, personal-song JSONB updates, and other server-authoritative operations online-only until safe replay contracts are defined.
+- [x] Do not claim an operation synced until Supabase confirms it.
 
 ### M4 — synchronization
-- [ ] Drain queued operations after startup, resume, and confirmed network recovery.
-- [ ] Retry transient failures with bounded exponential backoff.
-- [ ] Make retries idempotent and preserve operation order where required.
+- [x] Drain queued operations after startup, resume, and periodic foreground retry checks.
+- [x] Retry transient failures with bounded exponential backoff.
+- [x] Use idempotent upserts and sequential queue processing to preserve operation order.
 - [ ] Reconcile remote refreshes with unsynced local changes; never overwrite a dirty local record with a stale snapshot.
 - [ ] Define conflict behavior per entity; do not apply a generic last-write-wins policy to all data.
 - [ ] Use Realtime as an invalidation/refresh signal, not as the only sync mechanism.

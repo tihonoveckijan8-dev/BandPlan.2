@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'offline_store.dart';
 import 'network_error.dart';
 
