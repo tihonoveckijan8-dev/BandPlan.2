@@ -205,7 +205,10 @@ try {
     },
   };
   await command('Page.addScriptToEvaluateOnNewDocument', {
-    source: `localStorage.setItem(${JSON.stringify('sb-' + projectRef + '-auth-token')}, ${JSON.stringify(JSON.stringify(fixtureSession))});`,
+    // WHY: Chromium also runs this hook for about:blank and its internal
+    // chrome-error page; those opaque documents intentionally deny localStorage.
+    // Seed only the app's own origin so the fixture cannot create test-only errors.
+    source: `if (location.origin === ${JSON.stringify(new URL(appUrl).origin)} && location.pathname === ${JSON.stringify(basePath)}) { try { localStorage.setItem(${JSON.stringify('sb-' + projectRef + '-auth-token')}, ${JSON.stringify(JSON.stringify(fixtureSession))}); } catch (_) {} }`,
   });
 
   async function evaluate(expression) {
@@ -292,8 +295,12 @@ try {
   });
   await command('Page.reload', { ignoreCache: true });
   await waitFor(
-    '!!navigator.serviceWorker.controller && !!document.querySelector("flt-glass-pane") && performance.getEntriesByType("resource").some(e => e.name.endsWith("/main.dart.js"))',
+    'location.href.startsWith(' + JSON.stringify(appUrl) + ') && !!navigator.serviceWorker.controller && !!document.querySelector("flt-glass-pane") && performance.getEntriesByType("resource").some(e => e.name.endsWith("/main.dart.js"))',
     'Flutter to relaunch from the installed PWA cache while offline',
+  );
+  assert.ok(
+    (await evaluate('location.href')).startsWith(appUrl),
+    'Offline reload must remain on the BandPlan app origin, not a browser error page',
   );
 
   // WHY: A full page reload resets Flutter's lazily enabled semantics mode.
