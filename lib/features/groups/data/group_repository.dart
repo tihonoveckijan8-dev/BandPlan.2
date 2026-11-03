@@ -1,14 +1,90 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/local/network_error.dart';
+import '../../../core/local/offline_store.dart';
+
 /// Thin adapter over the existing BandPlan group RPC contract.
 class GroupRepository {
-  const GroupRepository(this._client);
+  const GroupRepository(this._client, {OfflineStore? offlineStore})
+      : _offlineStore = offlineStore;
 
   final SupabaseClient _client;
+  final OfflineStore? _offlineStore;
 
-  Future<dynamic> getMyGroups() => _client.rpc('bandplan_get_my_groups');
+  Future<dynamic> getMyGroups() async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw StateError('Требуется авторизация.');
+    try {
+      final response = await _client.rpc('bandplan_get_my_groups');
+      await _cacheGroups(user.id, response);
+      return response;
+    } catch (error) {
+      if (!isOfflineNetworkError(error)) rethrow;
+      final cached = await _offlineStore?.readCachedRecords(
+        ownerUserId: user.id,
+        collection: 'my_groups',
+      );
+      if (cached == null || cached.isEmpty) rethrow;
+      return cached
+          .map((row) => row['payload'])
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(growable: false);
+    }
+  }
 
-  Future<dynamic> getMyGroup() => _client.rpc('bandplan_get_my_group');
+  Future<dynamic> getMyGroup() async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw StateError('Требуется авторизация.');
+    try {
+      final response = await _client.rpc('bandplan_get_my_group');
+      final row = response is List
+          ? (response.isEmpty ? null : response.first)
+          : response;
+      final id = row is Map
+          ? (row['group_id'] ?? row['id'])?.toString().trim() ?? ''
+          : '';
+      await _offlineStore?.replaceRemoteRecords(
+        ownerUserId: user.id,
+        collection: 'active_group',
+        records: id.isEmpty
+            ? const []
+            : [
+                {
+                  'recordId': 'active',
+                  'payload': Map<String, Object?>.from(row as Map),
+                },
+              ],
+      );
+      return response;
+    } catch (error) {
+      if (!isOfflineNetworkError(error)) rethrow;
+      final cached = await _offlineStore?.readCachedRecords(
+        ownerUserId: user.id,
+        collection: 'active_group',
+      );
+      if (cached == null || cached.isEmpty) rethrow;
+      return cached.first['payload'];
+    }
+  }
+
+  Future<void> _cacheGroups(String userId, dynamic response) async {
+    if (response is! List) return;
+    final records = <Map<String, Object?>>[];
+    for (final item in response.whereType<Map>()) {
+      final id = (item['group_id'] ?? item['id'])?.toString().trim() ?? '';
+      if (id.isEmpty) continue;
+      records.add({
+        'recordId': id,
+        'payload': Map<String, Object?>.from(item),
+      });
+    }
+    await _offlineStore?.replaceRemoteRecords(
+      ownerUserId: userId,
+      collection: 'my_groups',
+      records: records,
+    );
+  }
 
   Future<void> setActiveGroup(String groupId) async {
     final result = await _client.rpc(

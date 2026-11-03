@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/local/offline_providers.dart';
 import '../../../core/supabase/supabase_bootstrap.dart';
 import '../data/group_repository.dart';
 import '../domain/group_summary.dart';
@@ -11,10 +12,14 @@ final groupRepositoryProvider = Provider<GroupRepository?>((ref) {
 });
 
 final myGroupsProvider = FutureProvider<List<GroupSummary>>((ref) async {
-  final repository = ref.watch(groupRepositoryProvider);
-  if (repository == null) {
+  if (!SupabaseBootstrap.isInitialized) {
     throw StateError('Supabase is not configured.');
   }
+  final store = await ref.watch(offlineStoreProvider.future);
+  final repository = GroupRepository(
+    Supabase.instance.client,
+    offlineStore: store,
+  );
 
   final response = await repository.getMyGroups();
   if (response is! List) {
@@ -29,13 +34,17 @@ final myGroupsProvider = FutureProvider<List<GroupSummary>>((ref) async {
       .toList(growable: false);
 });
 
-/// The server validates the saved active group and falls back to a valid
-/// membership when the previously selected group is no longer available.
+/// Uses the server-confirmed active group when online and a previously
+/// confirmed local snapshot only when the request fails at the transport layer.
 final activeGroupProvider = FutureProvider<GroupSummary?>((ref) async {
-  final repository = ref.watch(groupRepositoryProvider);
-  if (repository == null) {
+  if (!SupabaseBootstrap.isInitialized) {
     throw StateError('Supabase is not configured.');
   }
+  final store = await ref.watch(offlineStoreProvider.future);
+  final repository = GroupRepository(
+    Supabase.instance.client,
+    offlineStore: store,
+  );
 
   final response = await repository.getMyGroup();
   if (response == null) return null;
