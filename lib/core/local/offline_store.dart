@@ -72,6 +72,61 @@ class OfflineStore {
     });
   }
 
+  /// Reconciles a complete remote snapshot while protecting dirty local rows.
+  Future<void> replaceRemoteRecords({
+    required String ownerUserId,
+    required String collection,
+    required List<Map<String, Object?>> records,
+    String? groupId,
+  }) async {
+    _validateScope(ownerUserId, collection, 'snapshot');
+    final payloads = <String, Map<String, Object?>>{};
+    for (final item in records) {
+      final recordId = item['recordId']?.toString().trim() ?? '';
+      final payload = item['payload'];
+      if (recordId.isEmpty || payload is! Map) {
+        throw ArgumentError('Every remote record needs a recordId and map payload.');
+      }
+      payloads[recordId] = Map<String, Object?>.from(payload);
+    }
+
+    final now = DateTime.now().toUtc().toIso8601String();
+    await _database.transaction((transaction) async {
+      final existing = await _cache.find(
+        transaction,
+        finder: Finder(
+          filter: Filter.and([
+            Filter.equals('ownerUserId', ownerUserId),
+            Filter.equals('groupId', groupId),
+            Filter.equals('collection', collection),
+          ]),
+        ),
+      );
+
+      for (final snapshot in existing) {
+        final value = snapshot.value;
+        final recordId = value['recordId']?.toString() ?? '';
+        if (value['pendingSync'] == true || payloads.containsKey(recordId)) continue;
+        await _cache.record(snapshot.key).delete(transaction);
+      }
+
+      for (final entry in payloads.entries) {
+        final key = _cacheKey(ownerUserId, groupId, collection, entry.key);
+        final previous = await _cache.record(key).get(transaction);
+        if (previous?['pendingSync'] == true) continue;
+        await _cache.record(key).put(transaction, {
+          'ownerUserId': ownerUserId,
+          'groupId': groupId,
+          'collection': collection,
+          'recordId': entry.key,
+          'payload': entry.value,
+          'updatedAt': now,
+          'pendingSync': false,
+        });
+      }
+    });
+  }
+
   /// Stores a confirmed server snapshot without changing an existing dirty row.
   Future<void> cacheRemoteRecord({
     required String ownerUserId,
