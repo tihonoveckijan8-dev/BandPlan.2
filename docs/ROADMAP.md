@@ -56,12 +56,14 @@ Exit: core workflows work with existing records without destructive conversion.
 Exit: real-device performance workflows and correct audio resource lifecycle.
 
 ## Phase 5 — offline and polish (P3)
-- [ ] Local cache and offline song access.
-- [ ] Durable pending-change queue.
-- [ ] Realtime updates and per-entity conflict policies.
+- [ ] Cross-platform local database (IndexedDB on Web, file-backed storage on native).
+- [ ] Local-first repositories for songs, events, setlists, profile, and group snapshots.
+- [ ] Durable, account-scoped mutation queue with idempotent operation IDs.
+- [ ] Sync engine with retry/backoff, server reconciliation, and per-entity conflict policies.
+- [ ] Realtime invalidation without treating Realtime as durable sync.
 - [ ] Themes, accessibility, export, diagnostics.
-- [ ] Performance and platform QA.
-Exit: offline edits are not silently lost.
+- [ ] Airplane-mode, restart, multi-device, and platform QA.
+Exit: cached data remains readable offline and offline edits are durably queued without changing the Supabase schema or auth contract.
 
 ## Phase 6 — release
 - [ ] Android, iOS, Windows, macOS packages.
