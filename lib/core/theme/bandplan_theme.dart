@@ -40,6 +40,7 @@ abstract final class BandPlanTheme {
     VisualDensity visualDensity = VisualDensity.standard,
     double depthElevation = 2.0,
     double fontSizeFactor = 1.0,
+    double contrastLevel = 0.0,
   }) =>
       _build(
         Brightness.dark,
@@ -51,6 +52,7 @@ abstract final class BandPlanTheme {
         visualDensity: visualDensity,
         depthElevation: depthElevation,
         fontSizeFactor: fontSizeFactor,
+        contrastLevel: contrastLevel,
       );
 
   static ThemeData amoled({
@@ -62,6 +64,7 @@ abstract final class BandPlanTheme {
     VisualDensity visualDensity = VisualDensity.standard,
     double depthElevation = 2.0,
     double fontSizeFactor = 1.0,
+    double contrastLevel = 0.0,
   }) =>
       _build(
         Brightness.dark,
