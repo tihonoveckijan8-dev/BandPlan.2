@@ -123,11 +123,11 @@ abstract final class BandPlanTheme {
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(buttonCornerRadius),
+          borderRadius: BorderRadius.circular(fieldCornerRadius),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(cornerRadius * 0.72),
+          borderRadius: BorderRadius.circular(fieldCornerRadius),
           borderSide: BorderSide(color: accentColor, width: 1.5),
         ),
       ),
@@ -137,7 +137,7 @@ abstract final class BandPlanTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(cornerRadius * 0.72),
+            borderRadius: BorderRadius.circular(buttonCornerRadius),
           ),
         ),
       ),
@@ -145,7 +145,7 @@ abstract final class BandPlanTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(cornerRadius * 0.72),
+            borderRadius: BorderRadius.circular(buttonCornerRadius),
           ),
         ),
       ),
