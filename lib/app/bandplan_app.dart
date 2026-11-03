@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/local/offline_cache_warmup.dart';
 import '../core/local/offline_providers.dart';
 import '../core/supabase/supabase_bootstrap.dart';
+import '../core/theme/app_appearance.dart';
 import '../core/theme/bandplan_theme.dart';
 import 'router.dart';
 
@@ -93,12 +94,28 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp.router(
-        title: 'BandPlan',
-        debugShowCheckedModeBanner: false,
-        theme: BandPlanTheme.light(),
-        darkTheme: BandPlanTheme.dark(),
-        themeMode: ThemeMode.system,
-        routerConfig: bandPlanRouter,
-      );
+  Widget build(BuildContext context) {
+    final appearance =
+        ref.watch(appAppearanceProvider).value ?? AppAppearance.defaults;
+
+    return MaterialApp.router(
+      title: 'BandPlan',
+      debugShowCheckedModeBanner: false,
+      theme: BandPlanTheme.light(
+        accentColor: appearance.accentColor,
+        cornerRadius: appearance.cornerRadius,
+      ),
+      darkTheme: appearance.useAmoled
+          ? BandPlanTheme.amoled(
+              accentColor: appearance.accentColor,
+              cornerRadius: appearance.cornerRadius,
+            )
+          : BandPlanTheme.dark(
+              accentColor: appearance.accentColor,
+              cornerRadius: appearance.cornerRadius,
+            ),
+      themeMode: appearance.materialThemeMode,
+      routerConfig: bandPlanRouter,
+    );
+  }
 }
