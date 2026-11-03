@@ -124,6 +124,7 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
               depthElevation: appearance.depthElevation,
               fontSizeFactor: appearance.textSizeFactor,
               contrastLevel: appearance.contrastLevel,
+              surfaceTone: appearance.surfaceTone,
             )
           : BandPlanTheme.dark(
               accentColor: appearance.accentColor,
