@@ -273,6 +273,28 @@ class AppearanceSettingsTab extends ConsumerWidget {
                 onTap: () => _apply(context, ref, appearance.copyWith(elementDensity: option.$1)),
               ),
             )),
+            const SizedBox(height: 28),
+            const _SectionHeading(
+              title: 'Размер текста',
+              subtitle: 'Увеличь подписи и основные тексты, если так удобнее читать.',
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                (AppTextSize.standard, 'Обычный'),
+                (AppTextSize.large, 'Крупный'),
+                (AppTextSize.extraLarge, 'Очень крупный'),
+              ].map((option) => ChoiceChip(
+                label: Text(option.$2),
+                selected: appearance.textSize == option.$1,
+                onSelected: (_) => _apply(
+                  context,
+                  ref,
+                  appearance.copyWith(textSize: option.$1),
+                ),
+              )).toList(growable: false),
+            ),
             const SizedBox(height: 24),
             _AppearancePreview(appearance: appearance),
             const SizedBox(height: 18),
