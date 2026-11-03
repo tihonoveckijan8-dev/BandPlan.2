@@ -92,10 +92,10 @@ jobs:
                   1,
               )
 
-          pattern = r'(buildTypes\\s*\\{\\s*release\\s*\\{)'
+          pattern = r'(buildTypes\s*\{\s*release\s*\{)'
           source, count = re.subn(
               pattern,
-              r'\\1\\n            signingConfig = signingConfigs.getByName("release")',
+              r'\1\n            signingConfig = signingConfigs.getByName("release")',
               source,
               count=1,
           )
