@@ -63,11 +63,15 @@ class OfflineStore {
       final cachedBeforeEdit = await _cache.record(cacheKey).get(transaction);
       final baseVersionCaptured =
           firstQueued?['baseVersionCaptured'] == true ||
-          (firstQueued == null && cachedBeforeEdit?['pendingSync'] != true);
+          (firstQueued == null &&
+              (cachedBeforeEdit == null ||
+                  cachedBeforeEdit['pendingSync'] != true));
       final basePayload = firstQueued != null
           ? firstQueued['basePayload']
-          : (baseVersionCaptured && cachedBeforeEdit?['isDeleted'] != true
-              ? cachedBeforeEdit?['payload']
+          : (baseVersionCaptured &&
+                  cachedBeforeEdit != null &&
+                  cachedBeforeEdit['isDeleted'] != true
+              ? cachedBeforeEdit['payload']
               : null);
 
       // WHY: Keep a tombstone for queued deletes. A later remote refresh must
