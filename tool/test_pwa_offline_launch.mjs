@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { readFile, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, readFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const buildRoot = path.resolve(process.argv[2] ?? 'build/web');
 const basePath = '/BandPlan.2/';
@@ -61,7 +60,23 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
 const appUrl = `http://127.0.0.1:${address.port}${basePath}`;
 const profileDir = await mkdtemp(path.join(tmpdir(), 'bandplan-pwa-chrome-'));
-const chromePath = process.env.CHROME_BIN || '/usr/bin/google-chrome';
+async function findChrome() {
+  const candidates = [
+    process.env.CHROME_BIN,
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      await access(candidate);
+      return candidate;
+    } catch (_) {}
+  }
+  throw new Error('Chrome/Chromium executable not found on the CI runner.');
+}
+const chromePath = await findChrome();
 const chrome = spawn(chromePath, [
   '--headless=new',
   '--no-sandbox',

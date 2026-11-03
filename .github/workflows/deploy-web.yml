@@ -201,8 +201,6 @@ jobs:
       # WHY: The worker unit test cannot prove that Chrome can really relaunch
       # Flutter with its network disabled; exercise the built PWA in headless Chrome.
       - name: Test real offline PWA relaunch
-        env:
-          CHROME_BIN: ${{ env.CHROME_BIN }}
         run: node tool/test_pwa_offline_launch.mjs build/web
 
       - name: Upload Pages artifact
