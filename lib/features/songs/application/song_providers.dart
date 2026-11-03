@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/local/offline_providers.dart';
 import '../../../core/supabase/supabase_bootstrap.dart';
 import '../../groups/application/group_providers.dart';
 import '../data/song_repository.dart';
@@ -11,17 +12,31 @@ final songRepositoryProvider = Provider<SongRepository?>((ref) {
   return SongRepository(Supabase.instance.client);
 });
 
-final groupSongsProvider = FutureProvider<List<Song>>((ref) async {
+final groupSongsProvider = StreamProvider<List<Song>>((ref) async* {
   final group = await ref.watch(activeGroupProvider.future);
-  if (group == null) return const [];
-
-  final repository = ref.watch(songRepositoryProvider);
-  if (repository == null) throw StateError('Supabase is not configured.');
-  return repository.getGroupSongs(group.id);
+  if (group == null) {
+    yield const [];
+    return;
+  }
+  if (!SupabaseBootstrap.isInitialized) {
+    throw StateError('Supabase is not configured.');
+  }
+  final client = Supabase.instance.client;
+  final userId = client.auth.currentUser?.id;
+  if (userId == null) throw StateError('Требуется авторизация.');
+  final store = await ref.watch(offlineStoreProvider.future);
+  final repository = SongRepository(client, offlineStore: store);
+  yield* repository.watchGroupSongs(userId, group.id);
 });
 
-final personalSongsProvider = FutureProvider<List<Song>>((ref) async {
-  final repository = ref.watch(songRepositoryProvider);
-  if (repository == null) throw StateError('Supabase is not configured.');
-  return repository.getPersonalSongs();
+final personalSongsProvider = StreamProvider<List<Song>>((ref) async* {
+  if (!SupabaseBootstrap.isInitialized) {
+    throw StateError('Supabase is not configured.');
+  }
+  final client = Supabase.instance.client;
+  final userId = client.auth.currentUser?.id;
+  if (userId == null) throw StateError('Требуется авторизация.');
+  final store = await ref.watch(offlineStoreProvider.future);
+  final repository = SongRepository(client, offlineStore: store);
+  yield* repository.watchPersonalSongs(userId);
 });
