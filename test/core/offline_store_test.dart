@@ -73,6 +73,44 @@ void main() {
     expect(pending.single['operationId'], 'op-1');
   });
 
+  test('queued edits retain the first server baseline across repeated edits', () async {
+    await store.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Server baseline', 'tempo': 120},
+    );
+
+    await store.saveAndQueue(
+      operationId: 'edit-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'First local edit', 'tempo': 120},
+    );
+    await store.saveAndQueue(
+      operationId: 'edit-2',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Second local edit', 'tempo': 125},
+    );
+
+    final pending = await store.readPendingMutations(ownerUserId: 'user-a');
+    expect(pending, hasLength(2));
+    for (final mutation in pending) {
+      expect(mutation['baseVersionCaptured'], isTrue);
+      expect(
+        (mutation['basePayload'] as Map)['title'],
+        'Server baseline',
+      );
+      expect((mutation['basePayload'] as Map)['tempo'], 120);
+    }
+  });
+
   test('remote refresh cannot overwrite a pending local edit', () async {
     await store.saveAndQueue(
       operationId: 'op-1',
