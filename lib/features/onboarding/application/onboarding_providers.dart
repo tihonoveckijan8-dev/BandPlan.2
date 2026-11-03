@@ -36,10 +36,25 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
       ownerUserId: user.id,
       collection: 'onboarding',
     );
-    if (cached.isEmpty || cached.first['payload'] is! Map) rethrow;
-    final decision = (cached.first['payload'] as Map)['complete'];
-    if (decision is! bool) rethrow;
-    return decision;
+    if (cached.isNotEmpty && cached.first['payload'] is Map) {
+      final decision = (cached.first['payload'] as Map)['complete'];
+      if (decision is bool) return decision;
+    }
+
+    // WHY: on an app upgrade the onboarding decision may not have been cached
+    // yet, while the existing profile snapshot already proves account setup.
+    final profile = await store.readCachedRecords(
+      ownerUserId: user.id,
+      collection: 'profile',
+    );
+    if (profile.isNotEmpty && profile.first['payload'] is Map) {
+      final payload = profile.first['payload'] as Map;
+      if (payload['user_id']?.toString() == user.id) {
+        await _cacheDecision(store, user.id, true);
+        return true;
+      }
+    }
+    rethrow;
   }
 });
 
