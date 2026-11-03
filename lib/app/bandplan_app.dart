@@ -20,11 +20,22 @@ class BandPlanApp extends ConsumerStatefulWidget {
 class _BandPlanAppState extends ConsumerState<BandPlanApp>
     with WidgetsBindingObserver {
   Timer? _syncTimer;
+  StreamSubscription<AuthState>? _authSubscription;
+  final Set<String> _warmingUserIds = <String>{};
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (SupabaseBootstrap.isInitialized) {
+      // WHY: The first warmup may run before a user signs in. Listen for the
+      // initial restored session and later sign-ins so first-login data is
+      // prefetched too, rather than waiting for the user to open each tab.
+      _authSubscription =
+          Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+        if (state.session != null) unawaited(_warmOfflineCache());
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _sync();
       // WHY: Warm every accessible group and account snapshot before the user
@@ -38,7 +49,10 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _sync();
+    if (state == AppLifecycleState.resumed) {
+      _sync();
+      unawaited(_warmOfflineCache());
+    }
   }
 
   Future<void> _sync() async {
@@ -54,20 +68,26 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
 
   Future<void> _warmOfflineCache() async {
     if (!mounted || !SupabaseBootstrap.isInitialized) return;
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null || !_warmingUserIds.add(userId)) return;
     try {
       final store = await ref.read(offlineStoreProvider.future);
-      await OfflineCacheWarmup.run(
-        client: Supabase.instance.client,
-        store: store,
-      );
+      // WHY: Auth can change while IndexedDB is opening; never warm data for
+      // an account that is no longer the active signed-in user.
+      if (!mounted || client.auth.currentUser?.id != userId) return;
+      await OfflineCacheWarmup.run(client: client, store: store);
     } catch (_) {
       // WHY: Cache warmup is best-effort and must never delay or block the UI.
+    } finally {
+      _warmingUserIds.remove(userId);
     }
   }
 
   @override
   void dispose() {
     _syncTimer?.cancel();
+    unawaited(_authSubscription?.cancel());
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
