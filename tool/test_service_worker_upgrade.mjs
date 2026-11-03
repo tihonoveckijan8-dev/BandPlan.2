@@ -23,6 +23,17 @@ const manifestFixture = manifestPath
       ],
     };
 
+// WHY: Keep malicious-path fixtures alongside the real build manifest so
+// the test still proves that the worker rejects URLs outside the Pages scope.
+const manifestToServe = {
+  ...manifestFixture,
+  assets: [
+    ...(manifestFixture.assets ?? []),
+    'https://cdn.example.test/external.js',
+    '../outside-project.js',
+  ],
+};
+
 for (const requiredAsset of [
   'index.html',
   'flutter_bootstrap.js',
@@ -94,7 +105,7 @@ function createWorker(buildId) {
     networkCalls += 1;
     const url = typeof input === 'string' ? input : input.url;
     if (url.endsWith('/asset-manifest.json')) {
-      return new Response(JSON.stringify(manifestFixture), {
+      return new Response(JSON.stringify(manifestToServe), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
