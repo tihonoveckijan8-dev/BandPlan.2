@@ -29,7 +29,7 @@ abstract final class OfflineCacheWarmup {
     final activeGroupFuture = _try(() => groups.getMyGroup());
 
     await Future.wait<void>([
-      _ignore(() => profile.getMyProfile()),
+      _ignore(() => profile.refreshAndCacheConfirmedProfile()),
       _ignore(() => songs.refreshAndCachePersonalSongs(user.id)),
     ]);
 

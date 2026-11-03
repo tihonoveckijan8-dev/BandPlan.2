@@ -63,6 +63,20 @@ class ProfileRepository {
     }
   }
 
+  /// Caches a profile only when the account row is confirmed by Supabase.
+  Future<void> refreshAndCacheConfirmedProfile() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return;
+    final row = await _client.from('bandplan_accounts')
+        .select('user_id, display_name, roles, updated_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+    // WHY: A synthetic empty profile for a new account must not be mistaken
+    // for proof that onboarding has already been completed while offline.
+    if (row == null) return;
+    await _cacheProfile(AccountProfile.fromJson(row));
+  }
+
   Future<SyncReport> saveMyProfile({required String displayName, required List<String> roles}) async {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Требуется авторизация.');
