@@ -75,6 +75,24 @@ void main() {
       );
     });
 
+    test('restores and serializes typography size preference', () {
+      final appearance = AppAppearance.fromMap({'textSize': 'extraLarge'});
+
+      expect(appearance.textSize, AppTextSize.extraLarge);
+      expect(appearance.textSizeFactor, 1.16);
+      expect(
+        AppAppearance.fromMap(appearance.toMap()).textSize,
+        AppTextSize.extraLarge,
+      );
+    });
+
+    test('uses standard typography for older preference maps', () {
+      final appearance = AppAppearance.fromMap({'themeChoice': 'dark'});
+
+      expect(appearance.textSize, AppTextSize.standard);
+      expect(appearance.textSizeFactor, 1.0);
+    });
+
     test('serializes preferences for durable storage', () {
       const appearance = AppAppearance(
         themeChoice: AppThemeChoice.dark,
