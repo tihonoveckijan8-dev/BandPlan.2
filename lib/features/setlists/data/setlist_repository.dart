@@ -1,12 +1,16 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/local/network_error.dart';
+import '../../../core/local/offline_store.dart';
 import '../domain/setlist.dart';
 
 /// Group setlists use the verified bandplan_setlists JSONB table contract.
 class SetlistRepository {
-  const SetlistRepository(this._client);
+  const SetlistRepository(this._client, {OfflineStore? offlineStore})
+      : _offlineStore = offlineStore;
 
   final SupabaseClient _client;
+  final OfflineStore? _offlineStore;
 
   Future<List<Setlist>> getGroupSetlists(String groupId) async {
     final rows = await _client
@@ -19,6 +23,18 @@ class SetlistRepository {
         .whereType<Map>()
         .map((data) => Setlist.fromJson(Map<String, dynamic>.from(data)))
         .toList(growable: false);
+  }
+
+  Stream<List<Setlist>> watchGroupSetlists(String userId, String groupId) async* {
+    final cached = await _readCachedSetlists(userId, groupId);
+    yield cached;
+    try {
+      final remote = await getGroupSetlists(groupId);
+      await _cacheSetlists(userId, groupId, remote);
+      yield remote;
+    } catch (error) {
+      if (!isOfflineNetworkError(error) || cached.isEmpty) rethrow;
+    }
   }
 
   Future<void> saveGroupSetlist(String groupId, Setlist setlist) async {
@@ -52,5 +68,36 @@ class SetlistRepository {
     if (deleted.isEmpty) {
       throw StateError('Сет-лист не найден или нет прав на его удаление.');
     }
+  }
+
+  Future<List<Setlist>> _readCachedSetlists(String userId, String groupId) async {
+    final rows = await _offlineStore?.readCachedRecords(
+      ownerUserId: userId,
+      collection: 'group_setlists',
+      groupId: groupId,
+    );
+    return (rows ?? const [])
+        .map((row) => row['payload'])
+        .whereType<Map>()
+        .map((payload) => Setlist.fromJson(Map<String, dynamic>.from(payload)))
+        .toList(growable: false);
+  }
+
+  Future<void> _cacheSetlists(
+    String userId,
+    String groupId,
+    List<Setlist> setlists,
+  ) async {
+    await _offlineStore?.replaceRemoteRecords(
+      ownerUserId: userId,
+      collection: 'group_setlists',
+      groupId: groupId,
+      records: setlists
+          .map((setlist) => <String, Object?>{
+                'recordId': setlist.id,
+                'payload': setlist.toLegacyJson(),
+              })
+          .toList(growable: false),
+    );
   }
 }
