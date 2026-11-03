@@ -37,6 +37,7 @@ abstract final class BandPlanTheme {
     double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
     double depthElevation = 2.0,
+    double fontSizeFactor = 1.0,
   }) =>
       _build(
         Brightness.dark,
@@ -47,6 +48,7 @@ abstract final class BandPlanTheme {
         fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
         depthElevation: depthElevation,
+        fontSizeFactor: fontSizeFactor,
       );
 
   static ThemeData amoled({
@@ -57,6 +59,7 @@ abstract final class BandPlanTheme {
     double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
     double depthElevation = 2.0,
+    double fontSizeFactor = 1.0,
   }) =>
       _build(
         Brightness.dark,
