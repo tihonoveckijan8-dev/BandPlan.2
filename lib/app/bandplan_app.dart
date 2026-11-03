@@ -136,6 +136,7 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
               depthElevation: appearance.depthElevation,
               fontSizeFactor: appearance.textSizeFactor,
               contrastLevel: appearance.contrastLevel,
+              surfaceTone: appearance.surfaceTone,
             ),
       themeMode: appearance.materialThemeMode,
       routerConfig: bandPlanRouter,
