@@ -57,6 +57,16 @@ class SupabaseOfflineMutationHandler {
     }
 
     if (operation == 'delete') {
+      // WHY: a retry after a successful delete must be idempotent. First check
+      // whether the row is still visible under the current user's SELECT RLS.
+      final existing = await _client
+          .from(table)
+          .select('id')
+          .eq('group_id', groupId)
+          .eq('id', recordId)
+          .maybeSingle();
+      if (existing == null) return;
+
       final deleted = await _client
           .from(table)
           .delete()
@@ -64,7 +74,8 @@ class SupabaseOfflineMutationHandler {
           .eq('id', recordId)
           .select('id');
       if (deleted.isEmpty) {
-        // WHY: an empty RLS-filtered response is not proof that the delete was authorized.
+        // WHY: if the row was visible before DELETE but not returned after it,
+        // the user's DELETE policy did not confirm the operation.
         throw StateError('Сервер не подтвердил удаление записи $recordId.');
       }
       return;

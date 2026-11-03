@@ -56,6 +56,8 @@ class OfflineSyncEngine {
     final pending = await _store.readPendingMutations(ownerUserId: userId);
 
     for (final mutation in pending) {
+      // WHY: never replay account A's queue after the user switches to account B.
+      if (_currentUserId() != userId) break;
       if (mutation['status'] == 'failed') {
         lastError ??= mutation['lastError']?.toString();
         break;

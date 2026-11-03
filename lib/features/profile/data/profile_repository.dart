@@ -70,7 +70,7 @@ class ProfileRepository {
       operationId: '${user.id}:profile:${DateTime.now().microsecondsSinceEpoch}',
       ownerUserId: user.id, collection: 'profile', recordId: 'profile', payload: payload,
     );
-    return _syncEngine?.syncPending(force: true) ?? const SyncReport(pendingCount: 1);
+    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
   }
 
   Future<void> _cacheProfile(AccountProfile profile) async {
