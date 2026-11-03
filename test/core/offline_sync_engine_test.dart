@@ -102,6 +102,29 @@ void main() {
     expect(report.pendingCount, 0);
   });
 
+  test('stops draining when the authenticated account changes mid-run', () async {
+    await enqueue('song-1');
+    await enqueue('song-2');
+    var activeUser = 'user-a';
+    final applied = <String>[];
+    final engine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => activeUser,
+      applyMutation: (mutation) async {
+        applied.add(mutation['recordId']! as String);
+        activeUser = 'user-b';
+      },
+    );
+
+    final report = await engine.syncPending();
+    expect(applied, ['song-1']);
+    expect(report.pendingCount, 1);
+    expect(
+      (await store.readPendingMutations(ownerUserId: 'user-a')).single['recordId'],
+      'song-2',
+    );
+  });
+
   test('preserves FIFO order across multiple local edits', () async {
     await enqueue('song-1');
     await enqueue('song-2');

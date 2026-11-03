@@ -30,7 +30,7 @@ This choice is intentionally compatible with the current JSONB data contract and
 - M2 local-first reads are implemented for cached groups/active group, group and personal songs, events, setlists, and profile.
 - Refresh failures fall back only for recognized transport errors. Supabase authorization, RLS, validation, and other server errors remain visible.
 - After a remote refresh, repositories re-read the reconciled cache so a pending local row or delete tombstone cannot disappear behind an older server snapshot.
-- M3 is partially implemented: group song/event/setlist upserts and event/setlist deletes plus profile edits are persisted locally and enqueued atomically. The sequential Supabase outbox processor retries transport failures with bounded exponential backoff, records permanent server rejections, and acknowledges only confirmed writes. The app drains on startup/resume and periodically while foregrounded.
+- M3 is partially implemented: group song/event/setlist upserts and event/setlist deletes plus profile edits are persisted locally and enqueued atomically. The sequential Supabase outbox processor retries transport failures with bounded exponential backoff, records permanent server rejections, uses idempotent upserts/deletes, stops on account switches, and acknowledges only confirmed writes. The app drains on startup/resume and periodically while foregrounded.
 - Personal-song writes and server-authoritative group RPCs remain online-only; their contracts are not yet safe for blind offline replay.
 - A permanent server rejection remains visible in the outbox and must be explicitly retried after the cause is corrected; it is never silently discarded.
 
