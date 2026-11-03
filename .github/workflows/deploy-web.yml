@@ -34,8 +34,6 @@ jobs:
       # reliable install surfaces across Chromium and iOS Safari.
       - name: Generate PWA PNG icons
         run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick
           mkdir -p web/icons
           convert web/icons/icon-192.svg -resize 192x192 web/icons/icon-192.png
           convert web/icons/icon-512.svg -resize 512x512 web/icons/icon-512.png
