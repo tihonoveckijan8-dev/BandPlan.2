@@ -30,6 +30,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # WHY: Browser-backed tests verify the actual IndexedDB implementation
+      # used by the PWA; VM tests alone cannot prove browser storage persistence.
+      - name: Test PWA IndexedDB persistence
+        run: flutter test --platform chrome test/web/offline_indexeddb_test.dart
+
       # WHY: Generate real PNG install icons without depending on optional
       # image utilities on the hosted runner.
       - name: Generate PWA PNG icons
@@ -90,9 +95,9 @@ jobs:
                       if (x-cx)**2 + (y-cy)**2 <= radius**2:
                           paint(x, y, purple)
 
-              raw = b"".join(b"\x00" + pixels[y*size*4:(y+1)*size*4] for y in range(size))
+              raw = b"".join(b"\\x00" + pixels[y*size*4:(y+1)*size*4] for y in range(size))
               header = struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0)
-              png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+              png = b"\\x89PNG\\r\\n\\x1a\\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
               Path(output).write_bytes(png)
 
           make_icon(192, "web/icons/icon-192.png")
@@ -144,9 +149,9 @@ jobs:
           bootstrap_path = root / "flutter_bootstrap.js"
           bootstrap = bootstrap_path.read_text(encoding="utf-8")
           bootstrap, replacements = re.subn(
-              r'_flutter\.loader\.load\(\{\s*serviceWorkerSettings:\s*'
-              r'\{\s*serviceWorkerVersion:\s*"[^"]+"\s*'
-              r'(?:/\*.*?\*/\s*)?\}\s*\}\);',
+              r'_flutter\\.loader\\.load\\(\\{\\s*serviceWorkerSettings:\\s*'
+              r'\\{\\s*serviceWorkerVersion:\\s*"[^"]+"\\s*'
+              r'(?:/\\*.*?\\*/\\s*)?\\}\\s*\\}\\);',
               "_flutter.loader.load({});",
               bootstrap,
               count=1,
