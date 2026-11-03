@@ -96,7 +96,7 @@ class AppAppearanceController extends AsyncNotifier<AppAppearance> {
     return AppAppearance.fromMap(saved);
   }
 
-  Future<void> update(AppAppearance appearance) async {
+  Future<void> saveAppearance(AppAppearance appearance) async {
     final store = await ref.read(offlineStoreProvider.future);
     // WHY: Save preferences in the same durable IndexedDB database so the
     // user's appearance survives a browser restart and remains editable offline.
@@ -104,5 +104,5 @@ class AppAppearanceController extends AsyncNotifier<AppAppearance> {
     state = AsyncData(appearance);
   }
 
-  Future<void> reset() => update(AppAppearance.defaults);
+  Future<void> reset() => saveAppearance(AppAppearance.defaults);
 }
