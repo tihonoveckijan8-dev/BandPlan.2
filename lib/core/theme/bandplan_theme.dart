@@ -10,6 +10,9 @@ abstract final class BandPlanTheme {
   static ThemeData light({
     Color accentColor = accent,
     double cornerRadius = 24,
+    double? cardCornerRadius,
+    double? buttonCornerRadius,
+    double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
   }) =>
       _build(
@@ -17,12 +20,18 @@ abstract final class BandPlanTheme {
         lightCanvas,
         accentColor: accentColor,
         cornerRadius: cornerRadius,
+        cardCornerRadius: cardCornerRadius ?? cornerRadius,
+        buttonCornerRadius: buttonCornerRadius ?? cornerRadius,
+        fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
       );
 
   static ThemeData dark({
     Color accentColor = accent,
     double cornerRadius = 24,
+    double? cardCornerRadius,
+    double? buttonCornerRadius,
+    double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
   }) =>
       _build(
@@ -30,12 +39,18 @@ abstract final class BandPlanTheme {
         darkCanvas,
         accentColor: accentColor,
         cornerRadius: cornerRadius,
+        cardCornerRadius: cardCornerRadius ?? cornerRadius,
+        buttonCornerRadius: buttonCornerRadius ?? cornerRadius,
+        fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
       );
 
   static ThemeData amoled({
     Color accentColor = accent,
     double cornerRadius = 24,
+    double? cardCornerRadius,
+    double? buttonCornerRadius,
+    double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
   }) =>
       _build(
@@ -43,6 +58,9 @@ abstract final class BandPlanTheme {
         amoledCanvas,
         accentColor: accentColor,
         cornerRadius: cornerRadius,
+        cardCornerRadius: cardCornerRadius ?? cornerRadius,
+        buttonCornerRadius: buttonCornerRadius ?? cornerRadius,
+        fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
         isAmoled: true,
       );
@@ -52,6 +70,9 @@ abstract final class BandPlanTheme {
     Color canvas, {
     required Color accentColor,
     required double cornerRadius,
+    required double cardCornerRadius,
+    required double buttonCornerRadius,
+    required double fieldCornerRadius,
     required VisualDensity visualDensity,
     bool isAmoled = false,
   }) {
@@ -91,18 +112,18 @@ abstract final class BandPlanTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(cornerRadius),
+          borderRadius: BorderRadius.circular(cardCornerRadius),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: inputColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(cornerRadius * 0.72),
+          borderRadius: BorderRadius.circular(fieldCornerRadius),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(cornerRadius * 0.72),
+          borderRadius: BorderRadius.circular(buttonCornerRadius),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
