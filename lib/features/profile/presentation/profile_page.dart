@@ -171,7 +171,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ],
         ),
-        body: TabBarView(
+        body: Column(
+          children: [
+            Expanded(
+              child: TabBarView(
           children: [
             SafeArea(
               child: profile.when(
@@ -364,52 +367,46 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ],
         ),
-        // WHY: keep profile navigation reachable at the bottom, like Telegram,
-        // while the selected subtab content remains the main screen area.
-        bottomNavigationBar: SafeArea(
-          top: false,
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(10, 6, 10, 8),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
-                  blurRadius: 14,
-                  offset: const Offset(2, 4),
-                ),
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-                  blurRadius: 10,
-                  offset: const Offset(-2, -3),
-                ),
-              ],
-            ),
-            child: TabBar(
-              isScrollable: false,
-              dividerColor: Colors.transparent,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-              indicator: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(17),
               ),
-              labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-              labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-              unselectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
-              labelPadding: EdgeInsets.zero,
-              tabs: const [
-                Tab(icon: Icon(Icons.person_outline_rounded, size: 20), text: 'Профиль'),
-                Tab(icon: Icon(Icons.groups_outlined, size: 20), text: 'Группы'),
-                Tab(icon: Icon(Icons.palette_outlined, size: 20), text: 'Оформление'),
-                Tab(icon: Icon(Icons.tune_rounded, size: 20), text: 'Элементы'),
-                Tab(icon: Icon(Icons.download_rounded, size: 20), text: 'Приложение'),
-              ],
             ),
-          ),
+            // WHY: profile sections are stacked as full-width Telegram-style
+            // menu rows below the current section, not squeezed into a bottom bar.
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+                child: Builder(
+                  builder: (navigationContext) {
+                    final controller = DefaultTabController.of(navigationContext);
+                    const sections = [
+                      (Icons.person_outline_rounded, 'Профиль'),
+                      (Icons.groups_outlined, 'Группы'),
+                      (Icons.palette_outlined, 'Оформление'),
+                      (Icons.tune_rounded, 'Элементы'),
+                      (Icons.download_rounded, 'Приложение'),
+                    ];
+                    return AnimatedBuilder(
+                      animation: controller,
+                      builder: (context, _) => Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var index = 0; index < sections.length; index++) ...[
+                            if (index > 0) const SizedBox(height: 6),
+                            _ProfileSectionButton(
+                              icon: sections[index].$1,
+                              label: sections[index].$2,
+                              selected: controller.index == index,
+                              onTap: () => controller.animateTo(index),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
