@@ -55,20 +55,34 @@ class OfflineSyncEngine {
     String? lastError;
     final pending = await _store.readPendingMutations(ownerUserId: userId);
 
+    final blockedRecords = <String>{};
     for (final mutation in pending) {
       // WHY: never replay account A's queue after the user switches to account B.
       if (_currentUserId() != userId) break;
+
+      final recordKey = [
+        mutation['groupId'] ?? '_personal',
+        mutation['collection'] ?? '',
+        mutation['recordId'] ?? '',
+      ].join('::');
+      if (blockedRecords.contains(recordKey)) continue;
+
       if (mutation['status'] == 'failed') {
         lastError ??= mutation['lastError']?.toString();
-        break;
+        blockedRecords.add(recordKey);
+        continue;
       }
 
-      if (!force && !retryFailed && !_isRetryDue(mutation)) break;
+      if (!force && !retryFailed && !_isRetryDue(mutation)) {
+        blockedRecords.add(recordKey);
+        continue;
+      }
 
       final operationId = mutation['operationId']?.toString() ?? '';
       if (operationId.isEmpty) {
         lastError = 'В очереди обнаружена операция без идентификатора.';
-        break;
+        blockedRecords.add(recordKey);
+        continue;
       }
 
       try {
@@ -76,21 +90,22 @@ class OfflineSyncEngine {
         await _store.acknowledgeMutation(operationId);
         syncedCount++;
       } catch (error) {
-        lastError = error.toString();
+        lastError ??= error.toString();
         if (isOfflineNetworkError(error)) {
           await _store.recordRetry(
             operationId: operationId,
-            error: lastError,
+            error: error.toString(),
           );
-        } else {
-          await _store.recordFailure(
-            operationId: operationId,
-            error: lastError,
-          );
+          // WHY: a transport failure is likely global, so stop this drain.
+          break;
         }
-        // WHY: preserve mutation order. A later edit/delete must not overtake
-        // an earlier operation for the same record after a failed request.
-        break;
+        await _store.recordFailure(
+          operationId: operationId,
+          error: error.toString(),
+        );
+        // WHY: a rejected mutation blocks only later operations for that
+        // record; unrelated songs/events/profile changes can still sync.
+        blockedRecords.add(recordKey);
       }
     }
 

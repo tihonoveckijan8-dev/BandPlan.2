@@ -102,6 +102,27 @@ void main() {
     expect(report.pendingCount, 0);
   });
 
+  test('a rejected record does not block unrelated queued records', () async {
+    await enqueue('song-1');
+    await enqueue('song-2');
+    final applied = <String>[];
+    final engine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'user-a',
+      applyMutation: (mutation) async {
+        final id = mutation['recordId']! as String;
+        if (id == 'song-1') throw StateError('RLS rejected this song');
+        applied.add(id);
+      },
+    );
+
+    final report = await engine.syncPending();
+    expect(applied, ['song-2']);
+    expect(report.syncedCount, 1);
+    expect(report.failedCount, 1);
+    expect(report.pendingCount, 1);
+  });
+
   test('stops draining when the authenticated account changes mid-run', () async {
     await enqueue('song-1');
     await enqueue('song-2');
