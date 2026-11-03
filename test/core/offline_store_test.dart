@@ -94,6 +94,70 @@ void main() {
     expect((cached.single['payload'] as Map)['title'], 'Local edit');
   });
 
+  test('queued delete is hidden and cannot be resurrected by remote refresh', () async {
+    await store.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Song'},
+    );
+    await store.saveAndQueue(
+      operationId: 'delete-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: const {},
+      operation: 'delete',
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Stale server row'},
+    );
+
+    final cached = await store.readCachedRecords(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+    );
+    expect(cached, isEmpty);
+    expect(await store.readPendingMutations(ownerUserId: 'user-a'), hasLength(1));
+  });
+
+  test('acknowledging an older edit keeps a newer edit pending', () async {
+    await store.saveAndQueue(
+      operationId: 'edit-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'First edit'},
+    );
+    await store.saveAndQueue(
+      operationId: 'edit-2',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Second edit'},
+    );
+
+    await store.acknowledgeMutation('edit-1');
+
+    final cached = await store.readCachedRecords(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+    );
+    expect(cached.single['pendingSync'], isTrue);
+    expect((cached.single['payload'] as Map)['title'], 'Second edit');
+    expect(await store.readPendingMutations(ownerUserId: 'user-a'), hasLength(1));
+  });
+
   test('acknowledgement clears pending state only after server confirmation', () async {
     await store.saveAndQueue(
       operationId: 'op-1',

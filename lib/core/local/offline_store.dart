@@ -42,19 +42,18 @@ class OfflineStore {
     final now = DateTime.now().toUtc().toIso8601String();
 
     await _database.transaction((transaction) async {
-      if (operation == 'delete') {
-        await _cache.record(cacheKey).delete(transaction);
-      } else {
-        await _cache.record(cacheKey).put(transaction, {
-          'ownerUserId': ownerUserId,
-          'groupId': groupId,
-          'collection': collection,
-          'recordId': recordId,
-          'payload': payload,
-          'updatedAt': now,
-          'pendingSync': true,
-        });
-      }
+      // WHY: Keep a tombstone for queued deletes. A later remote refresh must
+      // not resurrect the row before Supabase acknowledges the deletion.
+      await _cache.record(cacheKey).put(transaction, {
+        'ownerUserId': ownerUserId,
+        'groupId': groupId,
+        'collection': collection,
+        'recordId': recordId,
+        'payload': payload,
+        'updatedAt': now,
+        'pendingSync': true,
+        'isDeleted': operation == 'delete',
+      });
 
       // WHY: Cache mutation and outbox insertion share one transaction. A crash
       // cannot leave a local edit visible without a durable sync instruction.
@@ -117,6 +116,7 @@ class OfflineStore {
       ),
     );
     return snapshots
+        .where((snapshot) => snapshot.value['isDeleted'] != true)
         .map((snapshot) => Map<String, Object?>.from(snapshot.value))
         .toList(growable: false);
   }
@@ -163,18 +163,36 @@ class OfflineStore {
       if (queued == null) return;
       await _outbox.record(operationId).delete(transaction);
 
-      if (queued['operation'] == 'delete') return;
-      final cacheKey = _cacheKey(
-        queued['ownerUserId']! as String,
-        queued['groupId'] as String?,
-        queued['collection']! as String,
-        queued['recordId']! as String,
+      final ownerUserId = queued['ownerUserId']! as String;
+      final groupId = queued['groupId'] as String?;
+      final collection = queued['collection']! as String;
+      final recordId = queued['recordId']! as String;
+      final cacheKey = _cacheKey(ownerUserId, groupId, collection, recordId);
+      final otherMutations = await _outbox.find(
+        transaction,
+        finder: Finder(
+          filter: Filter.equals('ownerUserId', ownerUserId),
+        ),
       );
+      final hasOtherPendingMutation = otherMutations.any((snapshot) {
+        final value = snapshot.value;
+        return value['groupId'] == groupId &&
+            value['collection'] == collection &&
+            value['recordId'] == recordId;
+      });
       final cached = await _cache.record(cacheKey).get(transaction);
       if (cached == null) return;
+
+      if (cached['isDeleted'] == true && !hasOtherPendingMutation) {
+        await _cache.record(cacheKey).delete(transaction);
+        return;
+      }
+
+      // WHY: Acknowledging an older operation must not mark a newer local edit
+      // as synced. The remaining outbox entry still owns this dirty cache row.
       await _cache.record(cacheKey).put(transaction, {
         ...cached,
-        'pendingSync': false,
+        'pendingSync': hasOtherPendingMutation,
       });
     });
   }
