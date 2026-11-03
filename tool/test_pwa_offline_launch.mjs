@@ -156,6 +156,51 @@ try {
   await command('Network.enable');
   await command('ServiceWorker.enable');
 
+  await command('Accessibility.enable');
+
+  // WHY: A signed-in session must survive a cold offline relaunch too.
+  // Use a local, unexpired fixture session; it is never sent to Supabase.
+  const projectUrl = process.env.SUPABASE_URL;
+  assert.ok(projectUrl, 'SUPABASE_URL is required for the auth storage key');
+  const projectRef = new URL(projectUrl).hostname.split('.')[0];
+  const userId = '00000000-0000-4000-8000-000000000042';
+  const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+  const encode = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const token = [
+    encode({ alg: 'HS256', typ: 'JWT' }),
+    encode({
+      aud: 'authenticated',
+      role: 'authenticated',
+      sub: userId,
+      exp: expiresAt,
+      iat: expiresAt - 3600,
+      email: 'offline-test@bandplan.invalid',
+      app_metadata: { provider: 'email', providers: ['email'] },
+      user_metadata: { bandplan_onboarding_done: true },
+    }),
+    'offline-test-signature',
+  ].join('.');
+  const fixtureSession = {
+    access_token: token,
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: expiresAt,
+    refresh_token: 'offline-test-refresh-token',
+    user: {
+      id: userId,
+      aud: 'authenticated',
+      role: 'authenticated',
+      email: 'offline-test@bandplan.invalid',
+      app_metadata: { provider: 'email', providers: ['email'] },
+      user_metadata: { bandplan_onboarding_done: true },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  };
+  await command('Page.addScriptToEvaluateOnNewDocument', {
+    source: `localStorage.setItem(${JSON.stringify('sb-' + projectRef + '-auth-token')}, ${JSON.stringify(JSON.stringify(fixtureSession))});`,
+  }, false);
+
   async function evaluate(expression) {
     const result = await command('Runtime.evaluate', {
       expression,
@@ -181,6 +226,19 @@ try {
   }
 
   await command('Page.navigate', { url: appUrl });
+  await waitFor(
+    'localStorage.getItem(' + JSON.stringify('sb-' + projectRef + '-auth-token') + ') !== null && !!document.querySelector("flt-glass-pane")',
+    'Flutter startup with a persisted signed-in session',
+  );
+  await waitFor(
+    'localStorage.getItem(' + JSON.stringify('sb-' + projectRef + '-auth-token') + ') !== null && !!document.querySelector("flt-glass-pane")',
+    'Flutter startup with a persisted signed-in session',
+  );
+  await waitFor(
+    'document.querySelectorAll("flt-semantics").length > 0',
+    'Flutter accessibility semantics for the signed-in app',
+    10000,
+  ).catch(() => {});
   await waitFor(
     'document.readyState === "complete" && !!document.querySelector("flt-glass-pane")',
     'Flutter app shell on first online launch',
