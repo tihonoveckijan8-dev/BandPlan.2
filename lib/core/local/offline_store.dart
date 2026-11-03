@@ -13,6 +13,7 @@ class OfflineStore {
 
   static final _cache = stringMapStoreFactory.store('cached_records');
   static final _outbox = stringMapStoreFactory.store('pending_mutations');
+  static final _settings = stringMapStoreFactory.store('app_settings');
 
   static Future<OfflineStore> open() async =>
       OfflineStore(await openBandPlanLocalDatabase());
@@ -441,6 +442,17 @@ class OfflineStore {
         'isDeleted': false,
       });
     });
+  }
+
+  /// Reads device-level preferences that are not tied to a signed-in account.
+  Future<Map<String, Object?>> readAppPreferences() async {
+    final saved = await _settings.record('appearance').get(_database);
+    return saved == null ? <String, Object?>{} : Map<String, Object?>.from(saved);
+  }
+
+  /// Persists visual preferences independently from account data and the sync outbox.
+  Future<void> saveAppPreferences(Map<String, Object?> preferences) async {
+    await _settings.record('appearance').put(_database, preferences);
   }
 
   Future<void> close() => _database.close();
