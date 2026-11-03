@@ -5,10 +5,16 @@ import '../../../core/local/offline_store.dart';
 import '../../../core/local/offline_sync_engine.dart';
 
 class AccountProfile {
-  const AccountProfile({required this.userId, required this.displayName, required this.roles});
+  const AccountProfile({
+    required this.userId,
+    required this.displayName,
+    required this.roles,
+    this.updatedAt,
+  });
   final String userId;
   final String displayName;
   final List<String> roles;
+  final String? updatedAt;
 
   factory AccountProfile.fromJson(Map<String, dynamic> json) {
     final rawRoles = json['roles'];
@@ -19,10 +25,16 @@ class AccountProfile {
       userId: json['user_id']?.toString() ?? '',
       displayName: json['display_name']?.toString() ?? '',
       roles: roles,
+      updatedAt: json['updated_at']?.toString(),
     );
   }
 
-  Map<String, Object?> toJson() => {'user_id': userId, 'display_name': displayName, 'roles': roles};
+  Map<String, Object?> toJson() => {
+        'user_id': userId,
+        'display_name': displayName,
+        'roles': roles,
+        if (updatedAt != null) 'updated_at': updatedAt,
+      };
 }
 
 class ProfileRepository {
@@ -37,7 +49,7 @@ class ProfileRepository {
     if (user == null) throw StateError('Требуется авторизация.');
     try {
       final row = await _client.from('bandplan_accounts')
-          .select('user_id, display_name, roles').eq('user_id', user.id).maybeSingle();
+          .select('user_id, display_name, roles, updated_at').eq('user_id', user.id).maybeSingle();
       final profile = row == null
           ? AccountProfile(userId: user.id, displayName: user.email?.split('@').first ?? '', roles: const [])
           : AccountProfile.fromJson(row);
