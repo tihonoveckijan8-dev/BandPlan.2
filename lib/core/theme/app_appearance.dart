@@ -6,6 +6,7 @@ enum AppThemeChoice { system, light, dark, amoled }
 enum AppCornerStyle { soft, balanced, sharp }
 enum AppElementDensity { compact, standard, comfortable }
 enum AppDepthStyle { soft, balanced, flat }
+enum AppTextSize { standard, large, extraLarge }
 
 class AppAppearance {
   const AppAppearance({
@@ -17,6 +18,7 @@ class AppAppearance {
     this.fieldCornerStyle = AppCornerStyle.soft,
     this.elementDensity = AppElementDensity.standard,
     this.depthStyle = AppDepthStyle.soft,
+    this.textSize = AppTextSize.standard,
   });
   static const defaults = AppAppearance();
   final AppThemeChoice themeChoice;
@@ -27,6 +29,13 @@ class AppAppearance {
   final AppCornerStyle fieldCornerStyle;
   final AppElementDensity elementDensity;
   final AppDepthStyle depthStyle;
+  final AppTextSize textSize;
+  // WHY: Typography presets tune the app's baseline while retaining platform accessibility scaling.
+  double get textSizeFactor => switch (textSize) {
+    AppTextSize.standard => 1.0,
+    AppTextSize.large => 1.08,
+    AppTextSize.extraLarge => 1.16,
+  };
   Color get accentColor => Color(accentColorValue);
   // WHY: Component-specific radii let users tune cards, controls and fields independently.
   double get cornerRadius => _radiusFor(cornerStyle);
@@ -56,7 +65,8 @@ class AppAppearance {
   AppAppearance copyWith({AppThemeChoice? themeChoice, int? accentColorValue,
     AppCornerStyle? cornerStyle, AppCornerStyle? cardCornerStyle,
     AppCornerStyle? buttonCornerStyle, AppCornerStyle? fieldCornerStyle,
-    AppElementDensity? elementDensity, AppDepthStyle? depthStyle}) => AppAppearance(
+    AppElementDensity? elementDensity, AppDepthStyle? depthStyle,
+    AppTextSize? textSize}) => AppAppearance(
       themeChoice: themeChoice ?? this.themeChoice,
       accentColorValue: accentColorValue ?? this.accentColorValue,
       cornerStyle: cornerStyle ?? this.cornerStyle,
@@ -65,6 +75,7 @@ class AppAppearance {
       fieldCornerStyle: fieldCornerStyle ?? (cornerStyle ?? this.fieldCornerStyle),
       elementDensity: elementDensity ?? this.elementDensity,
       depthStyle: depthStyle ?? this.depthStyle,
+      textSize: textSize ?? this.textSize,
     );
   Map<String, Object?> toMap() => {
     'themeChoice': themeChoice.name, 'accentColorValue': accentColorValue,
@@ -74,6 +85,7 @@ class AppAppearance {
     'fieldCornerStyle': fieldCornerStyle.name,
     'elementDensity': elementDensity.name,
     'depthStyle': depthStyle.name,
+    'textSize': textSize.name,
   };
   factory AppAppearance.fromMap(Map<String, Object?> values) => AppAppearance(
     themeChoice: _enumValue(AppThemeChoice.values, values['themeChoice'], AppThemeChoice.system),
@@ -91,6 +103,8 @@ class AppAppearance {
     elementDensity: _enumValue(AppElementDensity.values, values['elementDensity'], AppElementDensity.standard),
     // WHY: Profiles saved before depth controls keep the soft-clay default.
     depthStyle: _enumValue(AppDepthStyle.values, values['depthStyle'], AppDepthStyle.soft),
+    // WHY: Existing installations keep the current typography until a user changes it.
+    textSize: _enumValue(AppTextSize.values, values['textSize'], AppTextSize.standard),
   );
   static T _enumValue<T extends Enum>(List<T> values, Object? rawValue, T fallback) {
     for (final value in values) { if (value.name == rawValue?.toString()) return value; }
