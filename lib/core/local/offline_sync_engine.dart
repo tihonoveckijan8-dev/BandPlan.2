@@ -5,6 +5,22 @@ typedef OfflineMutationApplier = Future<void> Function(
   Map<String, Object?> mutation,
 );
 
+/// A server snapshot differs from the baseline captured with the local edit.
+class OfflineMutationConflict implements Exception {
+  const OfflineMutationConflict({
+    required this.message,
+    required this.remoteVersionExists,
+    this.remotePayload,
+  });
+
+  final String message;
+  final bool remoteVersionExists;
+  final Map<String, Object?>? remotePayload;
+
+  @override
+  String toString() => message;
+}
+
 /// A durable outbox drain. Mutations are sent sequentially and acknowledged
 /// only after the remote adapter confirms the write.
 class OfflineSyncEngine {
@@ -67,7 +83,8 @@ class OfflineSyncEngine {
       ].join('::');
       if (blockedRecords.contains(recordKey)) continue;
 
-      if (mutation['status'] == 'failed') {
+      if (mutation['status'] == 'failed' ||
+          mutation['status'] == 'conflict') {
         lastError ??= mutation['lastError']?.toString();
         blockedRecords.add(recordKey);
         continue;
@@ -89,6 +106,15 @@ class OfflineSyncEngine {
         await _applyMutation(mutation);
         await _store.acknowledgeMutation(operationId);
         syncedCount++;
+      } on OfflineMutationConflict catch (conflict) {
+        lastError ??= conflict.message;
+        await _store.recordConflict(
+          operationId: operationId,
+          error: conflict.message,
+          remoteVersionExists: conflict.remoteVersionExists,
+          remotePayload: conflict.remotePayload,
+        );
+        blockedRecords.add(recordKey);
       } catch (error) {
         lastError ??= error.toString();
         if (isOfflineNetworkError(error)) {
@@ -113,6 +139,9 @@ class OfflineSyncEngine {
     final failedCount = remaining
         .where((item) => item['status'] == 'failed')
         .length;
+    final conflictCount = remaining
+        .where((item) => item['status'] == 'conflict')
+        .length;
     if (lastError == null) {
       for (final item in remaining) {
         final value = item['lastError']?.toString();
@@ -127,6 +156,7 @@ class OfflineSyncEngine {
       syncedCount: syncedCount,
       pendingCount: remaining.length,
       failedCount: failedCount,
+      conflictCount: conflictCount,
       lastError: lastError,
     );
   }
@@ -151,12 +181,14 @@ class SyncReport {
     this.syncedCount = 0,
     this.pendingCount = 0,
     this.failedCount = 0,
+    this.conflictCount = 0,
     this.lastError,
   });
 
   final int syncedCount;
   final int pendingCount;
   final int failedCount;
+  final int conflictCount;
   final String? lastError;
 
   bool get hasPending => pendingCount > 0;
