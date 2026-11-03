@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_appearance.dart';
-import '../../../core/theme/bandplan_theme.dart';
 
 class AppearanceSettingsTab extends ConsumerWidget {
   const AppearanceSettingsTab({super.key});
@@ -213,91 +212,6 @@ class AppearanceSettingsTab extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
             const _SectionHeading(
-              title: 'Оттенок поверхностей',
-              subtitle: 'Выбери общий тон фона, карточек и полей. Цвет акцента останется прежним.',
-            ),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                (AppSurfaceTone.neutral, 'Нейтральный'),
-                (AppSurfaceTone.cool, 'Холодный'),
-                (AppSurfaceTone.warm, 'Тёплый'),
-              ].map((option) => ChoiceChip(
-                label: Text(option.$2),
-                selected: appearance.surfaceTone == option.$1,
-                onSelected: (_) => _apply(
-                  context,
-                  ref,
-                  appearance.copyWith(surfaceTone: option.$1),
-                ),
-              )).toList(growable: false),
-            ),
-            const SizedBox(height: 28),
-            const _SectionHeading(
-              title: 'Форма отдельных элементов',
-              subtitle: 'Меняй скругление карточек, кнопок и полей независимо друг от друга.',
-            ),
-            _ElementShapePicker(
-              title: 'Карточки',
-              selected: appearance.cardCornerStyle,
-              options: _corners,
-              onSelected: (value) => _apply(context, ref, appearance.copyWith(cardCornerStyle: value)),
-            ),
-            const SizedBox(height: 14),
-            _ElementShapePicker(
-              title: 'Кнопки',
-              selected: appearance.buttonCornerStyle,
-              options: _corners,
-              onSelected: (value) => _apply(context, ref, appearance.copyWith(buttonCornerStyle: value)),
-            ),
-            const SizedBox(height: 14),
-            _ElementShapePicker(
-              title: 'Поля ввода',
-              selected: appearance.fieldCornerStyle,
-              options: _corners,
-              onSelected: (value) => _apply(context, ref, appearance.copyWith(fieldCornerStyle: value)),
-            ),
-            const SizedBox(height: 28),
-            const _SectionHeading(
-              title: 'Глубина элементов',
-              subtitle: 'Выбери, насколько выражен объём карточек и основных кнопок.',
-            ),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                (AppDepthStyle.soft, 'Мягкая'),
-                (AppDepthStyle.balanced, 'Умеренная'),
-                (AppDepthStyle.flat, 'Плоская'),
-              ].map((option) => ChoiceChip(
-                label: Text(option.$2),
-                selected: appearance.depthStyle == option.$1,
-                onSelected: (_) => _apply(
-                  context,
-                  ref,
-                  appearance.copyWith(depthStyle: option.$1),
-                ),
-              )).toList(growable: false),
-            ),
-            const SizedBox(height: 28),
-            const _SectionHeading(title: 'Плотность интерфейса', subtitle: 'Настрой размеры и расстояния между стандартными элементами.'),
-            ...[
-              (AppElementDensity.compact, 'Компактные', 'Больше элементов на экране', Icons.view_compact_alt_rounded),
-              (AppElementDensity.standard, 'Обычные', 'Сбалансированные отступы', Icons.view_agenda_rounded),
-              (AppElementDensity.comfortable, 'Свободные', 'Больше пространства', Icons.view_day_rounded),
-            ].map((option) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _DensityChoice(
-                title: option.$2,
-                subtitle: option.$3,
-                icon: option.$4,
-                selected: appearance.elementDensity == option.$1,
-                onTap: () => _apply(context, ref, appearance.copyWith(elementDensity: option.$1)),
-              ),
-            )),
-            const SizedBox(height: 28),
-            const _SectionHeading(
               title: 'Контрастность',
               subtitle: 'Сделай подписи и цветовые различия заметнее.',
             ),
@@ -340,7 +254,6 @@ class AppearanceSettingsTab extends ConsumerWidget {
               )).toList(growable: false),
             ),
             const SizedBox(height: 24),
-            _AppearancePreview(appearance: appearance),
             const SizedBox(height: 18),
             Align(
               alignment: Alignment.center,
