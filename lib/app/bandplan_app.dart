@@ -109,6 +109,7 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
         fieldCornerRadius: appearance.fieldCornerRadius,
         visualDensity: appearance.visualDensity,
         depthElevation: appearance.depthElevation,
+        fontSizeFactor: appearance.textSizeFactor,
       ),
       darkTheme: appearance.useAmoled
           ? BandPlanTheme.amoled(
@@ -119,6 +120,7 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
               fieldCornerRadius: appearance.fieldCornerRadius,
               visualDensity: appearance.visualDensity,
               depthElevation: appearance.depthElevation,
+              fontSizeFactor: appearance.textSizeFactor,
             )
           : BandPlanTheme.dark(
               accentColor: appearance.accentColor,
@@ -127,7 +129,8 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
               buttonCornerRadius: appearance.buttonCornerRadius,
               fieldCornerRadius: appearance.fieldCornerRadius,
               visualDensity: appearance.visualDensity,
-        depthElevation: appearance.depthElevation,
+              depthElevation: appearance.depthElevation,
+              fontSizeFactor: appearance.textSizeFactor,
             ),
       themeMode: appearance.materialThemeMode,
       routerConfig: bandPlanRouter,
