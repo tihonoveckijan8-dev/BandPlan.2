@@ -130,7 +130,14 @@ try {
   browserSocket.addEventListener('message', (event) => {
     const message = JSON.parse(event.data);
     if (message.method === 'Runtime.exceptionThrown') {
-      exceptions.push(message.params.exceptionDetails.text || 'Uncaught browser exception');
+      const details = message.params.exceptionDetails;
+      // WHY: CDP's generic "Uncaught" label hides the actual Flutter/Supabase
+      // failure; retain exception text, source URL and line for actionable CI logs.
+      exceptions.push({
+        text: details.exception?.description || details.text || 'Uncaught browser exception',
+        url: details.url || '',
+        line: details.lineNumber ?? -1,
+      });
     }
     if (message.id && pending.has(message.id)) {
       const { resolve, reject } = pending.get(message.id);
