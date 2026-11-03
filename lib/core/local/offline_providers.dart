@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'offline_store.dart';
 import 'offline_sync_engine.dart';
-import 'offline_sync_engine.dart';
 import 'supabase_offline_mutation_handler.dart';
 
 /// Shared persistent database for local-first repositories.
