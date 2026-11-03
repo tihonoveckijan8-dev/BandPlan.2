@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
@@ -15,17 +15,120 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <style>
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background: #101426;
+    }
+    #bandplan-startup {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: grid;
+      place-content: center;
+      gap: 16px;
+      padding: 28px;
+      box-sizing: border-box;
+      background: #101426;
+      color: #e8ecf8;
+      font: 600 16px/1.5 Manrope, system-ui, sans-serif;
+      text-align: center;
+    }
+    #bandplan-startup[hidden] { display: none; }
+    #bandplan-startup .spinner {
+      width: 30px;
+      height: 30px;
+      margin: 0 auto;
+      border: 3px solid #ffffff30;
+      border-top-color: #1554ff;
+      border-radius: 50%;
+      animation: bandplan-spin .8s linear infinite;
+    }
+    #bandplan-startup .details {
+      max-width: 420px;
+      color: #b6bed2;
+      font-size: 13px;
+      font-weight: 400;
+    }
+    #bandplan-startup button {
+      min-height: 46px;
+      margin: 4px auto 0;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 14px;
+      background: #1554ff;
+      color: white;
+      font: inherit;
+    }
+    @keyframes bandplan-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      #bandplan-startup .spinner { animation: none; }
+    }
+  </style>
 </head>
 <body>
+  <div id="bandplan-startup" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <div id="bandplan-startup-title">Запускаем BandPlan…</div>
+    <div id="bandplan-startup-details" class="details">Подготавливаем приложение.</div>
+    <button id="bandplan-startup-retry" type="button" hidden>Перезагрузить</button>
+  </div>
   <script>
-    // WHY: Start installing the offline app shell while Flutter initializes.
-    // Waiting for window.load delays caching until after the initial page load,
-    // so a user can close the PWA before its offline files are ready.
-    // Keep registration relative so GitHub Pages project subpaths work correctly.
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js', { scope: './' })
-        .catch((error) => console.error('BandPlan PWA worker registration failed:', error));
-    }
+    (function () {
+      const panel = document.getElementById('bandplan-startup');
+      const title = document.getElementById('bandplan-startup-title');
+      const details = document.getElementById('bandplan-startup-details');
+      const retry = document.getElementById('bandplan-startup-retry');
+      let firstFrame = false;
+
+      function showStartupError(message) {
+        if (firstFrame) return;
+        title.textContent = 'Не удалось запустить BandPlan';
+        details.textContent = message || 'Проверьте подключение и попробуйте перезагрузить приложение.';
+        retry.hidden = false;
+      }
+
+      retry.addEventListener('click', function () {
+        window.location.reload();
+      });
+
+      // WHY: A failed Flutter bootstrap must show a recoverable message instead of a blank white page.
+      window.addEventListener('error', function (event) {
+        showStartupError(event.message || 'Ошибка загрузки приложения.');
+      });
+      window.addEventListener('unhandledrejection', function () {
+        showStartupError('Ошибка инициализации приложения. Попробуйте перезагрузить страницу.');
+      });
+
+      // WHY: Hide the HTML fallback only after Flutter has actually painted its first frame.
+      window.addEventListener('flutter-first-frame', function () {
+        firstFrame = true;
+        panel.hidden = true;
+      }, { once: true });
+
+      // WHY: Catch stalled downloads or a stale PWA shell even when no JS exception is emitted.
+      window.setTimeout(function () {
+        if (!firstFrame) {
+          showStartupError('Загрузка заняла слишком много времени. Перезагрузите приложение.');
+        }
+      }, 20000);
+
+      // WHY: Check for a newer worker on every fresh entry, without forcing a reload during an active session.
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js', {
+          scope: './',
+          updateViaCache: 'none'
+        }).then(function (registration) {
+          registration.update().catch(function (error) {
+            console.warn('BandPlan PWA update check failed:', error);
+          });
+        }).catch(function (error) {
+          console.error('BandPlan PWA worker registration failed:', error);
+        });
+      }
+    })();
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
