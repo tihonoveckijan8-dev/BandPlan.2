@@ -25,3 +25,15 @@ Phase 0 — product and backend discovery. See:
 
 ## Planned stack
 Flutter/Dart, supabase_flutter, Riverpod, go_router, feature-first architecture. Exact versions and platform scaffolding are set in Phase 1 after checking the available Flutter SDK.
+## Android APK signing
+
+The Android workflow supports a persistent upload keystore. Without it, the workflow still creates a test APK, but a later APK may not install as an update over that build.
+
+To enable update-safe releases, create a private JKS/PKCS12 upload keystore locally and add these repository **Actions secrets** under **Settings → Secrets and variables → Actions**:
+
+- `ANDROID_KEYSTORE_BASE64` — base64-encoded keystore file (for example, `base64 -w 0 upload-keystore.jks` on Linux).
+- `ANDROID_KEYSTORE_PASSWORD` — keystore password.
+- `ANDROID_KEY_ALIAS` — key alias.
+- `ANDROID_KEY_PASSWORD` — key password.
+
+Never commit the keystore or passwords. Keep a secure offline backup of the keystore: losing it prevents publishing compatible updates signed with the same key. Once all four secrets are configured, the Android workflow automatically signs release APKs with that key.
