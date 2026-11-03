@@ -196,7 +196,7 @@ jobs:
           print(f"Prepared offline cache for {len(assets)} same-origin files (build {build_id})")
           PY
           node --check build/web/service-worker.js
-          node tool/test_service_worker_upgrade.mjs build/web/service-worker.js
+          node tool/test_service_worker_upgrade.mjs build/web/service-worker.js build/web/asset-manifest.json
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
