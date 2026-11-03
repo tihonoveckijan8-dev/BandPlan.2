@@ -7,12 +7,14 @@ import 'package:bandplan/core/local/offline_store.dart';
 void main() {
   late OfflineStore store;
   var testDatabaseId = 0;
+  late String testDatabaseName;
 
   setUp(() async {
     // WHY: The memory factory keeps named databases alive across test cases.
     // Give every test its own database so outbox records cannot leak between tests.
+    testDatabaseName = 'offline-store-test-${testDatabaseId++}';
     final database = await databaseFactoryMemory.openDatabase(
-      'offline-store-test-${testDatabaseId++}',
+      testDatabaseName,
     );
     store = OfflineStore(database);
   });
@@ -109,6 +111,48 @@ void main() {
     );
     expect(pending, hasLength(1));
     expect(pending.single['operation'], 'delete');
+  });
+
+  test('queued edits survive closing and reopening the local database', () async {
+    await store.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'id': 'song-1', 'title': 'Server version'},
+    );
+    await store.saveAndQueue(
+      operationId: 'restart-edit-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'id': 'song-1', 'title': 'Local version'},
+    );
+
+    // WHY: Simulate process termination after commit, then reopen the same
+    // persistent database and verify both cache and outbox are recovered.
+    await store.close();
+    final reopenedDatabase = await databaseFactoryMemory.openDatabase(
+      testDatabaseName,
+    );
+    store = OfflineStore(reopenedDatabase);
+
+    final cached = await store.readCachedRecords(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+    );
+    final pending = await store.readPendingMutations(ownerUserId: 'user-a');
+
+    expect(cached, hasLength(1));
+    expect((cached.single['payload'] as Map)['title'], 'Local version');
+    expect(cached.single['pendingSync'], isTrue);
+    expect(pending, hasLength(1));
+    expect(pending.single['operationId'], 'restart-edit-1');
+    expect(pending.single['status'], 'pending');
+    expect(pending.single['baseVersionCaptured'], isTrue);
+    expect((pending.single['basePayload'] as Map)['title'], 'Server version');
   });
 
   test('cache is isolated by account and group', () async {
