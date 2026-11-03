@@ -246,4 +246,101 @@ void main() {
     expect(applied.single['payload'], {'id': 'pwa-song', 'title': 'Device A offline edit'});
   }, skip: !kIsWeb);
 
+
+  test('IndexedDB restores all offline app datasets after a cold store reopen', () async {
+    const databaseName = 'bandplan_offline_all_datasets_test';
+    await databaseFactoryWeb.deleteDatabase(databaseName);
+    var store = OfflineStore(
+      await databaseFactoryWeb.openDatabase(databaseName),
+    );
+
+    // WHY: Seed the same account/group-scoped collections consumed by the
+    // calendar, song library, setlists, and group switcher before termination.
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      collection: 'my_groups',
+      recordId: 'group-a',
+      payload: {'id': 'group-a', 'name': 'Offline Band'},
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      collection: 'active_group',
+      recordId: 'active',
+      payload: {'group_id': 'group-a', 'group_name': 'Offline Band'},
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-a',
+      payload: {'id': 'song-a', 'title': 'Cached song', 'lyrics': 'Offline lyrics'},
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      groupId: 'group-a',
+      collection: 'group_events',
+      recordId: 'event-a',
+      payload: {'id': 'event-a', 'title': 'Cached rehearsal', 'date': '2026-11-05'},
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      groupId: 'group-a',
+      collection: 'group_setlists',
+      recordId: 'setlist-a',
+      payload: {'id': 'setlist-a', 'name': 'Cached program', 'items': []},
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      collection: 'personal_songs',
+      recordId: 'personal-song-a',
+      payload: {'id': 'personal-song-a', 'title': 'Personal cached song'},
+    );
+    await store.close();
+
+    // WHY: A new OfflineStore instance models a cold app restart; each dataset
+    // must be readable without calling Supabase or depending on a live tab.
+    store = OfflineStore(
+      await databaseFactoryWeb.openDatabase(databaseName),
+    );
+    addTearDown(() async {
+      await store.close();
+      await databaseFactoryWeb.deleteDatabase(databaseName);
+    });
+
+    final groups = await store.readCachedRecords(
+      ownerUserId: 'offline-user',
+      collection: 'my_groups',
+    );
+    final activeGroup = await store.readCachedRecords(
+      ownerUserId: 'offline-user',
+      collection: 'active_group',
+    );
+    final songs = await store.readCachedRecords(
+      ownerUserId: 'offline-user',
+      groupId: 'group-a',
+      collection: 'group_songs',
+    );
+    final events = await store.readCachedRecords(
+      ownerUserId: 'offline-user',
+      groupId: 'group-a',
+      collection: 'group_events',
+    );
+    final setlists = await store.readCachedRecords(
+      ownerUserId: 'offline-user',
+      groupId: 'group-a',
+      collection: 'group_setlists',
+    );
+    final personalSongs = await store.readCachedRecords(
+      ownerUserId: 'offline-user',
+      collection: 'personal_songs',
+    );
+
+    expect((groups.single['payload'] as Map)['name'], 'Offline Band');
+    expect((activeGroup.single['payload'] as Map)['group_id'], 'group-a');
+    expect((songs.single['payload'] as Map)['lyrics'], 'Offline lyrics');
+    expect((events.single['payload'] as Map)['title'], 'Cached rehearsal');
+    expect((setlists.single['payload'] as Map)['name'], 'Cached program');
+    expect((personalSongs.single['payload'] as Map)['title'], 'Personal cached song');
+  }, skip: !kIsWeb);
+
 }
