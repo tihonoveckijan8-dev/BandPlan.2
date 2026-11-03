@@ -307,12 +307,30 @@ class OfflineStore {
           filter: Filter.equals('ownerUserId', ownerUserId),
         ),
       );
-      final hasOtherPendingMutation = otherMutations.any((snapshot) {
+      final sameRecordMutations = otherMutations.where((snapshot) {
         final value = snapshot.value;
         return value['groupId'] == groupId &&
             value['collection'] == collection &&
             value['recordId'] == recordId;
-      });
+      }).toList()
+        ..sort((a, b) => (a.value['createdAt']?.toString() ?? '')
+            .compareTo(b.value['createdAt']?.toString() ?? ''));
+      final hasOtherPendingMutation = sameRecordMutations.isNotEmpty;
+
+      // WHY: The next queued edit must compare against the version just
+      // acknowledged by Supabase, not the older pre-queue snapshot. This
+      // prevents our own previous write from being misclassified as a conflict.
+      if (hasOtherPendingMutation) {
+        final next = sameRecordMutations.first;
+        await _outbox.record(next.key).put(transaction, {
+          ...next.value,
+          'basePayload': queued['operation'] == 'delete'
+              ? null
+              : queued['payload'],
+          'baseVersionCaptured': true,
+        });
+      }
+
       final cached = await _cache.record(cacheKey).get(transaction);
       if (cached == null) return;
 
