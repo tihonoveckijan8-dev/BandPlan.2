@@ -118,7 +118,7 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
               buttonCornerRadius: appearance.buttonCornerRadius,
               fieldCornerRadius: appearance.fieldCornerRadius,
               visualDensity: appearance.visualDensity,
-        depthElevation: appearance.depthElevation,
+              depthElevation: appearance.depthElevation,
             )
           : BandPlanTheme.dark(
               accentColor: appearance.accentColor,
