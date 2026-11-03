@@ -61,6 +61,7 @@ This choice is intentionally compatible with the current JSONB data contract and
 - [x] Retry transient failures with bounded exponential backoff.
 - [x] Use idempotent upserts and sequential queue processing to preserve operation order.
 - [x] Reconcile remote refreshes with unsynced local changes; never overwrite a dirty local record or resurrect a queued delete tombstone from a stale snapshot.
+- [x] After a queued mutation is acknowledged, advance the next mutation for that record to use the acknowledged payload as its new baseline; this avoids treating the app's own previous sync as an external edit.
 - [ ] Define server-vs-device conflict resolution per entity. Current policy protects pending device edits until Supabase acknowledges them; concurrent edits from other devices still need a product-level resolution policy.
 - [x] Subscribe to Supabase Realtime changes for group songs, events, and setlists; treat changes as invalidation signals and re-fetch through the existing RLS-protected repositories.
 
