@@ -294,7 +294,7 @@ class _AppearancePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final radius = appearance.cornerRadius;
+    final radius = appearance.cardCornerRadius;
     return Container(
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(color: colors.surfaceContainer, borderRadius: BorderRadius.circular(radius)),
@@ -335,7 +335,7 @@ class _AppearancePreview extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color: appearance.accentColor,
-                borderRadius: BorderRadius.circular(radius * 0.72),
+                borderRadius: BorderRadius.circular(appearance.buttonCornerRadius),
               ),
               child: const Text(
                 'Кнопка',
