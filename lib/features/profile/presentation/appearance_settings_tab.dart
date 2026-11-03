@@ -113,20 +113,29 @@ class AppearanceSettingsTab extends ConsumerWidget {
               }).toList(growable: false),
             ),
             const SizedBox(height: 28),
-            const _SectionHeading(title: 'Форма элементов', subtitle: 'Настрой скругление карточек, кнопок и полей.'),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _corners.map((option) {
-                return Tooltip(
-                  message: option.description,
-                  child: ChoiceChip(
-                    label: Text(option.label),
-                    selected: appearance.cornerStyle == option.value,
-                    onSelected: (_) => _apply(context, ref, appearance.copyWith(cornerStyle: option.value)),
-                  ),
-                );
-              }).toList(growable: false),
+            const _SectionHeading(
+              title: 'Форма отдельных элементов',
+              subtitle: 'Меняй скругление карточек, кнопок и полей независимо друг от друга.',
+            ),
+            _ElementShapePicker(
+              title: 'Карточки',
+              selected: appearance.cardCornerStyle,
+              options: _corners,
+              onSelected: (value) => _apply(context, ref, appearance.copyWith(cardCornerStyle: value)),
+            ),
+            const SizedBox(height: 14),
+            _ElementShapePicker(
+              title: 'Кнопки',
+              selected: appearance.buttonCornerStyle,
+              options: _corners,
+              onSelected: (value) => _apply(context, ref, appearance.copyWith(buttonCornerStyle: value)),
+            ),
+            const SizedBox(height: 14),
+            _ElementShapePicker(
+              title: 'Поля ввода',
+              selected: appearance.fieldCornerStyle,
+              options: _corners,
+              onSelected: (value) => _apply(context, ref, appearance.copyWith(fieldCornerStyle: value)),
             ),
             const SizedBox(height: 28),
             const _SectionHeading(title: 'Плотность интерфейса', subtitle: 'Настрой размеры и расстояния между стандартными элементами.'),
@@ -336,6 +345,43 @@ class _AppearancePreview extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ElementShapePicker extends StatelessWidget {
+  const _ElementShapePicker({
+    required this.title,
+    required this.selected,
+    required this.options,
+    required this.onSelected,
+  });
+
+  final String title;
+  final AppCornerStyle selected;
+  final List<_CornerOption> options;
+  final ValueChanged<AppCornerStyle> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((option) => Tooltip(
+            message: option.description,
+            child: ChoiceChip(
+              label: Text(option.label),
+              selected: selected == option.value,
+              onSelected: (_) => onSelected(option.value),
+            ),
+          )).toList(growable: false),
+        ),
+      ],
     );
   }
 }
