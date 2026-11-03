@@ -366,7 +366,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               onDownloadApk: _downloadAndroidApk,
             ),
           ],
-        ),
               ),
             ),
             // WHY: profile sections are stacked as full-width Telegram-style
