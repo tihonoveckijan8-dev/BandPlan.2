@@ -68,6 +68,7 @@ class OfflineStore {
         'createdAt': now,
         'attemptCount': 0,
         'lastError': null,
+        'status': 'pending',
       });
     });
   }
@@ -206,8 +207,49 @@ class OfflineStore {
         ...current,
         'attemptCount': ((current['attemptCount'] as num?)?.toInt() ?? 0) + 1,
         'lastError': error,
+        'status': 'pending',
         'lastAttemptAt': DateTime.now().toUtc().toIso8601String(),
       });
+    });
+  }
+
+  Future<void> recordFailure({
+    required String operationId,
+    required String error,
+  }) async {
+    await _database.transaction((transaction) async {
+      final record = _outbox.record(operationId);
+      final current = await record.get(transaction);
+      if (current == null) return;
+      await record.put(transaction, {
+        ...current,
+        'attemptCount': ((current['attemptCount'] as num?)?.toInt() ?? 0) + 1,
+        'lastError': error,
+        'status': 'failed',
+        'lastAttemptAt': DateTime.now().toUtc().toIso8601String(),
+      });
+    });
+  }
+
+  /// Explicitly re-enables server-rejected mutations after the user retries.
+  Future<void> retryFailedMutations({required String ownerUserId}) async {
+    await _database.transaction((transaction) async {
+      final failed = await _outbox.find(
+        transaction,
+        finder: Finder(
+          filter: Filter.and([
+            Filter.equals('ownerUserId', ownerUserId),
+            Filter.equals('status', 'failed'),
+          ]),
+        ),
+      );
+      for (final snapshot in failed) {
+        await _outbox.record(snapshot.key).put(transaction, {
+          ...snapshot.value,
+          'status': 'pending',
+          'lastError': null,
+        });
+      }
     });
   }
 
