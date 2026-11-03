@@ -505,4 +505,31 @@ void main() {
     expect(cached.single['pendingSync'], isFalse);
   });
 
+
+  test('appearance preferences survive closing and reopening the database', () async {
+    const databaseName = 'offline-store-appearance-restart';
+    final firstStore = OfflineStore(
+      await databaseFactoryMemory.openDatabase(databaseName),
+    );
+    await firstStore.saveAppPreferences({
+      'themeChoice': 'amoled',
+      'accentColorValue': 0xFF7657FF,
+      'cornerStyle': 'sharp',
+    });
+    await firstStore.close();
+
+    // WHY: Appearance is device-level state and must survive a cold app restart
+    // without depending on the network or the currently signed-in account.
+    final reopenedStore = OfflineStore(
+      await databaseFactoryMemory.openDatabase(databaseName),
+    );
+    addTearDown(reopenedStore.close);
+
+    expect(await reopenedStore.readAppPreferences(), {
+      'themeChoice': 'amoled',
+      'accentColorValue': 0xFF7657FF,
+      'cornerStyle': 'sharp',
+    });
+  });
+
 }
