@@ -6,9 +6,14 @@ import 'package:bandplan/core/local/offline_store.dart';
 
 void main() {
   late OfflineStore store;
+  var testDatabaseId = 0;
 
   setUp(() async {
-    final database = await databaseFactoryMemory.openDatabase('offline-store-test');
+    // WHY: The memory factory keeps named databases alive across test cases.
+    // Give every test its own database so outbox records cannot leak between tests.
+    final database = await databaseFactoryMemory.openDatabase(
+      'offline-store-test-${testDatabaseId++}',
+    );
     store = OfflineStore(database);
   });
 
