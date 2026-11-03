@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bandplan/core/theme/app_appearance.dart';
+import 'package:bandplan/core/theme/bandplan_theme.dart';
 
 void main() {
   group('AppAppearance', () {
@@ -109,6 +110,22 @@ void main() {
 
       expect(appearance.contrast, AppContrast.standard);
       expect(appearance.contrastLevel, 0.0);
+    });
+
+    test('restores and serializes the selected surface tone', () {
+      final appearance = AppAppearance.fromMap({'surfaceTone': 'warm'});
+
+      expect(appearance.surfaceTone, AppSurfaceTone.warm);
+      expect(
+        AppAppearance.fromMap(appearance.toMap()).surfaceTone,
+        AppSurfaceTone.warm,
+      );
+    });
+
+    test('uses neutral surfaces for older preference maps', () {
+      final appearance = AppAppearance.fromMap({'themeChoice': 'dark'});
+
+      expect(appearance.surfaceTone, AppSurfaceTone.neutral);
     });
 
     test('serializes preferences for durable storage', () {
