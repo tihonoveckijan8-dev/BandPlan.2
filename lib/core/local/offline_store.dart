@@ -348,6 +348,101 @@ class OfflineStore {
     });
   }
 
+  /// Marks a queued mutation as a conflict and preserves both versions.
+  Future<void> recordConflict({
+    required String operationId,
+    required String error,
+    required bool remoteVersionExists,
+    Map<String, Object?>? remotePayload,
+  }) async {
+    await _database.transaction((transaction) async {
+      final record = _outbox.record(operationId);
+      final current = await record.get(transaction);
+      if (current == null) return;
+      await record.put(transaction, {
+        ...current,
+        'status': 'conflict',
+        'lastError': error,
+        'remoteVersionExists': remoteVersionExists,
+        'remotePayload': remotePayload,
+        'lastAttemptAt': DateTime.now().toUtc().toIso8601String(),
+      });
+    });
+  }
+
+  /// Keeps the device version, rebasing it on the latest server snapshot.
+  Future<void> resolveConflictKeepLocal({
+    required String operationId,
+  }) async {
+    await _database.transaction((transaction) async {
+      final record = _outbox.record(operationId);
+      final current = await record.get(transaction);
+      if (current == null || current['status'] != 'conflict') return;
+      await record.put(transaction, {
+        ...current,
+        'basePayload': current['remoteVersionExists'] == true
+            ? current['remotePayload']
+            : null,
+        'baseVersionCaptured': true,
+        'status': 'pending',
+        'lastError': null,
+        'remotePayload': null,
+        'remoteVersionExists': null,
+        'attemptCount': 0,
+        'lastAttemptAt': null,
+      });
+    });
+  }
+
+  /// Discards queued local edits for this record and adopts the server version.
+  Future<void> resolveConflictUseServer({
+    required String operationId,
+  }) async {
+    await _database.transaction((transaction) async {
+      final selected = await _outbox.record(operationId).get(transaction);
+      if (selected == null || selected['status'] != 'conflict') return;
+
+      final ownerUserId = selected['ownerUserId']! as String;
+      final groupId = selected['groupId'] as String?;
+      final collection = selected['collection']! as String;
+      final recordId = selected['recordId']! as String;
+      final matches = await _outbox.find(
+        transaction,
+        finder: Finder(
+          filter: Filter.and([
+            Filter.equals('ownerUserId', ownerUserId),
+            Filter.equals('groupId', groupId),
+            Filter.equals('collection', collection),
+            Filter.equals('recordId', recordId),
+          ]),
+        ),
+      );
+      for (final snapshot in matches) {
+        await _outbox.record(snapshot.key).delete(transaction);
+      }
+
+      final cacheKey = _cacheKey(ownerUserId, groupId, collection, recordId);
+      if (selected['remoteVersionExists'] != true) {
+        await _cache.record(cacheKey).delete(transaction);
+        return;
+      }
+      final remotePayload = selected['remotePayload'];
+      if (remotePayload is! Map) {
+        throw StateError('В конфликте отсутствует серверная версия записи.');
+      }
+      await _cache.record(cacheKey).put(transaction, {
+        'ownerUserId': ownerUserId,
+        'groupId': groupId,
+        'collection': collection,
+        'recordId': recordId,
+        'payload': Map<String, Object?>.from(remotePayload),
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        'pendingSync': false,
+        'isDeleted': false,
+      });
+    });
+  }
+
   Future<void> close() => _database.close();
 
   static String _cacheKey(
