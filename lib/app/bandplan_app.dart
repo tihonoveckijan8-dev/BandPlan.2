@@ -113,11 +113,17 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
           ? BandPlanTheme.amoled(
               accentColor: appearance.accentColor,
               cornerRadius: appearance.cornerRadius,
+              cardCornerRadius: appearance.cardCornerRadius,
+              buttonCornerRadius: appearance.buttonCornerRadius,
+              fieldCornerRadius: appearance.fieldCornerRadius,
               visualDensity: appearance.visualDensity,
             )
           : BandPlanTheme.dark(
               accentColor: appearance.accentColor,
               cornerRadius: appearance.cornerRadius,
+              cardCornerRadius: appearance.cardCornerRadius,
+              buttonCornerRadius: appearance.buttonCornerRadius,
+              fieldCornerRadius: appearance.fieldCornerRadius,
               visualDensity: appearance.visualDensity,
             ),
       themeMode: appearance.materialThemeMode,
