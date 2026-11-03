@@ -119,6 +119,7 @@ jobs:
           python3 - <<'PY'
           import json
           import os
+          import re
           from pathlib import Path
 
           root = Path("build/web")
@@ -130,17 +131,49 @@ jobs:
               "icons/icon-192.png",
               "icons/icon-512.png",
               "icons/apple-touch-icon.png",
+              "main.dart.js",
+              "canvaskit/canvaskit.js",
+              "canvaskit/canvaskit.wasm",
           ]
           missing = [name for name in required if not (root / name).is_file()]
           if missing:
               raise SystemExit("Missing PWA build files: " + ", ".join(missing))
 
+          # WHY: Flutter 3.47 emits a legacy worker that unregisters itself.
+          # It would replace and then remove our offline app-shell worker on the next launch.
+          bootstrap_path = root / "flutter_bootstrap.js"
+          bootstrap = bootstrap_path.read_text(encoding="utf-8")
+          bootstrap, replacements = re.subn(
+              r'_flutter\.loader\.load\(\{\s*serviceWorkerSettings:\s*'
+              r'\{\s*serviceWorkerVersion:\s*"[^"]+"\s*'
+              r'(?:/\*.*?\*/\s*)?\}\s*\}\);',
+              "_flutter.loader.load({});",
+              bootstrap,
+              count=1,
+              flags=re.DOTALL,
+          )
+          if replacements != 1:
+              raise SystemExit("Could not disable Flutter's legacy service-worker loader")
+          bootstrap_path.write_text(bootstrap, encoding="utf-8")
+
+          # Cache only files needed by the dart2js/CanvasKit build. Exclude debug
+          # symbols and unused alternate renderers to keep mobile storage reasonable.
           assets = sorted(
               path.relative_to(root).as_posix()
               for path in root.rglob("*")
               if path.is_file()
-              and path.name not in {"asset-manifest.json", "service-worker.js"}
+              and path.name not in {
+                  "asset-manifest.json",
+                  "service-worker.js",
+                  "flutter_service_worker.js",
+              }
               and path.suffix != ".map"
+              and not path.name.endswith(".symbols")
+              and not path.as_posix().startswith((
+                  "canvaskit/skwasm",
+                  "canvaskit/wimp",
+                  "canvaskit/webparagraph",
+              ))
           )
           if not assets:
               raise SystemExit("PWA asset list is empty")
