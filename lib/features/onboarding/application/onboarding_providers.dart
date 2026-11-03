@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/local/network_error.dart';
+import '../../../core/local/offline_store.dart';
 import '../../../core/local/offline_providers.dart';
 import '../../../core/supabase/supabase_bootstrap.dart';
 
