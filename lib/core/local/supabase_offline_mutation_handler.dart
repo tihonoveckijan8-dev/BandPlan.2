@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'offline_sync_engine.dart';
@@ -56,16 +58,36 @@ class SupabaseOfflineMutationHandler {
       throw const FormatException('В операции отсутствует идентификатор группы.');
     }
 
+    // WHY: compare the current RLS-visible server payload with the snapshot
+    // captured when the first local edit was made. Never blindly overwrite a
+    // concurrent edit from another device.
+    final baselineCaptured = mutation['baseVersionCaptured'] == true;
+    final rawBaseline = mutation['basePayload'];
+    final existing = await _client
+        .from(table)
+        .select('id,data')
+        .eq('group_id', groupId)
+        .eq('id', recordId)
+        .maybeSingle();
+
     if (operation == 'delete') {
-      // WHY: a retry after a successful delete must be idempotent. First check
-      // whether the row is still visible under the current user's SELECT RLS.
-      final existing = await _client
-          .from(table)
-          .select('id')
-          .eq('group_id', groupId)
-          .eq('id', recordId)
-          .maybeSingle();
+      // WHY: deleting an already-missing row is an idempotent success.
       if (existing == null) return;
+      if (baselineCaptured) {
+        final rawRemote = existing['data'];
+        final remotePayload = rawRemote is Map
+            ? Map<String, Object?>.from(rawRemote)
+            : null;
+        if (rawBaseline == null ||
+            rawRemote is! Map ||
+            !_sameJson(rawRemote, rawBaseline)) {
+          throw OfflineMutationConflict(
+            message: 'Запись "$recordId" изменилась на сервере. Удаление остановлено.',
+            remoteVersionExists: true,
+            remotePayload: remotePayload,
+          );
+        }
+      }
 
       final deleted = await _client
           .from(table)
@@ -85,6 +107,30 @@ class SupabaseOfflineMutationHandler {
       throw UnsupportedError('Неизвестная операция "$operation".');
     }
 
+    if (baselineCaptured) {
+      if (existing == null && rawBaseline != null) {
+        throw OfflineMutationConflict(
+          message: 'Запись "$recordId" была удалена на сервере. Локальная версия сохранена.',
+          remoteVersionExists: false,
+        );
+      }
+      if (existing != null) {
+        final rawRemote = existing['data'];
+        final remotePayload = rawRemote is Map
+            ? Map<String, Object?>.from(rawRemote)
+            : null;
+        if (rawBaseline == null ||
+            rawRemote is! Map ||
+            !_sameJson(rawRemote, rawBaseline)) {
+          throw OfflineMutationConflict(
+            message: 'Запись "$recordId" изменилась на сервере. Локальная версия сохранена.',
+            remoteVersionExists: true,
+            remotePayload: remotePayload,
+          );
+        }
+      }
+    }
+
     await _client
         .from(table)
         .upsert({
@@ -95,5 +141,20 @@ class SupabaseOfflineMutationHandler {
         }, onConflict: 'group_id,id')
         .select('id')
         .single();
+  }
+
+  static bool _sameJson(Object? left, Object? right) {
+    String canonical(Object? value) {
+      if (value is Map) {
+        final keys = value.keys.map((key) => key.toString()).toList()..sort();
+        return '{${keys.map((key) => '${jsonEncode(key)}:${canonical(value[key])}').join(',')}}';
+      }
+      if (value is List) {
+        return '[${value.map(canonical).join(',')}]';
+      }
+      return jsonEncode(value);
+    }
+
+    return canonical(left) == canonical(right);
   }
 }
