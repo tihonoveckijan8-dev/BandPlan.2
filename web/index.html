@@ -17,6 +17,16 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 </head>
 <body>
+  <script>
+    // WHY: Flutter 3.47 does not generate an app-shell cache worker for new projects.
+    // Keep registration relative so GitHub Pages project subpaths work correctly.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js', { scope: './' })
+          .catch((error) => console.error('BandPlan PWA worker registration failed:', error));
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
