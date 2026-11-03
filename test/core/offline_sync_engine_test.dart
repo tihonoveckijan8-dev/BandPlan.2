@@ -197,4 +197,72 @@ void main() {
     expect(pending.last['status'], 'pending');
   });
 
+
+  test('rebases later local edits in order after resolving a two-device conflict', () async {
+    await store.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'id': 'song-1', 'title': 'Original server version'},
+    );
+    await store.saveAndQueue(
+      operationId: 'edit-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'id': 'song-1', 'title': 'Device A first edit'},
+    );
+    await store.saveAndQueue(
+      operationId: 'edit-2',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'id': 'song-1', 'title': 'Device A final edit'},
+    );
+
+    final conflictEngine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'user-a',
+      applyMutation: (_) async => throw const OfflineMutationConflict(
+        message: 'Changed on device B',
+        remoteVersionExists: true,
+        remotePayload: {'id': 'song-1', 'title': 'Device B edit'},
+      ),
+    );
+    final conflictReport = await conflictEngine.syncPending(force: true);
+    expect(conflictReport.conflictCount, 1);
+    expect(conflictReport.pendingCount, 2);
+
+    await store.resolveConflictKeepLocal(operationId: 'edit-1');
+    final applied = <Map<String, Object?>>[];
+    final retryEngine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'user-a',
+      applyMutation: (mutation) async {
+        applied.add(Map<String, Object?>.from(mutation));
+      },
+    );
+    final retryReport = await retryEngine.syncPending(force: true);
+
+    expect(retryReport.syncedCount, 2);
+    expect(retryReport.pendingCount, 0);
+    expect(applied.map((item) => item['operationId']), ['edit-1', 'edit-2']);
+    expect(
+      (applied[0]['basePayload'] as Map)['title'],
+      'Device B edit',
+    );
+    expect(
+      (applied[1]['basePayload'] as Map)['title'],
+      'Device A first edit',
+    );
+    expect(
+      (applied[1]['payload'] as Map)['title'],
+      'Device A final edit',
+    );
+  });
+
+
 }
