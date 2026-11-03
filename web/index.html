@@ -18,13 +18,13 @@
 </head>
 <body>
   <script>
-    // WHY: Flutter 3.47 does not generate an app-shell cache worker for new projects.
+    // WHY: Start installing the offline app shell while Flutter initializes.
+    // Waiting for window.load delays caching until after the initial page load,
+    // so a user can close the PWA before its offline files are ready.
     // Keep registration relative so GitHub Pages project subpaths work correctly.
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js', { scope: './' })
-          .catch((error) => console.error('BandPlan PWA worker registration failed:', error));
-      });
+      navigator.serviceWorker.register('service-worker.js', { scope: './' })
+        .catch((error) => console.error('BandPlan PWA worker registration failed:', error));
     }
   </script>
   <script src="flutter_bootstrap.js" async></script>
