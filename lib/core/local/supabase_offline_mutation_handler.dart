@@ -50,6 +50,12 @@ class SupabaseOfflineMutationHandler {
       };
 
       if (existing == null) {
+        if (baselineCaptured && rawBaseline != null) {
+          throw OfflineMutationConflict(
+            message: 'Профиль был удалён на сервере. Локальная версия сохранена.',
+            remoteVersionExists: false,
+          );
+        }
         // WHY: an absent baseline can only create. INSERT, rather than UPSERT,
         // prevents a second device's newly-created profile from being replaced.
         try {
