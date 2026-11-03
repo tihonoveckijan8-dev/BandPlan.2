@@ -10,35 +10,40 @@ abstract final class BandPlanTheme {
   static ThemeData light({
     Color accentColor = accent,
     double cornerRadius = 24,
-    VisualDensity visualDensity = visualDensity,
+    VisualDensity visualDensity = VisualDensity.standard,
   }) =>
       _build(
         Brightness.light,
         lightCanvas,
         accentColor: accentColor,
         cornerRadius: cornerRadius,
+        visualDensity: visualDensity,
       );
 
   static ThemeData dark({
     Color accentColor = accent,
     double cornerRadius = 24,
+    VisualDensity visualDensity = VisualDensity.standard,
   }) =>
       _build(
         Brightness.dark,
         darkCanvas,
         accentColor: accentColor,
         cornerRadius: cornerRadius,
+        visualDensity: visualDensity,
       );
 
   static ThemeData amoled({
     Color accentColor = accent,
     double cornerRadius = 24,
+    VisualDensity visualDensity = VisualDensity.standard,
   }) =>
       _build(
         Brightness.dark,
         amoledCanvas,
         accentColor: accentColor,
         cornerRadius: cornerRadius,
+        visualDensity: visualDensity,
         isAmoled: true,
       );
 
