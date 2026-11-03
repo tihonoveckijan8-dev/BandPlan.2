@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/local/network_error.dart';
@@ -18,16 +20,77 @@ class EventRepository {
         .map((data) => GroupEvent.fromJson(Map<String, dynamic>.from(data))).toList(growable: false);
   }
 
-  Stream<List<GroupEvent>> watchGroupEvents(String userId, String groupId) async* {
-    final cached = await _readCachedEvents(userId, groupId);
-    yield cached;
-    try {
-      final remote = await getGroupEvents(groupId);
-      await _cacheEvents(userId, groupId, remote);
-      yield await _readCachedEvents(userId, groupId);
-    } catch (error) {
-      if (!isOfflineNetworkError(error) || cached.isEmpty) rethrow;
+  Stream<List<GroupEvent>> watchGroupEvents(String userId, String groupId) {
+    late final StreamController<List<GroupEvent>> controller;
+    RealtimeChannel? channel;
+    var refreshing = false;
+    var refreshAgain = false;
+
+    Future<void> refresh() async {
+      if (refreshing) {
+        refreshAgain = true;
+        return;
+      }
+      refreshing = true;
+      try {
+        do {
+          refreshAgain = false;
+          final remote = await getGroupEvents(groupId);
+          await _cacheEvents(userId, groupId, remote);
+          if (!controller.isClosed) {
+            controller.add(await _readCachedEvents(userId, groupId));
+          }
+        } while (refreshAgain && !controller.isClosed);
+      } catch (error, stackTrace) {
+        // WHY: keep the last confirmed local snapshot visible during transport
+        // failures; surface authorization/schema errors instead of hiding them.
+        if (!isOfflineNetworkError(error) && !controller.isClosed) {
+          controller.addError(error, stackTrace);
+        }
+      } finally {
+        refreshing = false;
+      }
     }
+
+    controller = StreamController<List<GroupEvent>>(
+      onListen: () async {
+        try {
+          if (_offlineStore != null) {
+            controller.add(await _readCachedEvents(userId, groupId));
+          }
+        } catch (error, stackTrace) {
+          controller.addError(error, stackTrace);
+        }
+
+        // WHY: Realtime is an invalidation signal only. Re-fetching a complete
+        // snapshot keeps RLS and repository parsing authoritative, while the
+        // local store protects unsynced rows and delete tombstones.
+        channel = _client
+            .channel('bandplan:group_events:$userId:$groupId')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'bandplan_events',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'group_id',
+                value: groupId,
+              ),
+              callback: (_) => unawaited(refresh()),
+            )
+            .subscribe();
+
+        await refresh();
+      },
+      onCancel: () async {
+        final activeChannel = channel;
+        channel = null;
+        if (activeChannel != null) {
+          await _client.removeChannel(activeChannel);
+        }
+      },
+    );
+    return controller.stream;
   }
 
   Future<SyncReport> saveGroupEvent(String groupId, GroupEvent event) async {
