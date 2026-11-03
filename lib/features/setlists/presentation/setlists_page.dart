@@ -152,7 +152,7 @@ class SetlistsPage extends ConsumerWidget {
       ref.invalidate(groupSetlistsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(sync.hasPending ? 'Удаление сет-листа сохранено на устройстве. Ожидает синхронизации.' : 'Сет-лист «${setlist.name}» удалён.')),
+          SnackBar(content: Text(sync.hasPermanentFailure ? 'Сет-лист удалён локально, но сервер отклонил синхронизацию.' : sync.hasPending ? 'Удаление сет-листа сохранено на устройстве. Ожидает синхронизации.' : 'Сет-лист «${setlist.name}» удалён.')),
         );
       }
     } catch (error) {
@@ -369,7 +369,9 @@ class SetlistsPage extends ConsumerWidget {
                           if (sheetContext.mounted) Navigator.of(sheetContext).pop();
                           if (context.mounted && sync.hasPending) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Сет-лист сохранён на устройстве. Ожидает синхронизации.')),
+                              SnackBar(content: Text(sync.hasPermanentFailure
+                                  ? 'Сет-лист сохранён локально, но сервер отклонил синхронизацию.'
+                                  : 'Сет-лист сохранён на устройстве. Ожидает синхронизации.')),
                             );
                           }
                         } catch (error) {
