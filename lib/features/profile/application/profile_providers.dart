@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/local/offline_providers.dart';
 import '../../../core/supabase/supabase_bootstrap.dart';
 import '../data/profile_repository.dart';
 
@@ -10,9 +11,13 @@ final profileRepositoryProvider = Provider<ProfileRepository?>((ref) {
 });
 
 final myProfileProvider = FutureProvider<AccountProfile>((ref) async {
-  final repository = ref.watch(profileRepositoryProvider);
-  if (repository == null) {
+  if (!SupabaseBootstrap.isInitialized) {
     throw StateError('Supabase is not configured.');
   }
+  final store = await ref.watch(offlineStoreProvider.future);
+  final repository = ProfileRepository(
+    Supabase.instance.client,
+    offlineStore: store,
+  );
   return repository.getMyProfile();
 });

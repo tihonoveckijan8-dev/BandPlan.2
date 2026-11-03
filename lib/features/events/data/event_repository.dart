@@ -31,7 +31,7 @@ class EventRepository {
     try {
       final remote = await getGroupEvents(groupId);
       await _cacheEvents(userId, groupId, remote);
-      yield remote;
+      yield await _readCachedEvents(userId, groupId);
     } catch (error) {
       if (!isOfflineNetworkError(error) || cached.isEmpty) rethrow;
     }

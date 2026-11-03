@@ -1,5 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/local/network_error.dart';
+import '../../../core/local/offline_store.dart';
+
 class AccountProfile {
   const AccountProfile({
     required this.userId,
@@ -27,32 +30,54 @@ class AccountProfile {
       roles: roles,
     );
   }
+
+  Map<String, Object?> toJson() => {
+        'user_id': userId,
+        'display_name': displayName,
+        'roles': roles,
+      };
 }
 
 class ProfileRepository {
-  const ProfileRepository(this._client);
+  const ProfileRepository(this._client, {OfflineStore? offlineStore})
+      : _offlineStore = offlineStore;
 
   final SupabaseClient _client;
+  final OfflineStore? _offlineStore;
 
   Future<AccountProfile> getMyProfile() async {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Требуется авторизация.');
 
-    final row = await _client
-        .from('bandplan_accounts')
-        .select('user_id, display_name, roles')
-        .eq('user_id', user.id)
-        .maybeSingle();
+    try {
+      final row = await _client
+          .from('bandplan_accounts')
+          .select('user_id, display_name, roles')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-    if (row == null) {
-      return AccountProfile(
-        userId: user.id,
-        displayName: user.email?.split('@').first ?? '',
-        roles: const [],
+      final profile = row == null
+          ? AccountProfile(
+              userId: user.id,
+              displayName: user.email?.split('@').first ?? '',
+              roles: const [],
+            )
+          : AccountProfile.fromJson(row);
+      await _cacheProfile(profile);
+      return profile;
+    } catch (error) {
+      if (!isOfflineNetworkError(error)) rethrow;
+      final cached = await _offlineStore?.readCachedRecords(
+        ownerUserId: user.id,
+        collection: 'profile',
+      );
+      if (cached == null || cached.isEmpty || cached.first['payload'] is! Map) {
+        rethrow;
+      }
+      return AccountProfile.fromJson(
+        Map<String, dynamic>.from(cached.first['payload'] as Map),
       );
     }
-
-    return AccountProfile.fromJson(row);
   }
 
   Future<void> saveMyProfile({
@@ -62,11 +87,36 @@ class ProfileRepository {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Требуется авторизация.');
 
-    await _client.from('bandplan_accounts').upsert({
+    final payload = {
       'user_id': user.id,
       'display_name': displayName.trim(),
       'roles': roles,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }, onConflict: 'user_id');
+    };
+    await _client.from('bandplan_accounts').upsert(
+      payload,
+      onConflict: 'user_id',
+    );
+
+    // WHY: only cache profile edits after the existing Supabase write succeeds.
+    await _offlineStore?.cacheRemoteRecord(
+      ownerUserId: user.id,
+      collection: 'profile',
+      recordId: 'profile',
+      payload: {
+        'user_id': user.id,
+        'display_name': displayName.trim(),
+        'roles': roles,
+      },
+    );
+  }
+
+  Future<void> _cacheProfile(AccountProfile profile) async {
+    await _offlineStore?.cacheRemoteRecord(
+      ownerUserId: profile.userId,
+      collection: 'profile',
+      recordId: 'profile',
+      payload: profile.toJson(),
+    );
   }
 }

@@ -31,7 +31,7 @@ class SetlistRepository {
     try {
       final remote = await getGroupSetlists(groupId);
       await _cacheSetlists(userId, groupId, remote);
-      yield remote;
+      yield await _readCachedSetlists(userId, groupId);
     } catch (error) {
       if (!isOfflineNetworkError(error) || cached.isEmpty) rethrow;
     }

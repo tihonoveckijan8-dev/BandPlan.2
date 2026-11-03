@@ -32,7 +32,9 @@ class SongRepository {
     try {
       final remote = await getGroupSongs(groupId);
       await _cacheSongs(userId, 'group_songs', remote, groupId);
-      yield remote;
+      // WHY: emit the reconciled cache so pending local edits and tombstones
+      // remain visible even when the server snapshot is older.
+      yield await _readCachedSongs(userId, 'group_songs', groupId);
     } catch (error) {
       if (!isOfflineNetworkError(error) || cached.isEmpty) rethrow;
     }
@@ -87,7 +89,7 @@ class SongRepository {
     try {
       final remote = await getPersonalSongs();
       await _cacheSongs(userId, 'personal_songs', remote, null);
-      yield remote;
+      yield await _readCachedSongs(userId, 'personal_songs', null);
     } catch (error) {
       if (!isOfflineNetworkError(error) || cached.isEmpty) rethrow;
     }
