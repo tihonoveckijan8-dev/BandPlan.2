@@ -14,6 +14,9 @@ abstract final class BandPlanTheme {
     double? buttonCornerRadius,
     double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
+    double depthElevation = 2.0,
+    double depthElevation = 2.0,
+    double depthElevation = 2.0,
   }) =>
       _build(
         Brightness.light,
@@ -23,6 +26,9 @@ abstract final class BandPlanTheme {
         buttonCornerRadius: buttonCornerRadius ?? cornerRadius,
         fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
+        depthElevation: depthElevation,
+        depthElevation: depthElevation,
+        depthElevation: depthElevation,
       );
 
   static ThemeData dark({
@@ -70,6 +76,7 @@ abstract final class BandPlanTheme {
     required double buttonCornerRadius,
     required double fieldCornerRadius,
     required VisualDensity visualDensity,
+    required double depthElevation,
     bool isAmoled = false,
   }) {
     final isDark = brightness == Brightness.dark;
@@ -99,7 +106,7 @@ abstract final class BandPlanTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: canvas,
         foregroundColor: scheme.onSurface,
-        elevation: 0,
+        elevation: depthElevation,
         scrolledUnderElevation: 0,
         centerTitle: false,
       ),
@@ -130,6 +137,7 @@ abstract final class BandPlanTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: accentColor,
+          elevation: depthElevation * 0.45,
           foregroundColor: Colors.white,
           minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(
