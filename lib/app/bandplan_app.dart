@@ -110,6 +110,7 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
         visualDensity: appearance.visualDensity,
         depthElevation: appearance.depthElevation,
         fontSizeFactor: appearance.textSizeFactor,
+        contrastLevel: appearance.contrastLevel,
       ),
       darkTheme: appearance.useAmoled
           ? BandPlanTheme.amoled(
@@ -121,6 +122,7 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
               visualDensity: appearance.visualDensity,
               depthElevation: appearance.depthElevation,
               fontSizeFactor: appearance.textSizeFactor,
+              contrastLevel: appearance.contrastLevel,
             )
           : BandPlanTheme.dark(
               accentColor: appearance.accentColor,
