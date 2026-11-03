@@ -303,4 +303,72 @@ void main() {
     expect(pending.single['baseVersionCaptured'], isTrue);
   });
 
+  test('conflict can keep local version rebased on latest server payload', () async {
+    await store.saveAndQueue(
+      operationId: 'conflict-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'My local version'},
+    );
+    await store.recordConflict(
+      operationId: 'conflict-1',
+      error: 'Changed remotely',
+      remoteVersionExists: true,
+      remotePayload: {'title': 'Remote version'},
+    );
+
+    await store.resolveConflictKeepLocal(operationId: 'conflict-1');
+
+    final mutation = (await store.readPendingMutations(ownerUserId: 'user-a')).single;
+    expect(mutation['status'], 'pending');
+    expect((mutation['basePayload'] as Map)['title'], 'Remote version');
+    expect((mutation['payload'] as Map)['title'], 'My local version');
+    expect(mutation['remotePayload'], isNull);
+  });
+
+  test('conflict can discard local edits and adopt the server version', () async {
+    await store.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Original'},
+    );
+    await store.saveAndQueue(
+      operationId: 'conflict-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Local edit'},
+    );
+    await store.saveAndQueue(
+      operationId: 'conflict-2',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Later local edit'},
+    );
+    await store.recordConflict(
+      operationId: 'conflict-1',
+      error: 'Changed remotely',
+      remoteVersionExists: true,
+      remotePayload: {'title': 'Remote edit'},
+    );
+
+    await store.resolveConflictUseServer(operationId: 'conflict-1');
+
+    expect(await store.readPendingMutations(ownerUserId: 'user-a'), isEmpty);
+    final cached = await store.readCachedRecords(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+    );
+    expect((cached.single['payload'] as Map)['title'], 'Remote edit');
+    expect(cached.single['pendingSync'], isFalse);
+  });
+
 }
