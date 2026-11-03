@@ -23,6 +23,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     'https://github.com/tihonoveckijan8-dev/BandPlan.2/releases/download/'
     'android-latest/BandPlan-android.apk',
   );
+  static final _webAppUri = Uri.parse(
+    'https://tihonoveckijan8-dev.github.io/BandPlan.2/',
+  );
 
   @override
   void dispose() {
@@ -57,6 +60,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       if (mounted) _message('Не удалось сохранить профиль: $error');
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _openWebApp() async {
+    try {
+      final opened = await launchUrl(
+        _webAppUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && mounted) {
+        _message('Не удалось открыть веб-версию BandPlan.');
+      }
+    } catch (error) {
+      if (mounted) _message('Не удалось открыть веб-версию: $error');
     }
   }
 
@@ -187,7 +204,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
             ),
             const GroupWorkspacePage(embedded: true),
-            _AndroidDownloadTab(onDownload: _downloadAndroidApk),
+            _AppInstallTab(
+              onOpenWeb: _openWebApp,
+              onDownloadApk: _downloadAndroidApk,
+            ),
           ],
         ),
       ),
@@ -195,10 +215,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
-class _AndroidDownloadTab extends StatelessWidget {
-  const _AndroidDownloadTab({required this.onDownload});
+class _AppInstallTab extends StatelessWidget {
+  const _AppInstallTab({
+    required this.onOpenWeb,
+    required this.onDownloadApk,
+  });
 
-  final VoidCallback onDownload;
+  final VoidCallback onOpenWeb;
+  final VoidCallback onDownloadApk;
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +232,8 @@ class _AndroidDownloadTab extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
         children: [
+          _PwaInstallCard(onOpenWeb: onOpenWeb),
+          const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
@@ -248,7 +274,7 @@ class _AndroidDownloadTab extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: onDownload,
+                    onPressed: onDownloadApk,
                     icon: const Icon(Icons.download_rounded),
                     label: const Text('Скачать APK'),
                   ),
@@ -285,6 +311,100 @@ class _AndroidDownloadTab extends StatelessWidget {
             'При обновлении установите новую версию поверх предыдущей.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colors.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PwaInstallCard extends StatelessWidget {
+  const _PwaInstallCard({required this.onOpenWeb});
+
+  final VoidCallback onOpenWeb;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              Icons.install_mobile_rounded,
+              size: 32,
+              color: colors.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Установить BandPlan как PWA',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Веб-версию можно добавить на главный экран. Она будет '
+            'открываться отдельным окном, как обычное приложение. APK '
+            'для этого не нужен.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  height: 1.45,
+                ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onOpenWeb,
+              icon: const Icon(Icons.open_in_browser_rounded),
+              label: const Text('Открыть веб-версию'),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text('Как установить на устройство',
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 10),
+          const _InstallStep(
+            number: '1',
+            title: 'Android · Chrome',
+            description:
+                'Откройте BandPlan в Chrome, нажмите ⋮ и выберите '
+                '«Установить приложение» или «Добавить на главный экран».',
+          ),
+          const _InstallStep(
+            number: '2',
+            title: 'iPhone · Safari',
+            description:
+                'Откройте BandPlan в Safari, нажмите «Поделиться» и выберите '
+                '«На экран Домой».',
+          ),
+          const _InstallStep(
+            number: '3',
+            title: 'Компьютер · Chrome или Edge',
+            description:
+                'Откройте сайт и нажмите значок установки в адресной строке '
+                'или выберите пункт установки в меню браузера.',
+          ),
+          Text(
+            'Для установки нужен интернет и открытие сайта по HTTPS. '
+            'Доступность пункта установки зависит от браузера.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  height: 1.4,
                 ),
           ),
         ],
