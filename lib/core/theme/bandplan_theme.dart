@@ -45,6 +45,7 @@ abstract final class BandPlanTheme {
     double depthElevation = 2.0,
     double fontSizeFactor = 1.0,
     double contrastLevel = 0.0,
+    AppSurfaceTone surfaceTone = AppSurfaceTone.neutral,
   }) =>
       _build(
         Brightness.dark,
@@ -57,6 +58,7 @@ abstract final class BandPlanTheme {
         depthElevation: depthElevation,
         fontSizeFactor: fontSizeFactor,
         contrastLevel: contrastLevel,
+        surfaceTone: surfaceTone,
       );
 
   static ThemeData amoled({
@@ -69,6 +71,7 @@ abstract final class BandPlanTheme {
     double depthElevation = 2.0,
     double fontSizeFactor = 1.0,
     double contrastLevel = 0.0,
+    AppSurfaceTone surfaceTone = AppSurfaceTone.neutral,
   }) =>
       _build(
         Brightness.dark,
@@ -81,6 +84,7 @@ abstract final class BandPlanTheme {
         depthElevation: depthElevation,
         fontSizeFactor: fontSizeFactor,
         contrastLevel: contrastLevel,
+        surfaceTone: surfaceTone,
         isAmoled: true,
       );
 
@@ -143,7 +147,7 @@ abstract final class BandPlanTheme {
       primaryTextTheme: ThemeData(brightness: brightness, fontFamily: 'Manrope').primaryTextTheme.apply(fontSizeFactor: fontSizeFactor),
       visualDensity: visualDensity,
       appBarTheme: AppBarTheme(
-        backgroundColor: canvas,
+        backgroundColor: tonedCanvas,
         foregroundColor: scheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
