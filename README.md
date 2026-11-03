@@ -15,6 +15,7 @@ Phase 0 — product and backend discovery. See:
 - [UX specification](docs/UX_SPEC.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Supabase integration](docs/SUPABASE_INTEGRATION.md)
+- [Android APK release and signing guide](docs/ANDROID_RELEASE.md)
 
 ## Data safety rules
 1. No production schema changes without an explicit, reviewed migration and approval.
