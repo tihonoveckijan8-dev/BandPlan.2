@@ -30,7 +30,7 @@ class AppearanceSettingsTab extends ConsumerWidget {
 
   Future<void> _apply(BuildContext context, WidgetRef ref, AppAppearance appearance) async {
     try {
-      await ref.read(appAppearanceProvider.notifier).update(appearance);
+      await ref.read(appAppearanceProvider.notifier).saveAppearance(appearance);
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
