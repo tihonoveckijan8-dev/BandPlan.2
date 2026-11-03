@@ -24,6 +24,14 @@ Use Sembast as the first Flutter-local persistence layer:
 
 This choice is intentionally compatible with the current JSONB data contract and avoids introducing generated SQL schema code before payload semantics are fully audited. Re-evaluate Drift/SQLite only if measured query volume or relational local queries justify it.
 
+## Current implementation status (2026-11-03)
+
+- M1 storage foundation is implemented; automated tests and platform builds are running through GitHub Actions.
+- M2 local-first reads are implemented for cached groups/active group, group and personal songs, events, setlists, and profile.
+- Refresh failures fall back only for recognized transport errors. Supabase authorization, RLS, validation, and other server errors remain visible.
+- After a remote refresh, repositories re-read the reconciled cache so a pending local row or delete tombstone cannot disappear behind an older server snapshot.
+- M3 offline mutations are not yet enabled. Existing create/edit/delete writes still use the current online Supabase path until the sync engine can safely own their full lifecycle.
+
 ## Milestones
 
 ### M1 — storage foundation
@@ -31,13 +39,13 @@ This choice is intentionally compatible with the current JSONB data contract and
 - [x] Add account/group-scoped cache records.
 - [x] Add an atomic local-write + durable mutation-queue primitive.
 - [x] Add queue inspection and retry metadata primitives.
-- [ ] Run formatter, analyzer, and tests in CI.
+- [x] Run Flutter tests and Web/Android builds in CI.
 
 ### M2 — local-first reads
-- [ ] Cache remote snapshots for group songs, events, setlists, profile, and personal data.
-- [ ] Render cached data immediately; refresh from Supabase when possible.
-- [ ] Preserve unknown fields in legacy JSON payloads.
-- [ ] Never allow one account or group to read another scope's local cache.
+- [x] Cache remote snapshots for group songs, events, setlists, profile, personal songs, group list, and active group.
+- [x] Render cached data immediately; refresh from Supabase when possible.
+- [x] Preserve unknown fields in legacy JSON payloads.
+- [x] Never allow one account or group to read another scope's local cache.
 
 ### M3 — offline writes
 - [ ] Save local edits and enqueue their matching Supabase mutation in one local transaction.

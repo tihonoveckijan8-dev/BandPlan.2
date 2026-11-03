@@ -56,8 +56,8 @@ Exit: core workflows work with existing records without destructive conversion.
 Exit: real-device performance workflows and correct audio resource lifecycle.
 
 ## Phase 5 — offline and polish (P3)
-- [ ] Cross-platform local database (IndexedDB on Web, file-backed storage on native).
-- [ ] Local-first repositories for songs, events, setlists, profile, and group snapshots.
+- [x] Cross-platform local database (IndexedDB on Web, file-backed storage on native).
+- [x] Local-first repositories for songs, events, setlists, profile, and group snapshots.
 - [ ] Durable, account-scoped mutation queue with idempotent operation IDs.
 - [ ] Sync engine with retry/backoff, server reconciliation, and per-entity conflict policies.
 - [ ] Realtime invalidation without treating Realtime as durable sync.
