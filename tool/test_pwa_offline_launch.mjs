@@ -289,6 +289,10 @@ try {
     'Flutter to relaunch from the installed PWA cache while offline',
   );
 
+  // WHY: A full page reload resets Flutter's lazily enabled semantics mode.
+  // Re-activate the accessibility placeholder before inspecting the offline tree.
+  await evaluate('document.querySelector("flt-semantics-placeholder")?.click()');
+  await delay(500);
   const offlineTree = await command('Accessibility.getFullAXTree');
   const offlineNames = offlineTree.nodes
     .map((node) => node.name?.value ?? '')
