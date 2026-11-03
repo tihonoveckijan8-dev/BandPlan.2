@@ -53,9 +53,9 @@ class AppearanceSettingsTab extends ConsumerWidget {
         builder: (dialogContext) => StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             final raw = controller.text.trim().replaceFirst('#', '');
-            final valid = raw.length == 6 &&
-                RegExp(r'^[0-9a-fA-F]+').hasMatch(raw);
-            final parsed = valid ? (0xFF000000 | int.parse(raw, radix: 16)) : null;
+            final rgb = raw.length == 6 ? int.tryParse(raw, radix: 16) : null;
+            final valid = rgb != null;
+            final parsed = rgb == null ? null : (0xFF000000 | rgb);
             return AlertDialog(
               title: const Text('Свой цвет элементов'),
               content: Column(
