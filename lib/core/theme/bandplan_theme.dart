@@ -15,6 +15,7 @@ abstract final class BandPlanTheme {
     double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
     double depthElevation = 2.0,
+    double fontSizeFactor = 1.0,
   }) =>
       _build(
         Brightness.light,
@@ -25,6 +26,7 @@ abstract final class BandPlanTheme {
         fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
         depthElevation: depthElevation,
+        fontSizeFactor: fontSizeFactor,
       );
 
   static ThemeData dark({
@@ -65,6 +67,7 @@ abstract final class BandPlanTheme {
         fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
         depthElevation: depthElevation,
+        fontSizeFactor: fontSizeFactor,
         isAmoled: true,
       );
 
@@ -77,6 +80,7 @@ abstract final class BandPlanTheme {
     required double fieldCornerRadius,
     required VisualDensity visualDensity,
     required double depthElevation,
+    required double fontSizeFactor,
     bool isAmoled = false,
   }) {
     final isDark = brightness == Brightness.dark;
@@ -102,6 +106,9 @@ abstract final class BandPlanTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: canvas,
       fontFamily: 'Manrope',
+      // WHY: Scale theme typography consistently without replacing MediaQuery accessibility scaling.
+      textTheme: ThemeData(brightness: brightness).textTheme.apply(fontSizeFactor: fontSizeFactor),
+      primaryTextTheme: ThemeData(brightness: brightness).primaryTextTheme.apply(fontSizeFactor: fontSizeFactor),
       visualDensity: visualDensity,
       appBarTheme: AppBarTheme(
         backgroundColor: canvas,
