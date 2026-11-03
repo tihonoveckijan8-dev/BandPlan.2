@@ -59,9 +59,9 @@ This choice is intentionally compatible with the current JSONB data contract and
 - [x] Drain queued operations after startup, resume, and periodic foreground retry checks.
 - [x] Retry transient failures with bounded exponential backoff.
 - [x] Use idempotent upserts and sequential queue processing to preserve operation order.
-- [ ] Reconcile remote refreshes with unsynced local changes; never overwrite a dirty local record with a stale snapshot.
-- [ ] Define conflict behavior per entity; do not apply a generic last-write-wins policy to all data.
-- [ ] Use Realtime as an invalidation/refresh signal, not as the only sync mechanism.
+- [x] Reconcile remote refreshes with unsynced local changes; never overwrite a dirty local record or resurrect a queued delete tombstone from a stale snapshot.
+- [ ] Define server-vs-device conflict resolution per entity. Current policy protects pending device edits until Supabase acknowledges them; concurrent edits from other devices still need a product-level resolution policy.
+- [x] Subscribe to Supabase Realtime changes for group songs, events, and setlists; treat changes as invalidation signals and re-fetch through the existing RLS-protected repositories.
 
 ### M5 — release hardening
 - [ ] Test first online launch followed by airplane-mode relaunch.
