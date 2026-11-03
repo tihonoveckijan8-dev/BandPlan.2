@@ -30,14 +30,75 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # WHY: Flutter copies web/ assets as-is; raster icons are required for
-      # reliable install surfaces across Chromium and iOS Safari.
+      # WHY: Generate real PNG install icons without depending on optional
+      # image utilities on the hosted runner.
       - name: Generate PWA PNG icons
         run: |
           mkdir -p web/icons
-          convert web/icons/icon-192.svg -resize 192x192 web/icons/icon-192.png
-          convert web/icons/icon-512.svg -resize 512x512 web/icons/icon-512.png
-          convert web/icons/icon-192.svg -resize 180x180 web/icons/apple-touch-icon.png
+          python3 - <<'PY'
+          import math
+          import struct
+          import zlib
+          from pathlib import Path
+
+          def chunk(kind, data):
+              body = kind + data
+              return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xffffffff)
+
+          def make_icon(size, output):
+              pixels = bytearray((16, 20, 38, 255) * size * size)
+
+              def paint(x, y, color):
+                  if 0 <= x < size and 0 <= y < size:
+                      offset = (y * size + x) * 4
+                      pixels[offset:offset + 4] = bytes((*color, 255))
+
+              def rect(x0, y0, x1, y1, color, radius=0):
+                  for y in range(max(0, y0), min(size, y1)):
+                      for x in range(max(0, x0), min(size, x1)):
+                          if radius:
+                              cx = min(max(x, x0 + radius), x1 - radius - 1)
+                              cy = min(max(y, y0 + radius), y1 - radius - 1)
+                              if (x - cx) ** 2 + (y - cy) ** 2 > radius ** 2:
+                                  continue
+                          paint(x, y, color)
+
+              blue = (21, 84, 255)
+              white = (245, 247, 255)
+              purple = (139, 92, 246)
+              rect(round(size*.23), round(size*.22), round(size*.34), round(size*.79), blue, round(size*.035))
+
+              glyph = (
+                  "11110",
+                  "10001",
+                  "10001",
+                  "11110",
+                  "10001",
+                  "10001",
+                  "11110",
+              )
+              cell = round(size * .075)
+              gx, gy = round(size * .40), round(size * .235)
+              for row, line in enumerate(glyph):
+                  for col, bit in enumerate(line):
+                      if bit == "1":
+                          rect(gx + col*cell, gy + row*cell, gx + (col+1)*cell, gy + (row+1)*cell, white, max(1, cell//7))
+
+              cx, cy, radius = round(size*.77), round(size*.25), round(size*.055)
+              for y in range(cy-radius, cy+radius+1):
+                  for x in range(cx-radius, cx+radius+1):
+                      if (x-cx)**2 + (y-cy)**2 <= radius**2:
+                          paint(x, y, purple)
+
+              raw = b"".join(b"\x00" + pixels[y*size*4:(y+1)*size*4] for y in range(size))
+              header = struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0)
+              png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+              Path(output).write_bytes(png)
+
+          make_icon(192, "web/icons/icon-192.png")
+          make_icon(512, "web/icons/icon-512.png")
+          make_icon(180, "web/icons/apple-touch-icon.png")
+          PY
 
       - name: Run unit and widget tests
         run: flutter test
