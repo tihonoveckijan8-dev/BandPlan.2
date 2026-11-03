@@ -15,8 +15,6 @@ abstract final class BandPlanTheme {
     double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
     double depthElevation = 2.0,
-    double depthElevation = 2.0,
-    double depthElevation = 2.0,
   }) =>
       _build(
         Brightness.light,
@@ -27,8 +25,6 @@ abstract final class BandPlanTheme {
         fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
         depthElevation: depthElevation,
-        depthElevation: depthElevation,
-        depthElevation: depthElevation,
       );
 
   static ThemeData dark({
@@ -38,6 +34,7 @@ abstract final class BandPlanTheme {
     double? buttonCornerRadius,
     double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
+    double depthElevation = 2.0,
   }) =>
       _build(
         Brightness.dark,
@@ -47,6 +44,7 @@ abstract final class BandPlanTheme {
         buttonCornerRadius: buttonCornerRadius ?? cornerRadius,
         fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
+        depthElevation: depthElevation,
       );
 
   static ThemeData amoled({
@@ -56,6 +54,7 @@ abstract final class BandPlanTheme {
     double? buttonCornerRadius,
     double? fieldCornerRadius,
     VisualDensity visualDensity = VisualDensity.standard,
+    double depthElevation = 2.0,
   }) =>
       _build(
         Brightness.dark,
@@ -65,6 +64,7 @@ abstract final class BandPlanTheme {
         buttonCornerRadius: buttonCornerRadius ?? cornerRadius,
         fieldCornerRadius: fieldCornerRadius ?? cornerRadius,
         visualDensity: visualDensity,
+        depthElevation: depthElevation,
         isAmoled: true,
       );
 
@@ -106,13 +106,13 @@ abstract final class BandPlanTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: canvas,
         foregroundColor: scheme.onSurface,
-        elevation: depthElevation,
+        elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
       ),
       cardTheme: CardThemeData(
         color: cardColor,
-        elevation: 0,
+        elevation: depthElevation,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardCornerRadius),
