@@ -42,19 +42,35 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
       if (decision is bool) return decision;
     }
 
-    // WHY: on an app upgrade the onboarding decision may not have been cached
-    // yet, while the existing profile snapshot already proves account setup.
+    // WHY: older installs may have a confirmed profile or group snapshot but
+    // no onboarding marker yet; those server-derived records prove setup.
     final profile = await store.readCachedRecords(
       ownerUserId: user.id,
       collection: 'profile',
     );
-    if (profile.isNotEmpty && profile.first['payload'] is Map) {
-      final payload = profile.first['payload'] as Map;
-      if (payload['user_id']?.toString() == user.id) {
+    if (profile.any((record) {
+      final payload = record['payload'];
+      return payload is Map && payload['user_id']?.toString() == user.id;
+    })) {
+      await _cacheDecision(store, user.id, true);
+      return true;
+    }
+
+    for (final collection in ['active_group', 'my_groups']) {
+      final groups = await store.readCachedRecords(
+        ownerUserId: user.id,
+        collection: collection,
+      );
+      if (groups.any((record) {
+        final payload = record['payload'];
+        return payload is Map &&
+            (payload['group_id'] ?? payload['id'])?.toString().isNotEmpty == true;
+      })) {
         await _cacheDecision(store, user.id, true);
         return true;
       }
     }
+
     rethrow;
   }
 });
