@@ -30,6 +30,32 @@ void main() {
       expect(appearance.cornerStyle, AppCornerStyle.soft);
     });
 
+    test('restores independent element shapes and depth preference', () {
+      final appearance = AppAppearance.fromMap({
+        'cardCornerStyle': 'sharp',
+        'buttonCornerStyle': 'balanced',
+        'fieldCornerStyle': 'soft',
+        'depthStyle': 'flat',
+      });
+
+      expect(appearance.cardCornerRadius, 12);
+      expect(appearance.buttonCornerRadius, 18);
+      expect(appearance.fieldCornerRadius, 24);
+      expect(appearance.depthElevation, 0);
+    });
+
+    test('keeps older preference maps compatible with soft defaults', () {
+      final appearance = AppAppearance.fromMap({
+        'themeChoice': 'dark',
+        'cornerStyle': 'balanced',
+      });
+
+      expect(appearance.cardCornerStyle, AppCornerStyle.balanced);
+      expect(appearance.buttonCornerStyle, AppCornerStyle.balanced);
+      expect(appearance.fieldCornerStyle, AppCornerStyle.balanced);
+      expect(appearance.depthStyle, AppDepthStyle.soft);
+    });
+
     test('maps each theme choice to the expected Material theme mode', () {
       expect(
         AppAppearance(themeChoice: AppThemeChoice.system).materialThemeMode,
