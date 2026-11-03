@@ -89,16 +89,34 @@ class SupabaseOfflineMutationHandler {
         }
       }
 
-      final deleted = await _client
+      final deleteQuery = _client
           .from(table)
           .delete()
           .eq('group_id', groupId)
-          .eq('id', recordId)
-          .select('id');
+          .eq('id', recordId);
+      final deleted = baselineCaptured && rawBaseline is Map
+          ? await deleteQuery
+              .filter('data', 'eq', jsonEncode(rawBaseline))
+              .select('id')
+          : await deleteQuery.select('id');
       if (deleted.isEmpty) {
-        // WHY: if the row was visible before DELETE but not returned after it,
-        // the user's DELETE policy did not confirm the operation.
-        throw StateError('Сервер не подтвердил удаление записи $recordId.');
+        // WHY: compare-and-delete makes the baseline check atomic with the
+        // deletion. A second device cannot edit between our read and delete.
+        final latest = await _client
+            .from(table)
+            .select('id,data')
+            .eq('group_id', groupId)
+            .eq('id', recordId)
+            .maybeSingle();
+        if (latest == null) return;
+        final latestData = latest['data'];
+        throw OfflineMutationConflict(
+          message: 'Запись "$recordId" изменилась на сервере. Удаление остановлено.',
+          remoteVersionExists: true,
+          remotePayload: latestData is Map
+              ? Map<String, Object?>.from(latestData)
+              : null,
+        );
       }
       return;
     }
@@ -131,14 +149,77 @@ class SupabaseOfflineMutationHandler {
       }
     }
 
+    final values = {
+      'group_id': groupId,
+      'id': recordId,
+      'data': payload,
+      'updated_by': ownerUserId,
+    };
+
+    if (baselineCaptured && rawBaseline is Map) {
+      // WHY: a read-then-upsert has a race window. Filter the UPDATE by the
+      // exact JSONB baseline so Postgres performs compare-and-swap atomically.
+      final updated = await _client
+          .from(table)
+          .update(values)
+          .eq('group_id', groupId)
+          .eq('id', recordId)
+          .filter('data', 'eq', jsonEncode(rawBaseline))
+          .select('id');
+      if (updated.isEmpty) {
+        final latest = await _client
+            .from(table)
+            .select('id,data')
+            .eq('group_id', groupId)
+            .eq('id', recordId)
+            .maybeSingle();
+        if (latest == null) {
+          throw OfflineMutationConflict(
+            message: 'Запись "$recordId" была удалена на сервере. Локальная версия сохранена.',
+            remoteVersionExists: false,
+          );
+        }
+        final latestData = latest['data'];
+        throw OfflineMutationConflict(
+          message: 'Запись "$recordId" изменилась на сервере. Локальная версия сохранена.',
+          remoteVersionExists: true,
+          remotePayload: latestData is Map
+              ? Map<String, Object?>.from(latestData)
+              : null,
+        );
+      }
+      return;
+    }
+
+    if (baselineCaptured && rawBaseline == null) {
+      // WHY: create must not overwrite a row created by another device after
+      // our initial absence check. A unique-key collision is surfaced as a
+      // conflict instead of falling back to an upsert.
+      try {
+        await _client.from(table).insert(values).select('id').single();
+      } on PostgrestException catch (error) {
+        if (error.code != '23505') rethrow;
+        final latest = await _client
+            .from(table)
+            .select('id,data')
+            .eq('group_id', groupId)
+            .eq('id', recordId)
+            .maybeSingle();
+        final latestData = latest?['data'];
+        throw OfflineMutationConflict(
+          message: 'Запись "$recordId" уже создана на сервере. Локальная версия сохранена.',
+          remoteVersionExists: latest != null,
+          remotePayload: latestData is Map
+              ? Map<String, Object?>.from(latestData)
+              : null,
+        );
+      }
+      return;
+    }
+
     await _client
         .from(table)
-        .upsert({
-          'group_id': groupId,
-          'id': recordId,
-          'data': payload,
-          'updated_by': ownerUserId,
-        }, onConflict: 'group_id,id')
+        .upsert(values, onConflict: 'group_id,id')
         .select('id')
         .single();
   }
