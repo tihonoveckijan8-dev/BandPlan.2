@@ -100,6 +100,7 @@ function createWorker(buildId) {
   let skipWaitingCount = 0;
   let networkCalls = 0;
   let navigationOffline = false;
+  let failedAssetSuffix = null;
 
   const fakeFetch = async (input) => {
     networkCalls += 1;
@@ -109,6 +110,9 @@ function createWorker(buildId) {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+    if (failedAssetSuffix && new URL(url).pathname.endsWith(failedAssetSuffix)) {
+      throw new TypeError('Simulated interrupted asset download');
     }
     if (navigationOffline) throw new TypeError('Network unavailable in test');
     return new Response('asset:' + new URL(url).pathname, { status: 200 });
@@ -158,6 +162,7 @@ function createWorker(buildId) {
   return {
     dispatch,
     setNavigationOffline: (value) => { navigationOffline = value; },
+    setFailedAsset: (suffix) => { failedAssetSuffix = suffix; },
     get claimCount() { return claimCount; },
     get skipWaitingCount() { return skipWaitingCount; },
     get networkCalls() { return networkCalls; },
@@ -203,6 +208,23 @@ assert.equal(
 const currentWorker = createWorker('103');
 await currentWorker.dispatch('install', {});
 await currentWorker.dispatch('activate', {});
+
+// WHY: A failed update must delete its partial cache, not evict the last
+// complete shell from the bounded two-version retention window.
+const interruptedUpdate = createWorker('104');
+interruptedUpdate.setFailedAsset('main.dart.js');
+await assert.rejects(
+  interruptedUpdate.dispatch('install', {}),
+  /Simulated interrupted asset download/,
+);
+assert.ok(
+  (await cacheStorage.keys()).includes('bandplan-pwa-shell-103'),
+  'The last complete app shell must survive an interrupted update',
+);
+assert.ok(
+  !(await cacheStorage.keys()).includes('bandplan-pwa-shell-104'),
+  'A failed install must remove its incomplete cache',
+);
 
 // Cached app assets are served from the shell without a network request.
 let assetResponse;
