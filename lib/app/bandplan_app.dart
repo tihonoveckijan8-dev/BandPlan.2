@@ -39,6 +39,7 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
     try {
       final engine = await ref.read(offlineSyncEngineProvider.future);
       await engine.syncPending();
+      ref.invalidate(offlineQueueStatusProvider);
     } catch (_) {
       // WHY: network failure must never block startup, navigation, or resume.
     }

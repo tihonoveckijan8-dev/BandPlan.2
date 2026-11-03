@@ -56,6 +56,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     try {
       final sync = await repository.saveMyProfile(displayName: name, roles: roles);
       ref.invalidate(myProfileProvider);
+      ref.invalidate(offlineQueueStatusProvider);
       if (mounted) _message(sync.hasPermanentFailure
           ? 'Профиль сохранён на устройстве, но сервер отклонил синхронизацию.'
           : sync.hasPending
