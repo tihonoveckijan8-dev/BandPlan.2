@@ -117,4 +117,61 @@ void main() {
     expect(cached.single['pendingSync'], isFalse);
     expect((cached.single['payload'] as Map)['title'], 'Offline edit');
   }, skip: !kIsWeb);
+  test('IndexedDB retains a failed network retry and drains it after reopen', () async {
+    await databaseFactoryWeb.deleteDatabase(databaseName);
+    var store = OfflineStore(
+      await databaseFactoryWeb.openDatabase(databaseName),
+    );
+    await store.saveAndQueue(
+      operationId: 'pwa-network-retry',
+      ownerUserId: 'pwa-user',
+      groupId: 'pwa-group',
+      collection: 'group_songs',
+      recordId: 'pwa-song',
+      payload: {'id': 'pwa-song', 'title': 'Offline edit'},
+    );
+
+    final offlineEngine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'pwa-user',
+      applyMutation: (_) async => throw Exception('Failed to fetch'),
+    );
+    final offlineReport = await offlineEngine.syncPending(force: true);
+    expect(offlineReport.pendingCount, 1);
+    expect(offlineReport.failedCount, 0);
+    final failedAttempt = (await store.readPendingMutations(
+      ownerUserId: 'pwa-user',
+    )).single;
+    expect(failedAttempt['status'], 'pending');
+    expect(failedAttempt['attemptCount'], 1);
+    expect(failedAttempt['lastError'], contains('Failed to fetch'));
+    await store.close();
+
+    // WHY: Retry metadata must survive a real browser database reopen too;
+    // reconnecting must not depend on the previous Dart process remaining alive.
+    store = OfflineStore(
+      await databaseFactoryWeb.openDatabase(databaseName),
+    );
+    addTearDown(() async {
+      await store.close();
+      await databaseFactoryWeb.deleteDatabase(databaseName);
+    });
+
+    final applied = <String>[];
+    final onlineEngine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'pwa-user',
+      applyMutation: (mutation) async {
+        applied.add(mutation['operationId']! as String);
+      },
+    );
+    final onlineReport = await onlineEngine.syncPending(force: true);
+    final remaining = await store.readPendingMutations(ownerUserId: 'pwa-user');
+
+    expect(applied, ['pwa-network-retry']);
+    expect(onlineReport.syncedCount, 1);
+    expect(onlineReport.pendingCount, 0);
+    expect(remaining, isEmpty);
+  }, skip: !kIsWeb);
+
 }
