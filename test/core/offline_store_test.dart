@@ -163,6 +163,49 @@ void main() {
     expect(await store.readPendingMutations(ownerUserId: 'user-a'), hasLength(1));
   });
 
+  test('remote snapshot removes stale clean rows but preserves pending edits', () async {
+    await store.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'stale-song',
+      payload: {'title': 'Stale'},
+    );
+    await store.saveAndQueue(
+      operationId: 'pending-song',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'pending-song',
+      payload: {'title': 'Local pending'},
+    );
+
+    await store.replaceRemoteRecords(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      records: [
+        {
+          'recordId': 'fresh-song',
+          'payload': {'id': 'fresh-song', 'title': 'Fresh'},
+        },
+      ],
+    );
+
+    final cached = await store.readCachedRecords(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+    );
+    final ids = cached.map((row) => row['recordId']).toSet();
+    expect(ids, containsAll(['fresh-song', 'pending-song']));
+    expect(ids, isNot(contains('stale-song')));
+    expect(
+      cached.singleWhere((row) => row['recordId'] == 'pending-song')['pendingSync'],
+      isTrue,
+    );
+  });
+
   test('acknowledgement clears pending state only after server confirmation', () async {
     await store.saveAndQueue(
       operationId: 'op-1',
