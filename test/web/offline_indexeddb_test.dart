@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sembast_web/sembast_web.dart';
 
@@ -52,5 +53,5 @@ void main() {
     expect(pending, hasLength(1));
     expect(pending.single['operationId'], 'pwa-restart-edit');
     expect((pending.single['basePayload'] as Map)['title'], 'Server version');
-  });
+  }, skip: !kIsWeb);
 }
