@@ -221,9 +221,28 @@ await currentWorker.dispatch('fetch', {
 });
 assert.equal(apiResponseHandled, false, 'Supabase API requests must bypass the service-worker cache');
 
-// Navigation is network-first, with the cached Flutter index as the offline fallback.
-currentWorker.setNavigationOffline(true);
+// Navigation must use the complete cached shell first, even while online.
+const callsBeforeNavigation = currentWorker.networkCalls;
 let navigationResponse;
+await currentWorker.dispatch('fetch', {
+  request: {
+    url: appIndex,
+    method: 'GET',
+    mode: 'navigate',
+  },
+  respondWith: (promise) => { navigationResponse = promise; },
+});
+assert.equal((await navigationResponse).status, 200);
+assert.equal(await (await navigationResponse).text(), 'asset:/BandPlan.2/index.html');
+assert.equal(
+  currentWorker.networkCalls,
+  callsBeforeNavigation,
+  'Launching an installed PWA must not make a network request for its app shell',
+);
+
+// The same cached shell must launch after the network becomes unavailable.
+currentWorker.setNavigationOffline(true);
+navigationResponse = undefined;
 await currentWorker.dispatch('fetch', {
   request: {
     url: appIndex,
