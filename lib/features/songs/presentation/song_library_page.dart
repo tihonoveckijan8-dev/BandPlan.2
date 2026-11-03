@@ -312,10 +312,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                                 if (group == null) {
                                   throw StateError('Сначала выберите музыкальную группу.');
                                 }
-                                final repository = ref.read(songRepositoryProvider);
-                                if (repository == null) {
-                                  throw StateError('Supabase не настроен.');
-                                }
+                                final repository = await ref.read(songRepositoryProvider.future);
                                 final bpmText = bpmController.text.trim();
                                 // WHY: editing a song must not silently discard legacy tags
                                 // or rewrite their capitalization when the user only edits lyrics.
@@ -337,7 +334,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                                   tags: tags,
                                   lyrics: lyricsController.text,
                                 );
-                                await repository.saveGroupSong(group.id, edited);
+                                final sync = await repository.saveGroupSong(group.id, edited);
                                 ref.invalidate(groupSongsProvider);
                                 if (sheetContext.mounted) {
                                   Navigator.of(sheetContext).pop(true);
@@ -369,7 +366,11 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
       );
       if (saved == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Песня сохранена в репертуаре группы')),
+          SnackBar(content: Text(sync.hasPermanentFailure
+              ? 'Песня сохранена на устройстве, но сервер отклонил синхронизацию.'
+              : sync.hasPending
+                  ? 'Песня сохранена на устройстве. Ожидает синхронизации.'
+                  : 'Песня сохранена в репертуаре группы')),
         );
       }
     } finally {

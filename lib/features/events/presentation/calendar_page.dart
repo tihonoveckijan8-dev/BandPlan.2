@@ -171,12 +171,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     if(action==null||action=='cancel'||!context.mounted)return;
     try{
       final group=await ref.read(activeGroupProvider.future);
-      final repo=ref.read(eventRepositoryProvider);
-      if(group==null||repo==null)throw StateError('Не удалось определить активную группу.');
+      final repo=await ref.read(eventRepositoryProvider.future);
+      if(group==null)throw StateError('Не удалось определить активную группу.');
       if(action=='one'){
         final excluded={...event.except,occurrenceDate}.toList()..sort();
-        await repo.saveGroupEvent(group.id,GroupEvent.fromJson({...event.raw,'except':excluded}));
-      }else{await repo.deleteGroupEvent(group.id,event.id);}
+        final sync=await repo.saveGroupEvent(group.id,GroupEvent.fromJson({...event.raw,'except':excluded}));
+      }else{final sync=await repo.deleteGroupEvent(group.id,event.id); if(sync.hasPending && context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Удаление сохранено на устройстве. Ожидает синхронизации.')));}
       ref.invalidate(groupEventsProvider);
       if(sheet.mounted)Navigator.pop(sheet);
       if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
@@ -189,7 +189,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
 
   Future<void> _edit(BuildContext context,WidgetRef ref,List<Setlist> programs,{GroupEvent? old,String? occurrenceDate,GroupEvent? initial,String? initialDate}) async {
     final group=await ref.read(activeGroupProvider.future);if(group==null||!context.mounted)return;
-    final repo=ref.read(eventRepositoryProvider);if(repo==null)return;
+    final repo=await ref.read(eventRepositoryProvider.future);
     final source=initial??old;
     final title=TextEditingController(text:source?.title??'');
     final date=TextEditingController(text:occurrenceDate??source?.date??initialDate??_iso(DateTime.now()));
@@ -263,9 +263,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                     'title':edited.title,'type':edited.type,'time':edited.time,'end':edited.end,
                     'location':edited.location,'notes':edited.notes,'status':edited.status,'setlistId':edited.setlistId,
                   });
-                  await repo.saveGroupEvent(group.id,event);ref.invalidate(groupEventsProvider);if(sheet.mounted)Navigator.pop(sheet);
+                  final sync=await repo.saveGroupEvent(group.id,event);ref.invalidate(groupEventsProvider);if(sheet.mounted)Navigator.pop(sheet);
                   if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content:Text(old==null?'Событие создано.':'Событие сохранено.')));
+                    SnackBar(content:Text(sync.hasPermanentFailure?'Событие сохранено на устройстве, но сервер отклонил синхронизацию.':sync.hasPending?'Событие сохранено на устройстве. Ожидает синхронизации.':old==null?'Событие создано.':'Событие сохранено.')));
                 }catch(error){setState(()=>saving=false);if(sheet.mounted)ScaffoldMessenger.of(sheet).showSnackBar(SnackBar(content:Text('Не удалось сохранить: $error')));}
               },icon:saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.save_rounded),
                 label:Text(saving?'Сохранение…':'Сохранить событие')),

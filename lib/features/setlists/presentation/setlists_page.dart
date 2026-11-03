@@ -144,15 +144,15 @@ class SetlistsPage extends ConsumerWidget {
 
     try {
       final group = await ref.read(activeGroupProvider.future);
-      final repository = ref.read(setlistRepositoryProvider);
-      if (group == null || repository == null) {
+      final repository = await ref.read(setlistRepositoryProvider.future);
+      if (group == null) {
         throw StateError('Не удалось определить активную группу.');
       }
-      await repository.deleteGroupSetlist(group.id, setlist.id);
+      final sync = await repository.deleteGroupSetlist(group.id, setlist.id);
       ref.invalidate(groupSetlistsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Сет-лист «${setlist.name}» удалён.')),
+          SnackBar(content: Text(sync.hasPending ? 'Удаление сет-листа сохранено на устройстве. Ожидает синхронизации.' : 'Сет-лист «${setlist.name}» удалён.')),
         );
       }
     } catch (error) {
@@ -181,8 +181,7 @@ class SetlistsPage extends ConsumerWidget {
   ]) async {
     final group = await ref.read(activeGroupProvider.future);
     if (group == null || !context.mounted) return;
-    final repository = ref.read(setlistRepositoryProvider);
-    if (repository == null) return;
+    final repository = await ref.read(setlistRepositoryProvider.future);
 
     final nameController = TextEditingController(text: existing?.name ?? '');
     final noteController = TextEditingController(text: existing?.note ?? '');
@@ -365,9 +364,14 @@ class SetlistsPage extends ConsumerWidget {
                             items: items,
                             eventId: linkedEventId,
                           );
-                          await repository.saveGroupSetlist(group.id, edited);
+                          final sync = await repository.saveGroupSetlist(group.id, edited);
                           ref.invalidate(groupSetlistsProvider);
                           if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                          if (context.mounted && sync.hasPending) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Сет-лист сохранён на устройстве. Ожидает синхронизации.')),
+                            );
+                          }
                         } catch (error) {
                           setSheetState(() => saving = false);
                           if (sheetContext.mounted) {

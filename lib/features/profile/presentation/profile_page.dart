@@ -41,8 +41,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       return;
     }
 
-    final repository = ref.read(profileRepositoryProvider);
-    if (repository == null) return;
+    final repository = await ref.read(profileRepositoryProvider.future);
 
     final roles = _rolesController.text
         .split(',')
@@ -53,9 +52,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     setState(() => _saving = true);
     try {
-      await repository.saveMyProfile(displayName: name, roles: roles);
+      final sync = await repository.saveMyProfile(displayName: name, roles: roles);
       ref.invalidate(myProfileProvider);
-      if (mounted) _message('Профиль сохранён.');
+      if (mounted) _message(sync.hasPending ? 'Профиль сохранён на устройстве. Ожидает синхронизации.' : 'Профиль сохранён.');
     } catch (error) {
       if (mounted) _message('Не удалось сохранить профиль: $error');
     } finally {
