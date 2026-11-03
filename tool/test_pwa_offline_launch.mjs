@@ -242,6 +242,10 @@ try {
 
   // WHY: Checking the accessibility tree distinguishes the signed-in app
   // from a Flutter shell that merely rendered the email/password screen.
+  // WHY: Flutter enables its semantics DOM lazily; CDP accessibility alone
+  // does not activate it, so press Flutter's own accessibility placeholder.
+  await evaluate('document.querySelector("flt-semantics-placeholder")?.click()');
+  await delay(500);
   const signedInTree = await command('Accessibility.getFullAXTree');
   const signedInNames = signedInTree.nodes
     .map((node) => node.name?.value ?? '')
