@@ -292,12 +292,21 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                                     child: Column(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
                                                       children: [
-                                                        Text(recordId, style: Theme.of(context).textTheme.bodyMedium),
                                                         Text(
-                                                          remoteExists
-                                                              ? 'Серверная и локальная версии различаются.'
-                                                              : 'Запись удалена на сервере, но локальная версия ещё сохранена.',
-                                                          style: Theme.of(context).textTheme.bodySmall,
+                                                          recordId,
+                                                          style: Theme.of(context).textTheme.titleSmall,
+                                                        ),
+                                                        const SizedBox(height: 8),
+                                                        _ConflictVersionCard(
+                                                          label: 'Локальная версия',
+                                                          payload: mutation['payload'],
+                                                          isDeleted: mutation['operation'] == 'delete',
+                                                        ),
+                                                        const SizedBox(height: 8),
+                                                        _ConflictVersionCard(
+                                                          label: 'Версия на сервере',
+                                                          payload: mutation['remotePayload'],
+                                                          missing: !remoteExists,
                                                         ),
                                                         const SizedBox(height: 8),
                                                         Wrap(
@@ -615,3 +624,104 @@ class _InstallStep extends StatelessWidget {
     );
   }
 }
+
+/// WHY: Show the actual competing values so users can choose a version based
+/// on its contents instead of resolving a conflict from a generic warning.
+class _ConflictVersionCard extends StatelessWidget {
+  const _ConflictVersionCard({
+    required this.label,
+    this.payload,
+    this.isDeleted = false,
+    this.missing = false,
+  });
+
+  final String label;
+  final Object? payload;
+  final bool isDeleted;
+  final bool missing;
+
+  static const _labels = <String, String>{
+    'title': 'Название',
+    'name': 'Название',
+    'display_name': 'Имя',
+    'artist': 'Исполнитель',
+    'key': 'Тональность',
+    'tempo': 'Темп',
+    'bpm': 'Темп',
+    'date': 'Дата',
+    'start_at': 'Начало',
+    'location': 'Место',
+    'roles': 'Роли',
+    'description': 'Описание',
+  };
+
+  static String _valueText(Object value) {
+    if (value is List) return value.take(4).join(', ');
+    if (value is Map) return 'Составные данные';
+    return value.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final values = payload is Map
+        ? Map<String, Object?>.from(payload as Map)
+        : <String, Object?>{};
+    final entries = <MapEntry<String, Object?>>[];
+
+    for (final key in _labels.keys) {
+      final value = values[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        entries.add(MapEntry(key, value));
+      }
+    }
+    if (entries.isEmpty) {
+      for (final entry in values.entries) {
+        final value = entry.value;
+        if (value == null || value is Map || value is List) continue;
+        entries.add(entry);
+        if (entries.length == 3) break;
+      }
+    }
+
+    final message = missing
+        ? 'Эта запись удалена на сервере.'
+        : isDeleted
+            ? 'Эта запись будет удалена после синхронизации.'
+            : entries.isEmpty
+                ? 'Нет данных для предварительного просмотра.'
+                : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 5),
+          if (message != null)
+            Text(message, style: Theme.of(context).textTheme.bodySmall)
+          else
+            ...entries.take(4).map((entry) {
+              final fieldLabel = _labels[entry.key] ?? entry.key;
+              return Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(
+                  '$fieldLabel: ${_valueText(entry.value!)}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+}
+
