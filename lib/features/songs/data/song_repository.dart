@@ -130,7 +130,9 @@ class SongRepository {
       await _cacheSongs(userId, 'personal_songs', remote, null);
       yield await _readCachedSongs(userId, 'personal_songs', null);
     } catch (error) {
-      if (!isOfflineNetworkError(error) || cached.isEmpty) rethrow;
+      // WHY: an empty personal-song cache is a valid empty state, not a reason
+      // to fail the screen while offline; the cached snapshot was already emitted.
+      if (!isOfflineNetworkError(error)) rethrow;
     }
   }
 
