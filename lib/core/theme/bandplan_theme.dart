@@ -7,17 +7,63 @@ abstract final class BandPlanTheme {
   static const darkCanvas = Color(0xFF171A22);
   static const amoledCanvas = Color(0xFF000000);
 
-  static ThemeData light() => _build(Brightness.light, lightCanvas);
-  static ThemeData dark() => _build(Brightness.dark, darkCanvas);
-  static ThemeData amoled() => _build(Brightness.dark, amoledCanvas);
+  static ThemeData light({
+    Color accentColor = accent,
+    double cornerRadius = 24,
+  }) =>
+      _build(
+        Brightness.light,
+        lightCanvas,
+        accentColor: accentColor,
+        cornerRadius: cornerRadius,
+      );
 
-  static ThemeData _build(Brightness brightness, Color canvas) {
+  static ThemeData dark({
+    Color accentColor = accent,
+    double cornerRadius = 24,
+  }) =>
+      _build(
+        Brightness.dark,
+        darkCanvas,
+        accentColor: accentColor,
+        cornerRadius: cornerRadius,
+      );
+
+  static ThemeData amoled({
+    Color accentColor = accent,
+    double cornerRadius = 24,
+  }) =>
+      _build(
+        Brightness.dark,
+        amoledCanvas,
+        accentColor: accentColor,
+        cornerRadius: cornerRadius,
+        isAmoled: true,
+      );
+
+  static ThemeData _build(
+    Brightness brightness,
+    Color canvas, {
+    required Color accentColor,
+    required double cornerRadius,
+    bool isAmoled = false,
+  }) {
     final isDark = brightness == Brightness.dark;
     final scheme = ColorScheme.fromSeed(
-      seedColor: accent,
+      seedColor: accentColor,
       brightness: brightness,
       surface: canvas,
     );
+    final cardColor = isAmoled
+        ? const Color(0xFF090909)
+        : isDark
+            ? const Color(0xFF222631)
+            : const Color(0xFFF8F9FD);
+    final inputColor = isAmoled
+        ? const Color(0xFF111111)
+        : isDark
+            ? const Color(0xFF222631)
+            : const Color(0xFFE9EDF5);
 
     return ThemeData(
       useMaterial3: true,
@@ -34,38 +80,36 @@ abstract final class BandPlanTheme {
         centerTitle: false,
       ),
       cardTheme: CardThemeData(
-        color: isDark ? const Color(0xFF222631) : const Color(0xFFF8F9FD),
+        color: cardColor,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(cornerRadius),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark
-            ? const Color(0xFF222631)
-            : const Color(0xFFE9EDF5),
+        fillColor: inputColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(cornerRadius * 0.72),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(cornerRadius * 0.72),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: accent, width: 1.5),
+          borderRadius: BorderRadius.circular(cornerRadius * 0.72),
+          borderSide: BorderSide(color: accentColor, width: 1.5),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: accent,
+          backgroundColor: accentColor,
           foregroundColor: Colors.white,
           minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(cornerRadius * 0.72),
           ),
         ),
       ),
@@ -73,7 +117,7 @@ abstract final class BandPlanTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(48, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(cornerRadius * 0.72),
           ),
         ),
       ),
