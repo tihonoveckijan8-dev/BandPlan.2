@@ -174,4 +174,76 @@ void main() {
     expect(remaining, isEmpty);
   }, skip: !kIsWeb);
 
+
+  test('IndexedDB preserves a two-device conflict and rebases keep-local after reopen', () async {
+    await databaseFactoryWeb.deleteDatabase(databaseName);
+    var store = OfflineStore(
+      await databaseFactoryWeb.openDatabase(databaseName),
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'pwa-user',
+      groupId: 'pwa-group',
+      collection: 'group_songs',
+      recordId: 'pwa-song',
+      payload: {'id': 'pwa-song', 'title': 'Original server version'},
+    );
+    await store.saveAndQueue(
+      operationId: 'pwa-two-device-conflict',
+      ownerUserId: 'pwa-user',
+      groupId: 'pwa-group',
+      collection: 'group_songs',
+      recordId: 'pwa-song',
+      payload: {'id': 'pwa-song', 'title': 'Device A offline edit'},
+    );
+
+    // WHY: Simulate device B changing the same song before device A reconnects.
+    final conflictEngine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'pwa-user',
+      applyMutation: (_) async => throw const OfflineMutationConflict(
+        message: 'Song changed on another device.',
+        remoteVersionExists: true,
+        remotePayload: {'id': 'pwa-song', 'title': 'Device B server edit'},
+      ),
+    );
+    final conflictReport = await conflictEngine.syncPending(force: true);
+    expect(conflictReport.conflictCount, 1);
+    expect(conflictReport.pendingCount, 1);
+    await store.close();
+
+    // WHY: Conflict details and both versions must survive PWA termination.
+    store = OfflineStore(
+      await databaseFactoryWeb.openDatabase(databaseName),
+    );
+    addTearDown(() async {
+      await store.close();
+      await databaseFactoryWeb.deleteDatabase(databaseName);
+    });
+    var pending = await store.readPendingMutations(ownerUserId: 'pwa-user');
+    expect(pending.single['status'], 'conflict');
+    expect((pending.single['payload'] as Map)['title'], 'Device A offline edit');
+    expect((pending.single['remotePayload'] as Map)['title'], 'Device B server edit');
+
+    await store.resolveConflictKeepLocal(
+      operationId: 'pwa-two-device-conflict',
+    );
+    pending = await store.readPendingMutations(ownerUserId: 'pwa-user');
+    expect(pending.single['status'], 'pending');
+    expect((pending.single['basePayload'] as Map)['title'], 'Device B server edit');
+
+    final applied = <Map<String, Object?>>[];
+    final retryEngine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'pwa-user',
+      applyMutation: (mutation) async {
+        applied.add(Map<String, Object?>.from(mutation));
+      },
+    );
+    final retryReport = await retryEngine.syncPending(force: true);
+    expect(retryReport.syncedCount, 1);
+    expect(retryReport.pendingCount, 0);
+    expect(applied.single['basePayload'], {'id': 'pwa-song', 'title': 'Device B server edit'});
+    expect(applied.single['payload'], {'id': 'pwa-song', 'title': 'Device A offline edit'});
+  }, skip: !kIsWeb);
+
 }
