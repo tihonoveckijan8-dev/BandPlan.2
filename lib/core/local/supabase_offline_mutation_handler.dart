@@ -42,6 +42,14 @@ class SupabaseOfflineMutationHandler {
           .select('user_id,display_name,roles,updated_at')
           .eq('user_id', ownerUserId)
           .maybeSingle();
+      if (existing == null && baselineCaptured && rawBaseline is Map) {
+        // WHY: a profile that existed at the time of the local edit was
+        // deleted remotely. Do not silently recreate it during offline sync.
+        throw OfflineMutationConflict(
+          message: 'Профиль был удалён на сервере. Локальная версия сохранена.',
+          remoteVersionExists: false,
+        );
+      }
       final values = {
         'user_id': ownerUserId,
         'display_name': payload['display_name'],
