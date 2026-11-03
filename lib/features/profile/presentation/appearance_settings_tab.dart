@@ -138,6 +138,28 @@ class AppearanceSettingsTab extends ConsumerWidget {
               onSelected: (value) => _apply(context, ref, appearance.copyWith(fieldCornerStyle: value)),
             ),
             const SizedBox(height: 28),
+            const _SectionHeading(
+              title: 'Глубина элементов',
+              subtitle: 'Выбери, насколько выражен объём карточек и основных кнопок.',
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                (AppDepthStyle.soft, 'Мягкая'),
+                (AppDepthStyle.balanced, 'Умеренная'),
+                (AppDepthStyle.flat, 'Плоская'),
+              ].map((option) => ChoiceChip(
+                label: Text(option.$2),
+                selected: appearance.depthStyle == option.$1,
+                onSelected: (_) => _apply(
+                  context,
+                  ref,
+                  appearance.copyWith(depthStyle: option.$1),
+                ),
+              )).toList(growable: false),
+            ),
+            const SizedBox(height: 28),
             const _SectionHeading(title: 'Плотность интерфейса', subtitle: 'Настрой размеры и расстояния между стандартными элементами.'),
             ...[
               (AppElementDensity.compact, 'Компактные', 'Больше элементов на экране', Icons.view_compact_alt_rounded),
@@ -297,7 +319,24 @@ class _AppearancePreview extends StatelessWidget {
     final radius = appearance.cardCornerRadius;
     return Container(
       padding: const EdgeInsets.all(17),
-      decoration: BoxDecoration(color: colors.surfaceContainer, borderRadius: BorderRadius.circular(radius)),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: appearance.depthElevation == 0
+            ? const []
+            : [
+                BoxShadow(
+                  color: colors.shadow.withValues(alpha: 0.10 * (appearance.depthElevation / 2)),
+                  blurRadius: 12 * (appearance.depthElevation / 2),
+                  offset: const Offset(3, 4),
+                ),
+                BoxShadow(
+                  color: colors.surface.withValues(alpha: 0.75),
+                  blurRadius: 10,
+                  offset: const Offset(-3, -3),
+                ),
+              ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
