@@ -170,16 +170,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               icon: const Icon(Icons.logout_rounded),
             ),
           ],
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(icon: Icon(Icons.person_outline_rounded), text: 'Профиль'),
-              Tab(icon: Icon(Icons.groups_outlined), text: 'Группы'),
-              Tab(icon: Icon(Icons.palette_outlined), text: 'Оформление'),
-              Tab(icon: Icon(Icons.tune_rounded), text: 'Элементы'),
-              Tab(icon: Icon(Icons.download_rounded), text: 'Приложение'),
-            ],
-          ),
         ),
         body: TabBarView(
           children: [
@@ -373,6 +363,53 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               onDownloadApk: _downloadAndroidApk,
             ),
           ],
+        ),
+        // WHY: keep profile navigation reachable at the bottom, like Telegram,
+        // while the selected subtab content remains the main screen area.
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
+                  blurRadius: 14,
+                  offset: const Offset(2, 4),
+                ),
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                  blurRadius: 10,
+                  offset: const Offset(-2, -3),
+                ),
+              ],
+            ),
+            child: TabBar(
+              isScrollable: false,
+              dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+              indicator: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(17),
+              ),
+              labelColor: Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+              unselectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
+              labelPadding: EdgeInsets.zero,
+              tabs: const [
+                Tab(icon: Icon(Icons.person_outline_rounded, size: 20), text: 'Профиль'),
+                Tab(icon: Icon(Icons.groups_outlined, size: 20), text: 'Группы'),
+                Tab(icon: Icon(Icons.palette_outlined, size: 20), text: 'Оформление'),
+                Tab(icon: Icon(Icons.tune_rounded, size: 20), text: 'Элементы'),
+                Tab(icon: Icon(Icons.download_rounded, size: 20), text: 'Приложение'),
+              ],
+            ),
+          ),
         ),
       ),
     );
