@@ -31,17 +31,78 @@ class SupabaseOfflineMutationHandler {
       if (operation != 'upsert') {
         throw UnsupportedError('Удаление профиля не поддерживается.');
       }
-      await _client
-          .from('bandplan_accounts')
-          .upsert({
-            'user_id': ownerUserId,
-            'display_name': payload['display_name'],
-            'roles': payload['roles'],
-            if (payload['updated_at'] != null)
-              'updated_at': payload['updated_at'],
-          }, onConflict: 'user_id')
-          .select('user_id')
-          .single();
+
+      final table = _client.from('bandplan_accounts');
+      final baselineCaptured = mutation['baseVersionCaptured'] == true;
+      final rawBaseline = mutation['basePayload'];
+      final baseline = rawBaseline is Map
+          ? Map<String, dynamic>.from(rawBaseline)
+          : null;
+      final existing = await table
+          .select('user_id,display_name,roles,updated_at')
+          .eq('user_id', ownerUserId)
+          .maybeSingle();
+      final values = {
+        'user_id': ownerUserId,
+        'display_name': payload['display_name'],
+        'roles': payload['roles'],
+        if (payload['updated_at'] != null) 'updated_at': payload['updated_at'],
+      };
+
+      if (existing == null) {
+        // WHY: an absent baseline can only create. INSERT, rather than UPSERT,
+        // prevents a second device's newly-created profile from being replaced.
+        try {
+          await table.insert(values).select('user_id').single();
+        } on PostgrestException catch (error) {
+          if (error.code != '23505') rethrow;
+          final latest = await table
+              .select('user_id,display_name,roles,updated_at')
+              .eq('user_id', ownerUserId)
+              .maybeSingle();
+          throw OfflineMutationConflict(
+            message: 'Профиль был создан на другом устройстве. Локальная версия сохранена.',
+            remoteVersionExists: latest != null,
+            remotePayload: latest == null
+                ? null
+                : Map<String, Object?>.from(latest),
+          );
+        }
+        return;
+      }
+
+      final baselineUpdatedAt = baseline?['updated_at']?.toString();
+      final remoteUpdatedAt = existing['updated_at']?.toString();
+      if (!baselineCaptured ||
+          baselineUpdatedAt == null ||
+          remoteUpdatedAt != baselineUpdatedAt) {
+        throw OfflineMutationConflict(
+          message: 'Профиль изменился на сервере. Локальная версия сохранена.',
+          remoteVersionExists: true,
+          remotePayload: Map<String, Object?>.from(existing),
+        );
+      }
+
+      // WHY: updated_at is the server-side version token. Conditional UPDATE
+      // closes the read/write race without changing the existing table or RLS.
+      final updated = await table
+          .update(values)
+          .eq('user_id', ownerUserId)
+          .eq('updated_at', baselineUpdatedAt)
+          .select('user_id');
+      if (updated.isEmpty) {
+        final latest = await table
+            .select('user_id,display_name,roles,updated_at')
+            .eq('user_id', ownerUserId)
+            .maybeSingle();
+        throw OfflineMutationConflict(
+          message: 'Профиль изменился на сервере. Локальная версия сохранена.',
+          remoteVersionExists: latest != null,
+          remotePayload: latest == null
+              ? null
+              : Map<String, Object?>.from(latest),
+        );
+      }
       return;
     }
 
