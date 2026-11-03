@@ -38,10 +38,9 @@ self.addEventListener('install', (event) => {
         await cache.put(request, response);
       }
 
-      // WHY: Activate a fully downloaded update immediately so returning PWA
-      // launches stop being pinned to an older interface. Existing open pages
-      // are not forcibly reloaded; the new shell is used on the next launch.
-      await self.skipWaiting();
+      // WHY: Do not call skipWaiting here. The browser activates this fully
+      // downloaded worker after pages controlled by the old worker are closed,
+      // so an active rehearsal/session is never interrupted by an update.
     } catch (error) {
       // WHY: A partial update must not occupy a retained-cache slot and
       // displace the last complete app shell during a later successful update.
