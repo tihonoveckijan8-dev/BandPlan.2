@@ -192,12 +192,15 @@ try {
   assert.equal(registration.scope, appUrl, 'Service Worker scope must match the GitHub Pages project path');
   assert.equal(registration.state, 'activated', 'The initial worker must finish installation before offline relaunch');
 
-  // WHY: A newly installed worker does not control its first page. Reload once
-  // online so the second launch is served by the installed, complete app shell.
-  await command('Page.reload', { ignoreCache: true });
+  // WHY: The first document was opened before the worker finished installing.
+  // Leaving that client and opening a fresh navigation guarantees Chromium
+  // creates a page under the already-active worker's control.
+  await command('Page.navigate', { url: 'about:blank' });
+  await delay(250);
+  await command('Page.navigate', { url: appUrl });
   await waitFor(
     '!!navigator.serviceWorker.controller && !!document.querySelector("flt-glass-pane")',
-    'the installed Service Worker to control the app',
+    'a fresh app navigation controlled by the installed Service Worker',
   );
   const cachedMain = await evaluate(
     'caches.keys().then(async keys => { for (const key of keys) { const cache = await caches.open(key); if (await cache.match(new URL("main.dart.js", location.href))) return true; } return false; })',
