@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../auth/application/auth_providers.dart';
+import '../../../core/local/offline_providers.dart';
 import '../../groups/presentation/group_workspace_page.dart';
 import '../application/profile_providers.dart';
 
@@ -18,6 +19,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _rolesController = TextEditingController();
   String? _loadedUserId;
   bool _saving = false;
+  bool _syncing = false;
 
   static final _androidApkUri = Uri.parse(
     'https://github.com/tihonoveckijan8-dev/BandPlan.2/releases/download/'
@@ -66,6 +68,26 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
+  Future<void> _retryOfflineSync() async {
+    setState(() => _syncing = true);
+    try {
+      final engine = await ref.read(offlineSyncEngineProvider.future);
+      final report = await engine.syncPending(force: true, retryFailed: true);
+      ref.invalidate(offlineQueueStatusProvider);
+      if (mounted) {
+        _message(report.failedCount > 0
+            ? 'Синхронизировано: ${report.syncedCount}. Ошибок: ${report.failedCount}. Проверьте доступы и повторите.'
+            : report.hasPending
+                ? 'Синхронизировано: ${report.syncedCount}. Осталось в очереди: ${report.pendingCount}.'
+                : 'Все изменения синхронизированы.');
+      }
+    } catch (error) {
+      if (mounted) _message('Не удалось запустить синхронизацию: $error');
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
   Future<void> _openWebApp() async {
     try {
       final opened = await launchUrl(
@@ -103,6 +125,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(myProfileProvider);
+    final offlineQueue = ref.watch(offlineQueueStatusProvider);
 
     return DefaultTabController(
       length: 3,
@@ -191,6 +214,45 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 24),
+                      offlineQueue.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (error, stack) => const SizedBox.shrink(),
+                        data: (status) => status.pendingCount == 0
+                            ? const SizedBox.shrink()
+                            : Container(
+                                margin: const EdgeInsets.only(bottom: 18),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainer,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(children: [
+                                      const Icon(Icons.sync_rounded),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text(
+                                        status.failedCount > 0
+                                            ? 'Есть изменения с ошибками синхронизации'
+                                            : 'Изменения ожидают синхронизации',
+                                        style: Theme.of(context).textTheme.titleSmall,
+                                      )),
+                                    ]),
+                                    const SizedBox(height: 6),
+                                    Text('В очереди: ${status.pendingCount} · Ошибок: ${status.failedCount}'),
+                                    const SizedBox(height: 10),
+                                    OutlinedButton.icon(
+                                      onPressed: _syncing ? null : _retryOfflineSync,
+                                      icon: _syncing
+                                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                          : const Icon(Icons.sync_rounded),
+                                      label: const Text('Повторить синхронизацию'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                      ),
                       FilledButton(
                         onPressed: _saving ? null : _save,
                         child: _saving
