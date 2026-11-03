@@ -266,4 +266,41 @@ void main() {
     expect(cached.single['pendingSync'], isFalse);
     expect(pending, isEmpty);
   });
+  test('acknowledgement advances the next queued edit baseline', () async {
+    await store.cacheRemoteRecord(
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Server version'},
+    );
+    await store.saveAndQueue(
+      operationId: 'edit-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'First local version'},
+    );
+    await store.saveAndQueue(
+      operationId: 'edit-2',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'songs',
+      recordId: 'song-1',
+      payload: {'title': 'Second local version'},
+    );
+
+    await store.acknowledgeMutation('edit-1');
+
+    final pending = await store.readPendingMutations(ownerUserId: 'user-a');
+    expect(pending, hasLength(1));
+    expect(pending.single['operationId'], 'edit-2');
+    expect(
+      (pending.single['basePayload'] as Map)['title'],
+      'First local version',
+    );
+    expect(pending.single['baseVersionCaptured'], isTrue);
+  });
+
 }
