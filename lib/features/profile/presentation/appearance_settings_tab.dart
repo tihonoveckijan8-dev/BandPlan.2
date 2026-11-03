@@ -275,6 +275,27 @@ class AppearanceSettingsTab extends ConsumerWidget {
             )),
             const SizedBox(height: 28),
             const _SectionHeading(
+              title: 'Контрастность',
+              subtitle: 'Сделай подписи и цветовые различия заметнее.',
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                (AppContrast.standard, 'Стандартная'),
+                (AppContrast.high, 'Повышенная'),
+              ].map((option) => ChoiceChip(
+                label: Text(option.$2),
+                selected: appearance.contrast == option.$1,
+                onSelected: (_) => _apply(
+                  context,
+                  ref,
+                  appearance.copyWith(contrast: option.$1),
+                ),
+              )).toList(growable: false),
+            ),
+            const SizedBox(height: 28),
+            const _SectionHeading(
               title: 'Размер текста',
               subtitle: 'Увеличь подписи и основные тексты, если так удобнее читать.',
             ),
