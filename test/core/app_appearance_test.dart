@@ -93,6 +93,24 @@ void main() {
       expect(appearance.textSizeFactor, 1.0);
     });
 
+    test('restores and serializes contrast preference', () {
+      final appearance = AppAppearance.fromMap({'contrast': 'high'});
+
+      expect(appearance.contrast, AppContrast.high);
+      expect(appearance.contrastLevel, 0.5);
+      expect(
+        AppAppearance.fromMap(appearance.toMap()).contrast,
+        AppContrast.high,
+      );
+    });
+
+    test('uses standard contrast for older preference maps', () {
+      final appearance = AppAppearance.fromMap({'themeChoice': 'dark'});
+
+      expect(appearance.contrast, AppContrast.standard);
+      expect(appearance.contrastLevel, 0.0);
+    });
+
     test('serializes preferences for durable storage', () {
       const appearance = AppAppearance(
         themeChoice: AppThemeChoice.dark,
