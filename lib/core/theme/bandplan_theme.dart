@@ -16,6 +16,7 @@ abstract final class BandPlanTheme {
     VisualDensity visualDensity = VisualDensity.standard,
     double depthElevation = 2.0,
     double fontSizeFactor = 1.0,
+    double contrastLevel = 0.0,
   }) =>
       _build(
         Brightness.light,
@@ -27,6 +28,7 @@ abstract final class BandPlanTheme {
         visualDensity: visualDensity,
         depthElevation: depthElevation,
         fontSizeFactor: fontSizeFactor,
+        contrastLevel: contrastLevel,
       );
 
   static ThemeData dark({
@@ -71,6 +73,7 @@ abstract final class BandPlanTheme {
         visualDensity: visualDensity,
         depthElevation: depthElevation,
         fontSizeFactor: fontSizeFactor,
+        contrastLevel: contrastLevel,
         isAmoled: true,
       );
 
@@ -84,6 +87,7 @@ abstract final class BandPlanTheme {
     required VisualDensity visualDensity,
     required double depthElevation,
     required double fontSizeFactor,
+    required double contrastLevel,
     bool isAmoled = false,
   }) {
     final isDark = brightness == Brightness.dark;
@@ -91,6 +95,7 @@ abstract final class BandPlanTheme {
       seedColor: accentColor,
       brightness: brightness,
       surface: canvas,
+      contrastLevel: contrastLevel,
     );
     final cardColor = isAmoled
         ? const Color(0xFF090909)
