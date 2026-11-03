@@ -279,39 +279,44 @@ class _AppInstallTab extends StatelessWidget {
                     label: const Text('Скачать APK'),
                   ),
                 ),
+                const SizedBox(height: 22),
+                Divider(color: colors.outlineVariant),
+                const SizedBox(height: 18),
+                Text(
+                  'Как установить APK',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 14),
+                const _InstallStep(
+                  number: '1',
+                  title: 'Скачайте файл',
+                  description:
+                      'Нажмите «Скачать APK» и дождитесь завершения загрузки.',
+                ),
+                const _InstallStep(
+                  number: '2',
+                  title: 'Разрешите установку',
+                  description:
+                      'Если Android спросит разрешение, разрешите установку '
+                      'приложений из браузера или файлового менеджера.',
+                ),
+                const _InstallStep(
+                  number: '3',
+                  title: 'Установите BandPlan',
+                  description:
+                      'Откройте загруженный APK и подтвердите установку.',
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Загружайте APK только из официального репозитория BandPlan. '
+                  'При обновлении установите новую версию поверх предыдущей.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Как установить',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          const _InstallStep(
-            number: '1',
-            title: 'Скачайте файл',
-            description: 'Нажмите «Скачать APK» и дождитесь завершения загрузки.',
-          ),
-          const _InstallStep(
-            number: '2',
-            title: 'Разрешите установку',
-            description:
-                'Если Android спросит разрешение, разрешите установку приложений '
-                'из браузера или файлового менеджера.',
-          ),
-          const _InstallStep(
-            number: '3',
-            title: 'Установите BandPlan',
-            description: 'Откройте загруженный APK и подтвердите установку.',
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Загружайте APK только из официального репозитория BandPlan. '
-            'При обновлении установите новую версию поверх предыдущей.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
           ),
         ],
       ),
