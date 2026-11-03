@@ -110,8 +110,8 @@ abstract final class BandPlanTheme {
       scaffoldBackgroundColor: canvas,
       fontFamily: 'Manrope',
       // WHY: Scale theme typography consistently without replacing MediaQuery accessibility scaling.
-      textTheme: ThemeData(brightness: brightness).textTheme.apply(fontSizeFactor: fontSizeFactor),
-      primaryTextTheme: ThemeData(brightness: brightness).primaryTextTheme.apply(fontSizeFactor: fontSizeFactor),
+      textTheme: ThemeData(brightness: brightness, fontFamily: 'Manrope').textTheme.apply(fontSizeFactor: fontSizeFactor),
+      primaryTextTheme: ThemeData(brightness: brightness, fontFamily: 'Manrope').primaryTextTheme.apply(fontSizeFactor: fontSizeFactor),
       visualDensity: visualDensity,
       appBarTheme: AppBarTheme(
         backgroundColor: canvas,
