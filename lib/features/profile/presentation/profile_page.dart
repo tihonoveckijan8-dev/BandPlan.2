@@ -7,6 +7,7 @@ import '../../../core/local/offline_providers.dart';
 import '../../groups/presentation/group_workspace_page.dart';
 import '../application/profile_providers.dart';
 import 'appearance_settings_tab.dart';
+import 'element_customization_tab.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -158,7 +159,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final offlineConflicts = ref.watch(offlineConflictsProvider);
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Профиль'),
@@ -175,6 +176,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               Tab(icon: Icon(Icons.person_outline_rounded), text: 'Профиль'),
               Tab(icon: Icon(Icons.groups_outlined), text: 'Группы'),
               Tab(icon: Icon(Icons.palette_outlined), text: 'Оформление'),
+              Tab(icon: Icon(Icons.tune_rounded), text: 'Элементы'),
               Tab(icon: Icon(Icons.download_rounded), text: 'Приложение'),
             ],
           ),
@@ -365,6 +367,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const GroupWorkspacePage(embedded: true),
             const AppearanceSettingsTab(),
+            const ElementCustomizationTab(),
             _AppInstallTab(
               onOpenWeb: _openWebApp,
               onDownloadApk: _downloadAndroidApk,
