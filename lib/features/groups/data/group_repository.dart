@@ -24,7 +24,8 @@ class GroupRepository {
         ownerUserId: user.id,
         collection: 'my_groups',
       );
-      if (cached == null || cached.isEmpty) rethrow;
+      // WHY: a missing first-run cache must not turn offline app entry into an error.
+      if (cached == null || cached.isEmpty) return const <Map<String, dynamic>>[];
       return cached
           .map((row) => row['payload'])
           .whereType<Map>()
@@ -63,7 +64,9 @@ class GroupRepository {
         ownerUserId: user.id,
         collection: 'active_group',
       );
-      if (cached == null || cached.isEmpty) rethrow;
+      // WHY: an account with no cached group should still reach the empty calendar
+      // and profile screens; lack of a group is not an app-startup failure.
+      if (cached == null || cached.isEmpty) return null;
       return cached.first['payload'];
     }
   }
