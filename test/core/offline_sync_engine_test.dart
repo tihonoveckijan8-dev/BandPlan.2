@@ -159,4 +159,42 @@ void main() {
     expect(applied, ['song-1', 'song-2']);
     expect(report.pendingCount, 0);
   });
+  test('stores a detected conflict and blocks later edits to the same record', () async {
+    await store.saveAndQueue(
+      operationId: 'edit-1',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'title': 'Local edit'},
+    );
+    await store.saveAndQueue(
+      operationId: 'edit-2',
+      ownerUserId: 'user-a',
+      groupId: 'group-a',
+      collection: 'group_songs',
+      recordId: 'song-1',
+      payload: {'title': 'Later local edit'},
+    );
+    final engine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'user-a',
+      applyMutation: (_) async => throw const OfflineMutationConflict(
+        message: 'Changed remotely',
+        remoteVersionExists: true,
+        remotePayload: {'title': 'Remote edit'},
+      ),
+    );
+
+    final report = await engine.syncPending();
+    final pending = await store.readPendingMutations(ownerUserId: 'user-a');
+
+    expect(report.conflictCount, 1);
+    expect(report.failedCount, 0);
+    expect(report.pendingCount, 2);
+    expect(pending.first['status'], 'conflict');
+    expect((pending.first['remotePayload'] as Map)['title'], 'Remote edit');
+    expect(pending.last['status'], 'pending');
+  });
+
 }
