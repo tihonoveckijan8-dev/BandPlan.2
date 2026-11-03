@@ -72,9 +72,27 @@ class OfflineSyncEngine {
     final pending = await _store.readPendingMutations(ownerUserId: userId);
 
     final blockedRecords = <String>{};
-    for (final mutation in pending) {
+    for (final queuedSnapshot in pending) {
       // WHY: never replay account A's queue after the user switches to account B.
       if (_currentUserId() != userId) break;
+
+      final operationId = queuedSnapshot['operationId']?.toString() ?? '';
+      if (operationId.isEmpty) {
+        lastError = 'В очереди обнаружена операция без идентификатора.';
+        continue;
+      }
+
+      // WHY: acknowledging an earlier edit rebases the next queued edit in
+      // IndexedDB. Reload each operation before applying it so the current
+      // iteration cannot send the stale baseline from the initial queue read.
+      final refreshedQueue = await _store.readPendingMutations(
+        ownerUserId: userId,
+      );
+      final matching = refreshedQueue
+          .where((item) => item['operationId'] == operationId)
+          .toList(growable: false);
+      if (matching.isEmpty) continue;
+      final mutation = matching.first;
 
       final recordKey = [
         mutation['groupId'] ?? '_personal',
@@ -91,13 +109,6 @@ class OfflineSyncEngine {
       }
 
       if (!force && !retryFailed && !_isRetryDue(mutation)) {
-        blockedRecords.add(recordKey);
-        continue;
-      }
-
-      final operationId = mutation['operationId']?.toString() ?? '';
-      if (operationId.isEmpty) {
-        lastError = 'В очереди обнаружена операция без идентификатора.';
         blockedRecords.add(recordKey);
         continue;
       }
