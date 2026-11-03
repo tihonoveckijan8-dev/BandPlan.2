@@ -118,10 +118,13 @@ class AppearanceSettingsTab extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: _corners.map((option) {
-                return ChoiceChip(
-                  label: Text(option.label),
-                  selected: appearance.cornerStyle == option.value,
-                  onSelected: (_) => _apply(context, ref, appearance.copyWith(cornerStyle: option.value)),
+                return Tooltip(
+                  message: option.description,
+                  child: ChoiceChip(
+                    label: Text(option.label),
+                    selected: appearance.cornerStyle == option.value,
+                    onSelected: (_) => _apply(context, ref, appearance.copyWith(cornerStyle: option.value)),
+                  ),
                 );
               }).toList(growable: false),
             ),
