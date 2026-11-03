@@ -148,6 +148,8 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
     var selectedKey = existing?.key.isNotEmpty == true ? existing!.key : 'Am';
     var saving = false;
     final formKey = GlobalKey<FormState>();
+    var syncPending = false;
+    var syncFailed = false;
 
     try {
       final saved = await showModalBottomSheet<bool>(
@@ -335,6 +337,8 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                                   lyrics: lyricsController.text,
                                 );
                                 final sync = await repository.saveGroupSong(group.id, edited);
+                                syncPending = sync.hasPending;
+                                syncFailed = sync.hasPermanentFailure;
                                 ref.invalidate(groupSongsProvider);
                                 if (sheetContext.mounted) {
                                   Navigator.of(sheetContext).pop(true);
@@ -366,9 +370,9 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
       );
       if (saved == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(sync.hasPermanentFailure
+          SnackBar(content: Text(syncFailed
               ? 'Песня сохранена на устройстве, но сервер отклонил синхронизацию.'
-              : sync.hasPending
+              : syncPending
                   ? 'Песня сохранена на устройстве. Ожидает синхронизации.'
                   : 'Песня сохранена в репертуаре группы')),
         );

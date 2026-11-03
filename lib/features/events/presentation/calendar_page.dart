@@ -169,6 +169,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       ],
     ));
     if(action==null||action=='cancel'||!context.mounted)return;
+    var pendingSync = false;
     try{
       final group=await ref.read(activeGroupProvider.future);
       final repo=await ref.read(eventRepositoryProvider.future);
@@ -176,11 +177,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       if(action=='one'){
         final excluded={...event.except,occurrenceDate}.toList()..sort();
         final sync=await repo.saveGroupEvent(group.id,GroupEvent.fromJson({...event.raw,'except':excluded}));
-      }else{final sync=await repo.deleteGroupEvent(group.id,event.id); if(sync.hasPending && context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Удаление сохранено на устройстве. Ожидает синхронизации.')));}
+        pendingSync=sync.hasPending;
+      }else{final sync=await repo.deleteGroupEvent(group.id,event.id); pendingSync=sync.hasPending;}
       ref.invalidate(groupEventsProvider);
       if(sheet.mounted)Navigator.pop(sheet);
       if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text(action=='one'?'Повторение удалено.':'Событие удалено.')));
+        SnackBar(content:Text(pendingSync?'Изменение сохранено на устройстве. Ожидает синхронизации.':action=='one'?'Повторение удалено.':'Событие удалено.')));
     }catch(error){
       if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content:Text('Не удалось удалить событие: $error')));
