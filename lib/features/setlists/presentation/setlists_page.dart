@@ -34,18 +34,50 @@ class SetlistsPage extends ConsumerWidget {
           ),
           data: (items) {
             if (items.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
-                  padding: EdgeInsets.all(28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.queue_music_rounded, size: 46),
-                      SizedBox(height: 12),
-                      Text('Пока нет сет-листов', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                      SizedBox(height: 6),
-                      Text('Создайте программу выступления и добавьте песни из репертуара группы.', textAlign: TextAlign.center),
-                    ],
+                  padding: const EdgeInsets.all(28),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Icon(Icons.queue_music_rounded, size: 38,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer),
+                        ),
+                        const SizedBox(height: 18),
+                        Text('Соберите программу выступления',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                )),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Добавьте песни из репертуара группы, задайте порядок и запускайте сет-лист в режиме исполнения.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                height: 1.45,
+                              ),
+                        ),
+                        const SizedBox(height: 18),
+                        FilledButton.icon(
+                          onPressed: songs.hasValue
+                              ? () => _editSetlist(context, ref, songs.value!,
+                                  events.asData?.value ?? const <GroupEvent>[])
+                              : null,
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text('Создать сет-лист'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -53,7 +85,7 @@ class SetlistsPage extends ConsumerWidget {
             final songMap = {for (final song in songs.asData?.value ?? const <Song>[]) song.id: song};
             final eventMap = {for (final event in events.asData?.value ?? const <GroupEvent>[]) event.id: event};
             return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 110),
               itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
