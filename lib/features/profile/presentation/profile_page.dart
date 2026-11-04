@@ -1005,13 +1005,13 @@ class _ProfileSectionButton extends StatelessWidget {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest.withOpacity(0.72),
+                  color: colors.primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.chevron_right_rounded,
-                  size: 19,
-                  color: colors.onSurfaceVariant,
+                  size: 20,
+                  color: colors.primary,
                 ),
               ),
             ],
