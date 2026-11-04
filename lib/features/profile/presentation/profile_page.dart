@@ -166,17 +166,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Профиль'),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: [
-              Tab(icon: Icon(Icons.person_outline_rounded), text: 'Профиль'),
-              Tab(icon: Icon(Icons.groups_outlined), text: 'Группы'),
-              Tab(icon: Icon(Icons.palette_outlined), text: 'Оформление'),
-              Tab(icon: Icon(Icons.tune_rounded), text: 'Элементы'),
-              Tab(icon: Icon(Icons.download_rounded), text: 'Приложение'),
-            ],
-          ),
           actions: [
             IconButton(
               tooltip: 'Выйти из аккаунта',
@@ -363,6 +352,42 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Text('Сохранить профиль'),
+                      ),
+                      const SizedBox(height: 28),
+                      Text(
+                        'Разделы профиля',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      _ProfileSectionButton(
+                        icon: Icons.person_outline_rounded,
+                        title: 'Аккаунт',
+                        description: 'Имя и музыкальные роли',
+                        onTap: () => DefaultTabController.of(context).animateTo(0),
+                      ),
+                      _ProfileSectionButton(
+                        icon: Icons.groups_outlined,
+                        title: 'Группы',
+                        description: 'Составы, приглашения и управление группами',
+                        onTap: () => DefaultTabController.of(context).animateTo(1),
+                      ),
+                      _ProfileSectionButton(
+                        icon: Icons.palette_outlined,
+                        title: 'Оформление',
+                        description: 'Тема и внешний вид приложения',
+                        onTap: () => DefaultTabController.of(context).animateTo(2),
+                      ),
+                      _ProfileSectionButton(
+                        icon: Icons.tune_rounded,
+                        title: 'Элементы',
+                        description: 'Настройка элементов интерфейса',
+                        onTap: () => DefaultTabController.of(context).animateTo(3),
+                      ),
+                      _ProfileSectionButton(
+                        icon: Icons.download_rounded,
+                        title: 'Приложение',
+                        description: 'Установка и версия BandPlan',
+                        onTap: () => DefaultTabController.of(context).animateTo(4),
                       ),
                     ],
                   );
@@ -736,3 +761,67 @@ class _ConflictVersionCard extends StatelessWidget {
   }
 }
 
+
+
+class _ProfileSectionButton extends StatelessWidget {
+  const _ProfileSectionButton({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.secondaryContainer,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: colors.onSecondaryContainer),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 3),
+                      Text(
+                        description,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
