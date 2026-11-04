@@ -157,28 +157,33 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final dark = theme.brightness == Brightness.dark;
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(12, 5, 12, 9),
+      minimum: const EdgeInsets.fromLTRB(18, 18, 18, 8),
       child: Container(
-        padding: const EdgeInsets.all(5),
+        height: 74,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(25),
+          // WHY: Keep the floating capsule legible over every page while
+          // using the active theme instead of copying the reference's blur.
+          color: colors.surface.withOpacity(dark ? 0.96 : 0.94),
+          borderRadius: BorderRadius.circular(38),
+          border: Border.all(
+            color: colors.onSurface.withOpacity(dark ? 0.13 : 0.09),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: colors.shadow.withOpacity(
-                theme.brightness == Brightness.dark ? 0.24 : 0.10,
-              ),
-              blurRadius: 22,
-              offset: const Offset(0, 6),
+              color: colors.shadow.withOpacity(dark ? 0.30 : 0.13),
+              blurRadius: 24,
+              spreadRadius: 1,
+              offset: const Offset(0, 8),
             ),
             BoxShadow(
-              color: colors.onSurface.withOpacity(
-                theme.brightness == Brightness.dark ? 0.06 : 0.035,
-              ),
-              blurRadius: 1,
+              color: colors.onSurface.withOpacity(dark ? 0.07 : 0.045),
+              blurRadius: 2,
               offset: const Offset(0, -1),
             ),
           ],
@@ -187,80 +192,82 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
           children: List.generate(_items.length, (index) {
             final item = _items[index];
             final selected = shell.currentIndex == index;
-            // WHY: the active destination uses the app's primary accent,
-            // making the current section immediately recognizable on mobile.
-            final foreground = selected
-                ? colors.onPrimary
-                : colors.onSurfaceVariant;
-
             return Expanded(
               child: Semantics(
                 button: true,
                 selected: selected,
                 label: item.$3,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => shell.goBranch(
-                      index,
-                      initialLocation: index == shell.currentIndex,
-                    ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 280),
-                      curve: Curves.easeInOutCubic,
-                      constraints: const BoxConstraints(minHeight: 62),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 3,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected ? colors.primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 220),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            transitionBuilder: (child, animation) =>
-                                ScaleTransition(
-                              scale: animation,
-                              child: FadeTransition(
-                                opacity: animation,
-                                child: child,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => shell.goBranch(
+                    index,
+                    initialLocation: index == shell.currentIndex,
+                  ),
+                  child: SizedBox(
+                    height: 74,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        AnimatedAlign(
+                          duration: const Duration(milliseconds: 430),
+                          curve: Curves.easeInOutCubic,
+                          alignment: selected
+                              ? const Alignment(0, -1.48)
+                              : Alignment.center,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 430),
+                            curve: Curves.easeInOutCubic,
+                            width: selected ? 58 : 46,
+                            height: selected ? 58 : 46,
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? colors.primary
+                                  : Colors.transparent,
+                              shape: BoxShape.circle,
+                              boxShadow: selected
+                                  ? [
+                                      BoxShadow(
+                                        color: colors.shadow.withOpacity(
+                                          dark ? 0.30 : 0.16,
+                                        ),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                      BoxShadow(
+                                        color: colors.onPrimary.withOpacity(0.20),
+                                        blurRadius: 2,
+                                        offset: const Offset(0, -1),
+                                      ),
+                                    ]
+                                  : const [],
+                            ),
+                            child: Center(
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                switchInCurve: Curves.easeOutCubic,
+                                switchOutCurve: Curves.easeInCubic,
+                                transitionBuilder: (child, animation) =>
+                                    ScaleTransition(
+                                  scale: animation,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                ),
+                                child: Icon(
+                                  selected ? item.$2 : item.$1,
+                                  key: ValueKey(selected),
+                                  size: selected ? 29 : 27,
+                                  color: selected
+                                      ? colors.onPrimary
+                                      : colors.onSurfaceVariant,
+                                ),
                               ),
                             ),
-                            child: Icon(
-                              selected ? item.$2 : item.$1,
-                              key: ValueKey(selected),
-                              size: selected ? 23 : 22,
-                              color: foreground,
-                            ),
                           ),
-                          const SizedBox(height: 3),
-                          AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeInOutCubic,
-                            style: theme.textTheme.labelSmall!.copyWith(
-                              color: foreground,
-                              fontSize: selected ? 11 : 10.5,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                            child: Text(
-                              item.$3,
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.fade,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -272,7 +279,6 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
     );
   }
 }
-
  
 // WHY: Keep the indexed branch navigators alive while animating the visible
 // content, so switching tabs does not reset each tab's scroll or route state.
@@ -295,7 +301,7 @@ class _BranchTransitionState extends State<_BranchTransition>
     vsync: this,
     // WHY: A slightly longer ease-in/ease-out gives the movement a natural
     // acceleration and deceleration instead of a mechanical snap.
-    duration: const Duration(milliseconds: 280),
+    duration: const Duration(milliseconds: 430),
     value: 1,
   );
 
@@ -305,7 +311,7 @@ class _BranchTransitionState extends State<_BranchTransition>
   );
 
   late Animation<Offset> _slide = Tween<Offset>(
-    begin: const Offset(0.035, 0),
+    begin: const Offset(0.02, 0),
     end: Offset.zero,
   ).animate(_motion);
 
@@ -324,7 +330,7 @@ class _BranchTransitionState extends State<_BranchTransition>
       }
       final direction = widget.currentIndex > oldWidget.currentIndex ? 1.0 : -1.0;
       _slide = Tween<Offset>(
-        begin: Offset(direction * 0.035, 0),
+        begin: Offset(direction * 0.02, 0),
         end: Offset.zero,
       ).animate(_motion);
       _controller
