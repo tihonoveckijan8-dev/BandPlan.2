@@ -484,24 +484,28 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             Builder(
               builder: (sectionContext) => _ProfileSubpage(
+                title: 'Группы',
                 onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
                 child: const GroupWorkspacePage(embedded: true),
               ),
             ),
             Builder(
               builder: (sectionContext) => _ProfileSubpage(
+                title: 'Оформление',
                 onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
                 child: const AppearanceSettingsTab(),
               ),
             ),
             Builder(
               builder: (sectionContext) => _ProfileSubpage(
+                title: 'Элементы',
                 onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
                 child: const ElementCustomizationTab(),
               ),
             ),
             Builder(
               builder: (sectionContext) => _ProfileSubpage(
+                title: 'Приложение',
                 onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
                 child: _AppInstallTab(
                   onOpenWeb: _openWebApp,
