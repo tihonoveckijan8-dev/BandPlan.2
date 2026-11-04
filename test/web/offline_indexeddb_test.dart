@@ -8,6 +8,11 @@ import 'package:bandplan/features/events/domain/group_event.dart';
 import 'package:bandplan/features/groups/domain/group_summary.dart';
 import 'package:bandplan/features/setlists/domain/setlist.dart';
 import 'package:bandplan/features/songs/domain/song.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:bandplan/features/events/data/event_repository.dart';
+import 'package:bandplan/features/setlists/data/setlist_repository.dart';
+import 'package:bandplan/features/songs/data/song_repository.dart';
 
 void main() {
   const databaseName = 'bandplan_offline_pwa_persistence_test';
@@ -365,6 +370,65 @@ void main() {
     expect(restoredEvent.title, 'Cached rehearsal');
     expect(restoredSetlist.name, 'Cached program');
     expect(restoredPersonalSong.title, 'Personal cached song');
+  }, skip: !kIsWeb);
+
+
+  test('feature streams expose restored IndexedDB content before offline refresh', () async {
+    const databaseName = 'bandplan_offline_feature_streams_test';
+    await databaseFactoryWeb.deleteDatabase(databaseName);
+    final store = OfflineStore(
+      await databaseFactoryWeb.openDatabase(databaseName),
+    );
+    final client = SupabaseClient('http://127.0.0.1:1', 'offline-test-key');
+    addTearDown(() async {
+      await client.removeAllChannels();
+      await store.close();
+      await databaseFactoryWeb.deleteDatabase(databaseName);
+    });
+
+    // WHY: A cold offline relaunch must restore data through the same
+    // repository streams consumed by the real songs, calendar and setlist UI.
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      groupId: 'offline-group',
+      collection: 'group_songs',
+      recordId: 'song-stream',
+      payload: {'id': 'song-stream', 'title': 'Offline stream song', 'lyrics': 'Local lyrics'},
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      groupId: 'offline-group',
+      collection: 'group_events',
+      recordId: 'event-stream',
+      payload: {'id': 'event-stream', 'title': 'Offline stream rehearsal', 'date': '2026-11-05'},
+    );
+    await store.cacheRemoteRecord(
+      ownerUserId: 'offline-user',
+      groupId: 'offline-group',
+      collection: 'group_setlists',
+      recordId: 'setlist-stream',
+      payload: {'id': 'setlist-stream', 'name': 'Offline stream setlist', 'items': []},
+    );
+
+    // WHY: Port 1 deliberately refuses network requests. The stream must still
+    // emit its durable local snapshot and suppress only this transport failure.
+    final songs = await SongRepository(client, offlineStore: store)
+        .watchGroupSongs('offline-user', 'offline-group')
+        .first
+        .timeout(const Duration(seconds: 5));
+    final events = await EventRepository(client, offlineStore: store)
+        .watchGroupEvents('offline-user', 'offline-group')
+        .first
+        .timeout(const Duration(seconds: 5));
+    final setlists = await SetlistRepository(client, offlineStore: store)
+        .watchGroupSetlists('offline-user', 'offline-group')
+        .first
+        .timeout(const Duration(seconds: 5));
+
+    expect(songs.map((song) => song.title), ['Offline stream song']);
+    expect(songs.single.lyrics, 'Local lyrics');
+    expect(events.map((event) => event.title), ['Offline stream rehearsal']);
+    expect(setlists.map((setlist) => setlist.name), ['Offline stream setlist']);
   }, skip: !kIsWeb);
 
 }
