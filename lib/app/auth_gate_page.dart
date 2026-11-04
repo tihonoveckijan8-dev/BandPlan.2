@@ -293,32 +293,42 @@ class _BranchTransitionState extends State<_BranchTransition>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 320),
+    // WHY: A short, gentle settle feels responsive without looking like a
+    // delayed page load when the user switches tabs repeatedly.
+    duration: const Duration(milliseconds: 250),
     value: 1,
   );
 
-  late final Animation<double> _fade = CurvedAnimation(
+  late final Animation<double> _motion = CurvedAnimation(
     parent: _controller,
     curve: Curves.easeOutCubic,
   );
 
   late Animation<Offset> _slide = Tween<Offset>(
-    begin: const Offset(0.16, 0),
+    begin: const Offset(0.055, 0),
     end: Offset.zero,
-  ).animate(_fade);
+  ).animate(_motion);
 
   @override
   void didUpdateWidget(covariant _BranchTransition oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentIndex != widget.currentIndex) {
-      // WHY: Move the incoming page from the side of the selected tab,
-      // matching Telegram's horizontal swipe-like branch transition.
+      // WHY: Keep the swipe direction, but use a much smaller travel distance
+      // so the page glides into place instead of appearing to lag behind.
+      final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      if (reduceMotion) {
+        _controller
+          ..stop()
+          ..value = 1;
+        return;
+      }
       final direction = widget.currentIndex > oldWidget.currentIndex ? 1.0 : -1.0;
       _slide = Tween<Offset>(
-        begin: Offset(direction * 0.16, 0),
+        begin: Offset(direction * 0.055, 0),
         end: Offset.zero,
-      ).animate(_fade);
+      ).animate(_motion);
       _controller
+        ..stop()
         ..value = 0
         ..forward();
     }
@@ -333,9 +343,9 @@ class _BranchTransitionState extends State<_BranchTransition>
   @override
   Widget build(BuildContext context) => SlideTransition(
         position: _slide,
-        child: FadeTransition(
-          opacity: Tween<double>(begin: 0.92, end: 1).animate(_fade),
-          child: widget.child,
-        ),
+        // WHY: Isolate the complex tab navigator from the moving parent.
+        // Removing the opacity animation also avoids an unnecessary full-page
+        // compositing pass on every frame, reducing visual stutter on phones.
+        child: RepaintBoundary(child: widget.child),
       );
 }
