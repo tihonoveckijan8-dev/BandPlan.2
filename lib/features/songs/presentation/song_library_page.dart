@@ -47,6 +47,45 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
         child: Column(
           children: [
             Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _library == _SongLibrary.group ? 'Репертуар группы' : 'Моя библиотека',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _library == _SongLibrary.group
+                              ? 'Песни, которые доступны всей группе'
+                              : 'Личные песни и заготовки',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(Icons.library_music_rounded,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: SegmentedButton<_SongLibrary>(
                 segments: const [
@@ -72,7 +111,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                 controller: _searchController,
                 onChanged: (value) => setState(() => _query = value.trim()),
                 decoration: InputDecoration(
-                  hintText: 'Название, исполнитель или текст песни',
+                  hintText: 'Найти песню или исполнителя',
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: _query.isEmpty
                       ? null
