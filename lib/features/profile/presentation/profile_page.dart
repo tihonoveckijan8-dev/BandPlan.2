@@ -394,12 +394,32 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 },
               ),
             ),
-            const GroupWorkspacePage(embedded: true),
-            const AppearanceSettingsTab(),
-            const ElementCustomizationTab(),
-            _AppInstallTab(
-              onOpenWeb: _openWebApp,
-              onDownloadApk: _downloadAndroidApk,
+            Builder(
+              builder: (sectionContext) => _ProfileSubpage(
+                onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
+                child: const GroupWorkspacePage(embedded: true),
+              ),
+            ),
+            Builder(
+              builder: (sectionContext) => _ProfileSubpage(
+                onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
+                child: const AppearanceSettingsTab(),
+              ),
+            ),
+            Builder(
+              builder: (sectionContext) => _ProfileSubpage(
+                onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
+                child: const ElementCustomizationTab(),
+              ),
+            ),
+            Builder(
+              builder: (sectionContext) => _ProfileSubpage(
+                onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
+                child: _AppInstallTab(
+                  onOpenWeb: _openWebApp,
+                  onDownloadApk: _downloadAndroidApk,
+                ),
+              ),
             ),
           ],
         ),
@@ -822,6 +842,37 @@ class _ProfileSectionButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _ProfileSubpage extends StatelessWidget {
+  const _ProfileSubpage({
+    required this.child,
+    required this.onBack,
+  });
+
+  final Widget child;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SafeArea(
+          bottom: false,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('Профиль'),
+            ),
+          ),
+        ),
+        Expanded(child: child),
+      ],
     );
   }
 }
