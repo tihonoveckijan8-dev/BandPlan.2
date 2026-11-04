@@ -256,40 +256,50 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       // an independent Telegram-style submenu instead of one dense list.
                       Column(
                         children: [
-                          _ProfileSectionButton(
+                          Builder(
+                            builder: (buttonContext) => _ProfileSectionButton(
                             icon: Icons.person_outline_rounded,
                             title: 'Аккаунт',
                             description: 'Имя и музыкальные роли',
-                            onTap: () => DefaultTabController.of(context).animateTo(1),
+                            onTap: () => DefaultTabController.of(buttonContext).animateTo(1),
                           ),
+                          ),,
                           const SizedBox(height: 12),
-                          _ProfileSectionButton(
+                          Builder(
+                            builder: (buttonContext) => _ProfileSectionButton(
                             icon: Icons.groups_outlined,
                             title: 'Группы',
                             description: 'Составы, приглашения и управление группами',
-                            onTap: () => DefaultTabController.of(context).animateTo(2),
+                            onTap: () => DefaultTabController.of(buttonContext).animateTo(2),
                           ),
+                          ),,
                           const SizedBox(height: 12),
-                          _ProfileSectionButton(
+                          Builder(
+                            builder: (buttonContext) => _ProfileSectionButton(
                             icon: Icons.palette_outlined,
                             title: 'Оформление',
                             description: 'Тема и внешний вид приложения',
-                            onTap: () => DefaultTabController.of(context).animateTo(3),
+                            onTap: () => DefaultTabController.of(buttonContext).animateTo(3),
                           ),
+                          ),,
                           const SizedBox(height: 12),
-                          _ProfileSectionButton(
+                          Builder(
+                            builder: (buttonContext) => _ProfileSectionButton(
                             icon: Icons.tune_rounded,
                             title: 'Элементы',
                             description: 'Настройка элементов интерфейса',
-                            onTap: () => DefaultTabController.of(context).animateTo(4),
+                            onTap: () => DefaultTabController.of(buttonContext).animateTo(4),
                           ),
+                          ),,
                           const SizedBox(height: 12),
-                          _ProfileSectionButton(
+                          Builder(
+                            builder: (buttonContext) => _ProfileSectionButton(
                             icon: Icons.download_rounded,
                             title: 'Приложение',
                             description: 'Установка и версия BandPlan',
-                            onTap: () => DefaultTabController.of(context).animateTo(5),
+                            onTap: () => DefaultTabController.of(buttonContext).animateTo(5),
                           ),
+                          ),,
                         ],
                       ),
                       const SizedBox(height: 24),
