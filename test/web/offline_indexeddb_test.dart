@@ -4,6 +4,10 @@ import 'package:sembast_web/sembast_web.dart';
 
 import 'package:bandplan/core/local/offline_store.dart';
 import 'package:bandplan/core/local/offline_sync_engine.dart';
+import 'package:bandplan/features/events/domain/group_event.dart';
+import 'package:bandplan/features/groups/domain/group_summary.dart';
+import 'package:bandplan/features/setlists/domain/setlist.dart';
+import 'package:bandplan/features/songs/domain/song.dart';
 
 void main() {
   const databaseName = 'bandplan_offline_pwa_persistence_test';
@@ -335,12 +339,32 @@ void main() {
       collection: 'personal_songs',
     );
 
-    expect((groups.single['payload'] as Map)['name'], 'Offline Band');
+    // WHY: A raw IndexedDB read is not enough: the actual feature models must
+    // also accept the restored legacy payloads used by their screens.
+    final restoredGroup = GroupSummary.fromJson(
+      Map<String, dynamic>.from(groups.single['payload'] as Map),
+    );
+    final restoredSong = Song.fromJson(
+      Map<String, dynamic>.from(songs.single['payload'] as Map),
+    );
+    final restoredEvent = GroupEvent.fromJson(
+      Map<String, dynamic>.from(events.single['payload'] as Map),
+    );
+    final restoredSetlist = Setlist.fromJson(
+      Map<String, dynamic>.from(setlists.single['payload'] as Map),
+    );
+    final restoredPersonalSong = Song.fromJson(
+      Map<String, dynamic>.from(personalSongs.single['payload'] as Map),
+    );
+
+    expect(restoredGroup.id, 'group-a');
+    expect(restoredGroup.name, 'Offline Band');
     expect((activeGroup.single['payload'] as Map)['group_id'], 'group-a');
-    expect((songs.single['payload'] as Map)['lyrics'], 'Offline lyrics');
-    expect((events.single['payload'] as Map)['title'], 'Cached rehearsal');
-    expect((setlists.single['payload'] as Map)['name'], 'Cached program');
-    expect((personalSongs.single['payload'] as Map)['title'], 'Personal cached song');
+    expect(restoredSong.title, 'Cached song');
+    expect(restoredSong.lyrics, 'Offline lyrics');
+    expect(restoredEvent.title, 'Cached rehearsal');
+    expect(restoredSetlist.name, 'Cached program');
+    expect(restoredPersonalSong.title, 'Personal cached song');
   }, skip: !kIsWeb);
 
 }
