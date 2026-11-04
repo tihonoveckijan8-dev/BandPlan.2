@@ -333,27 +333,78 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   }
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 36),
                     children: [
-                      TextField(
-                        controller: _nameController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                          labelText: 'Отображаемое имя',
-                          prefixIcon: Icon(Icons.person_outline_rounded),
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.manage_accounts_rounded,
+                                size: 30,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Личные данные',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                          )),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Имя и музыкальные роли будут видны участникам ваших групп.',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                          height: 1.35,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _rolesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Музыкальные роли',
-                          hintText: 'Вокал, гитара, клавиши',
-                          helperText: 'Укажите роли через запятую',
-                          prefixIcon: Icon(Icons.music_note_rounded),
+                      const SizedBox(height: 22),
+                      Text('Профиль участника',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              )),
+                      const SizedBox(height: 10),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              TextField(
+                                controller: _nameController,
+                                textCapitalization: TextCapitalization.words,
+                                decoration: const InputDecoration(
+                                  labelText: 'Отображаемое имя',
+                                  hintText: 'Как к вам обращаться',
+                                  prefixIcon: Icon(Icons.person_outline_rounded),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: _rolesController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Музыкальные роли',
+                                  hintText: 'Вокал, гитара, клавиши',
+                                  helperText: 'Укажите роли через запятую',
+                                  prefixIcon: Icon(Icons.music_note_rounded),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 22),
                       offlineQueue.when(
                         loading: () => const LinearProgressIndicator(),
                         error: (error, stack) => const SizedBox.shrink(),
