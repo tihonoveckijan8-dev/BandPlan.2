@@ -166,6 +166,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Профиль'),
+          centerTitle: true,
+          scrolledUnderElevation: 0,
           actions: [
             IconButton(
               tooltip: 'Выйти из аккаунта',
@@ -207,7 +209,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   }
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
                     children: [
                       // WHY: mirror the compact Telegram-style identity header
                       // while keeping the existing editable profile fields below it.
@@ -244,7 +246,58 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 26),
+                      Text(
+                        'Разделы профиля',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            _ProfileSectionButton(
+                              icon: Icons.person_outline_rounded,
+                              title: 'Аккаунт',
+                              description: 'Имя и музыкальные роли',
+                              onTap: () => DefaultTabController.of(context).animateTo(0),
+                            ),
+                            _profileSectionDivider(context),
+                            _ProfileSectionButton(
+                              icon: Icons.groups_outlined,
+                              title: 'Группы',
+                              description: 'Составы, приглашения и управление группами',
+                              onTap: () => DefaultTabController.of(context).animateTo(1),
+                            ),
+                            _profileSectionDivider(context),
+                            _ProfileSectionButton(
+                              icon: Icons.palette_outlined,
+                              title: 'Оформление',
+                              description: 'Тема и внешний вид приложения',
+                              onTap: () => DefaultTabController.of(context).animateTo(2),
+                            ),
+                            _profileSectionDivider(context),
+                            _ProfileSectionButton(
+                              icon: Icons.tune_rounded,
+                              title: 'Элементы',
+                              description: 'Настройка элементов интерфейса',
+                              onTap: () => DefaultTabController.of(context).animateTo(3),
+                            ),
+                            _profileSectionDivider(context),
+                            _ProfileSectionButton(
+                              icon: Icons.download_rounded,
+                              title: 'Приложение',
+                              description: 'Установка и версия BandPlan',
+                              onTap: () => DefaultTabController.of(context).animateTo(4),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       TextField(
                         controller: _nameController,
                         textCapitalization: TextCapitalization.words,
@@ -378,56 +431,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             : const Text('Сохранить профиль'),
                       ),
                       const SizedBox(height: 28),
-                      Text(
-                        'Разделы профиля',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Column(
-                          children: [
-                            _ProfileSectionButton(
-                              icon: Icons.person_outline_rounded,
-                              title: 'Аккаунт',
-                              description: 'Имя и музыкальные роли',
-                              onTap: () => DefaultTabController.of(context).animateTo(0),
-                            ),
-                            _profileSectionDivider(context),
-                            _ProfileSectionButton(
-                              icon: Icons.groups_outlined,
-                              title: 'Группы',
-                              description: 'Составы, приглашения и управление группами',
-                              onTap: () => DefaultTabController.of(context).animateTo(1),
-                            ),
-                            _profileSectionDivider(context),
-                            _ProfileSectionButton(
-                              icon: Icons.palette_outlined,
-                              title: 'Оформление',
-                              description: 'Тема и внешний вид приложения',
-                              onTap: () => DefaultTabController.of(context).animateTo(2),
-                            ),
-                            _profileSectionDivider(context),
-                            _ProfileSectionButton(
-                              icon: Icons.tune_rounded,
-                              title: 'Элементы',
-                              description: 'Настройка элементов интерфейса',
-                              onTap: () => DefaultTabController.of(context).animateTo(3),
-                            ),
-                            _profileSectionDivider(context),
-                            _ProfileSectionButton(
-                              icon: Icons.download_rounded,
-                              title: 'Приложение',
-                              description: 'Установка и версия BandPlan',
-                              onTap: () => DefaultTabController.of(context).animateTo(4),
-                            ),
-                          ],
-                        ),
-                      ),
+
                     ],
                   );
                 },
