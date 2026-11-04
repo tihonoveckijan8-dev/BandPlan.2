@@ -209,18 +209,42 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
                     children: [
+                      // WHY: mirror the compact Telegram-style identity header
+                      // while keeping the existing editable profile fields below it.
                       Center(
-                        child: CircleAvatar(
-                          radius: 38,
-                          child: Text(
-                            value.displayName.isEmpty
-                                ? '?'
-                                : value.displayName.characters.first.toUpperCase(),
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 46,
+                              child: Text(
+                                value.displayName.isEmpty
+                                    ? '?'
+                                    : value.displayName.characters.first.toUpperCase(),
+                                style: Theme.of(context).textTheme.headlineLarge,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              value.displayName.isEmpty ? 'Ваш профиль' : value.displayName,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              value.roles.isEmpty
+                                  ? 'Музыкальный профиль BandPlan'
+                                  : value.roles.join(' · '),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
                       TextField(
                         controller: _nameController,
                         textCapitalization: TextCapitalization.words,
