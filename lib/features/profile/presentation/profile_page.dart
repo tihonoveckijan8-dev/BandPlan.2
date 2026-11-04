@@ -10,7 +10,10 @@ import 'appearance_settings_tab.dart';
 import 'element_customization_tab.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({super.key, this.initialSection = 0, this.showSectionMenu = true});
+
+  final int initialSection;
+  final bool showSectionMenu;
 
   @override
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
@@ -160,9 +163,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     return DefaultTabController(
       length: 5,
+      initialIndex: widget.initialSection,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Профиль'),
+          title: Text(const ['Профиль', 'Группы', 'Оформление', 'Элементы', 'Приложение'][widget.initialSection]),
           actions: [
             IconButton(
               tooltip: 'Выйти из аккаунта',
@@ -175,6 +179,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           children: [
             Expanded(
               child: TabBarView(
+          physics: const NeverScrollableScrollPhysics(),
           children: [
             SafeArea(
               child: profile.when(
@@ -370,7 +375,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             // WHY: profile sections are stacked as full-width Telegram-style
             // menu rows below the current section, not squeezed into a bottom bar.
-            SafeArea(
+            if (widget.showSectionMenu) SafeArea(
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
@@ -395,7 +400,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: sections[index].$1,
                               label: sections[index].$2,
                               selected: controller.index == index,
-                              onTap: () => controller.animateTo(index),
+                              // WHY: each profile section is a separate route with
+                              // its own AppBar/back navigation, not an in-place tab.
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ProfilePage(
+                                    initialSection: index,
+                                    showSectionMenu: false,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ],
