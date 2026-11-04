@@ -161,7 +161,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final offlineConflicts = ref.watch(offlineConflictsProvider);
 
     return DefaultTabController(
-      length: 5,
+      length: 6,
       initialIndex: widget.initialSection,
       child: Scaffold(
         appBar: AppBar(
@@ -264,40 +264,82 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               icon: Icons.person_outline_rounded,
                               title: 'Аккаунт',
                               description: 'Имя и музыкальные роли',
-                              onTap: () => DefaultTabController.of(context).animateTo(0),
+                              onTap: () => DefaultTabController.of(context).animateTo(1),
                             ),
                             _profileSectionDivider(context),
                             _ProfileSectionButton(
                               icon: Icons.groups_outlined,
                               title: 'Группы',
                               description: 'Составы, приглашения и управление группами',
-                              onTap: () => DefaultTabController.of(context).animateTo(1),
+                              onTap: () => DefaultTabController.of(context).animateTo(2),
                             ),
                             _profileSectionDivider(context),
                             _ProfileSectionButton(
                               icon: Icons.palette_outlined,
                               title: 'Оформление',
                               description: 'Тема и внешний вид приложения',
-                              onTap: () => DefaultTabController.of(context).animateTo(2),
+                              onTap: () => DefaultTabController.of(context).animateTo(3),
                             ),
                             _profileSectionDivider(context),
                             _ProfileSectionButton(
                               icon: Icons.tune_rounded,
                               title: 'Элементы',
                               description: 'Настройка элементов интерфейса',
-                              onTap: () => DefaultTabController.of(context).animateTo(3),
+                              onTap: () => DefaultTabController.of(context).animateTo(4),
                             ),
                             _profileSectionDivider(context),
                             _ProfileSectionButton(
                               icon: Icons.download_rounded,
                               title: 'Приложение',
                               description: 'Установка и версия BandPlan',
-                              onTap: () => DefaultTabController.of(context).animateTo(4),
+                              onTap: () => DefaultTabController.of(context).animateTo(5),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 24),
+                    ],
+                  );
+                },
+              ),
+            ),
+            Builder(
+              builder: (sectionContext) => _ProfileSubpage(
+                title: 'Аккаунт',
+                onBack: () => DefaultTabController.of(sectionContext).animateTo(0),
+                child: SafeArea(
+              child: profile.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.cloud_off_rounded, size: 40),
+                        const SizedBox(height: 12),
+                        Text(error.toString(), textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          onPressed: () => ref.invalidate(myProfileProvider),
+                          child: const Text('Повторить'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                data: (value) {
+                  // WHY: a long-lived profile page must not show the previous account's
+                  // controllers after the authenticated user changes.
+                  if (_loadedUserId != value.userId) {
+                    _nameController.text = value.displayName;
+                    _rolesController.text = value.roles.join(', ');
+                    _loadedUserId = value.userId;
+                  }
+
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+                    children: [
                       TextField(
                         controller: _nameController,
                         textCapitalization: TextCapitalization.words,
@@ -435,6 +477,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     ],
                   );
                 },
+              ),
+            ),
+,
               ),
             ),
             Builder(
@@ -896,10 +941,12 @@ class _ProfileSubpage extends StatelessWidget {
   const _ProfileSubpage({
     required this.child,
     required this.onBack,
+    this.title,
   });
 
   final Widget child;
   final VoidCallback onBack;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -909,10 +956,18 @@ class _ProfileSubpage extends StatelessWidget {
           bottom: false,
           child: Align(
             alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: onBack,
-              icon: const Icon(Icons.arrow_back_rounded),
-              label: const Text('Профиль'),
+            child: Row(
+              children: [
+                TextButton.icon(
+                  onPressed: onBack,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text('Профиль'),
+                ),
+                if (title != null) ...[
+                  const SizedBox(width: 8),
+                  Text(title!, style: Theme.of(context).textTheme.titleMedium),
+                ],
+              ],
             ),
           ),
         ),
