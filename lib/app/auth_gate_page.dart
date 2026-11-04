@@ -213,7 +213,7 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                           duration: const Duration(milliseconds: 430),
                           curve: Curves.easeInOutCubic,
                           alignment: selected
-                              ? const Alignment(0, -1.48)
+                              ? const Alignment(0, -3.3)
                               : Alignment.center,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 430),
