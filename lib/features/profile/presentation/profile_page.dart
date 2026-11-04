@@ -938,39 +938,66 @@ class _ProfileSectionButton extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Material(
       color: colors.surfaceContainer,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(17),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(17),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(color: colors.outlineVariant.withOpacity(0.45)),
+            // WHY: paired soft shadows make each submenu tile tactile without
+            // adding blur or changing the navigation behavior.
+            boxShadow: [
+              BoxShadow(
+                color: colors.shadow.withOpacity(0.07),
+                blurRadius: 10,
+                offset: const Offset(2, 3),
+              ),
+              BoxShadow(
+                color: colors.surface.withOpacity(0.7),
+                blurRadius: 8,
+                offset: const Offset(-2, -2),
+              ),
+            ],
+          ),
           child: Row(
             children: [
               Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: colors.secondaryContainer,
+                  color: colors.primaryContainer,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: colors.onSecondaryContainer),
+                child: Icon(icon, color: colors.onPrimaryContainer, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
                     const SizedBox(height: 3),
                     Text(
                       description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
+                            color: colors.onSurfaceVariant,
+                          ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
             ],
           ),
