@@ -48,7 +48,10 @@ class AuthGatePage extends ConsumerWidget {
       ),
       data: (complete) => complete
           ? Scaffold(
-              body: navigationShell,
+              body: _BranchTransition(
+                currentIndex: navigationShell.currentIndex,
+                child: navigationShell,
+              ),
               bottomNavigationBar: LayoutBuilder(
                 builder: (context, constraints) {
                   final isMobile = MediaQuery.sizeOf(context).width < 700;
@@ -204,8 +207,8 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                       initialLocation: index == shell.currentIndex,
                     ),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeInOutCubic,
                       constraints: const BoxConstraints(minHeight: 62),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 3,
@@ -220,7 +223,9 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 180),
+                            duration: const Duration(milliseconds: 220),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
                             transitionBuilder: (child, animation) =>
                                 ScaleTransition(
                               scale: animation,
@@ -238,8 +243,8 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                           ),
                           const SizedBox(height: 3),
                           AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOut,
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeInOutCubic,
                             style: theme.textTheme.labelSmall!.copyWith(
                               color: foreground,
                               fontSize: selected ? 11 : 10.5,
@@ -266,4 +271,64 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
       ),
     );
   }
+}
+
+ 
+// WHY: Keep the indexed branch navigators alive while animating the visible
+// content, so switching tabs does not reset each tab's scroll or route state.
+class _BranchTransition extends StatefulWidget {
+  const _BranchTransition({
+    required this.currentIndex,
+    required this.child,
+  });
+
+  final int currentIndex;
+  final Widget child;
+
+  @override
+  State<_BranchTransition> createState() => _BranchTransitionState();
+}
+
+class _BranchTransitionState extends State<_BranchTransition>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+    value: 1,
+  );
+
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+  );
+
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0.018, 0),
+    end: Offset.zero,
+  ).animate(_fade);
+
+  @override
+  void didUpdateWidget(covariant _BranchTransition oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentIndex != widget.currentIndex) {
+      _controller
+        ..value = 0
+        ..forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: _fade,
+        child: SlideTransition(
+          position: _slide,
+          child: widget.child,
+        ),
+      );
 }
