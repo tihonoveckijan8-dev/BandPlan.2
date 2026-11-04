@@ -262,28 +262,28 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             description: 'Имя и музыкальные роли',
                             onTap: () => DefaultTabController.of(context).animateTo(1),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           _ProfileSectionButton(
                             icon: Icons.groups_outlined,
                             title: 'Группы',
                             description: 'Составы, приглашения и управление группами',
                             onTap: () => DefaultTabController.of(context).animateTo(2),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           _ProfileSectionButton(
                             icon: Icons.palette_outlined,
                             title: 'Оформление',
                             description: 'Тема и внешний вид приложения',
                             onTap: () => DefaultTabController.of(context).animateTo(3),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           _ProfileSectionButton(
                             icon: Icons.tune_rounded,
                             title: 'Элементы',
                             description: 'Настройка элементов интерфейса',
                             onTap: () => DefaultTabController.of(context).animateTo(4),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           _ProfileSectionButton(
                             icon: Icons.download_rounded,
                             title: 'Приложение',
@@ -938,14 +938,17 @@ class _ProfileSectionButton extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Material(
       color: colors.surfaceContainer,
-      borderRadius: BorderRadius.circular(17),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(18),
+        splashColor: colors.primary.withOpacity(0.10),
+        highlightColor: colors.primary.withOpacity(0.045),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          constraints: const BoxConstraints(minHeight: 76),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(color: colors.outlineVariant.withOpacity(0.45)),
             // WHY: paired soft shadows make each submenu tile tactile without
             // adding blur or changing the navigation behavior.
