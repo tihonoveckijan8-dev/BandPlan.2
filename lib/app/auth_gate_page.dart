@@ -164,7 +164,7 @@ class _TelegramStyleNavigationBarState
   late int _activeIndex = widget.shell.currentIndex;
   late final AnimationController _notchController = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 420),
+    duration: const Duration(milliseconds: 360),
     value: 1,
   );
   late Animation<double> _notchPosition = AlwaysStoppedAnimation(
@@ -184,7 +184,7 @@ class _TelegramStyleNavigationBarState
       end: nextIndex.toDouble(),
     ).animate(CurvedAnimation(
       parent: _notchController,
-      curve: Curves.easeInOutCubicEmphasized,
+      curve: Curves.easeInOutCubic,
     ));
     _notchController
       ..stop()
@@ -284,7 +284,7 @@ class _TelegramStyleNavigationBarState
                                     ),
                                     child: Center(
                                       child: AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 260),
+                                        duration: const Duration(milliseconds: 220),
                                         switchInCurve: Curves.easeOutCubic,
                                         switchOutCurve: Curves.easeInCubic,
                                         transitionBuilder: (child, animation) =>
@@ -410,9 +410,10 @@ class _FloatingNavigationShape extends CustomPainter {
       oldDelegate.highlight != highlight;
 }
 
-// WHY: Keep the indexed branch navigators alive while animating the visible
-// content, so switching tabs does not reset each tab's scroll or route state.
-class _BranchTransition extends StatefulWidget {
+// WHY: Keep branch navigators alive without translating the entire page.
+// The tab indicator and notch carry the motion; avoiding a full-screen slide
+// prevents an unnecessary compositing pass on lower-powered phones.
+class _BranchTransition extends StatelessWidget {
   const _BranchTransition({
     required this.currentIndex,
     required this.child,
@@ -422,66 +423,5 @@ class _BranchTransition extends StatefulWidget {
   final Widget child;
 
   @override
-  State<_BranchTransition> createState() => _BranchTransitionState();
-}
-
-class _BranchTransitionState extends State<_BranchTransition>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    // WHY: Keep the page movement short and subtle; the expensive tab subtree
-    // is isolated so navigation does not animate a large composited surface.
-    duration: const Duration(milliseconds: 260),
-    value: 1,
-  );
-
-  late final Animation<double> _motion = CurvedAnimation(
-    parent: _controller,
-    curve: Curves.easeOutCubic,
-  );
-
-  late Animation<Offset> _slide = Tween<Offset>(
-    begin: const Offset(0.008, 0),
-    end: Offset.zero,
-  ).animate(_motion);
-
-  @override
-  void didUpdateWidget(covariant _BranchTransition oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentIndex != widget.currentIndex) {
-      // WHY: A very short, subtle movement avoids the heavy feel of sliding
-      // the entire page while still making the tab change perceptible.
-      final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-      if (reduceMotion) {
-        _controller
-          ..stop()
-          ..value = 1;
-        return;
-      }
-      final direction = widget.currentIndex > oldWidget.currentIndex ? 1.0 : -1.0;
-      _slide = Tween<Offset>(
-        begin: Offset(direction * 0.008, 0),
-        end: Offset.zero,
-      ).animate(_motion);
-      _controller
-        ..stop()
-        ..value = 0
-        ..forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => SlideTransition(
-        position: _slide,
-        // WHY: Isolate the complex tab navigator from the moving parent.
-        // Removing the opacity animation also avoids an unnecessary full-page
-        // compositing pass on every frame, reducing visual stutter on phones.
-        child: RepaintBoundary(child: widget.child),
-      );
+  Widget build(BuildContext context) => RepaintBoundary(child: child);
 }
