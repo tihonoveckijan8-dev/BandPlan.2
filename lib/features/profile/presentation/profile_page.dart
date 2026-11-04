@@ -252,50 +252,45 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Column(
-                          children: [
-                            _ProfileSectionButton(
-                              icon: Icons.person_outline_rounded,
-                              title: 'Аккаунт',
-                              description: 'Имя и музыкальные роли',
-                              onTap: () => DefaultTabController.of(context).animateTo(1),
-                            ),
-                            _profileSectionDivider(context),
-                            _ProfileSectionButton(
-                              icon: Icons.groups_outlined,
-                              title: 'Группы',
-                              description: 'Составы, приглашения и управление группами',
-                              onTap: () => DefaultTabController.of(context).animateTo(2),
-                            ),
-                            _profileSectionDivider(context),
-                            _ProfileSectionButton(
-                              icon: Icons.palette_outlined,
-                              title: 'Оформление',
-                              description: 'Тема и внешний вид приложения',
-                              onTap: () => DefaultTabController.of(context).animateTo(3),
-                            ),
-                            _profileSectionDivider(context),
-                            _ProfileSectionButton(
-                              icon: Icons.tune_rounded,
-                              title: 'Элементы',
-                              description: 'Настройка элементов интерфейса',
-                              onTap: () => DefaultTabController.of(context).animateTo(4),
-                            ),
-                            _profileSectionDivider(context),
-                            _ProfileSectionButton(
-                              icon: Icons.download_rounded,
-                              title: 'Приложение',
-                              description: 'Установка и версия BandPlan',
-                              onTap: () => DefaultTabController.of(context).animateTo(5),
-                            ),
-                          ],
-                        ),
+                      // WHY: separate rounded tiles make each profile section read as
+                      // an independent Telegram-style submenu instead of one dense list.
+                      Column(
+                        children: [
+                          _ProfileSectionButton(
+                            icon: Icons.person_outline_rounded,
+                            title: 'Аккаунт',
+                            description: 'Имя и музыкальные роли',
+                            onTap: () => DefaultTabController.of(context).animateTo(1),
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfileSectionButton(
+                            icon: Icons.groups_outlined,
+                            title: 'Группы',
+                            description: 'Составы, приглашения и управление группами',
+                            onTap: () => DefaultTabController.of(context).animateTo(2),
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfileSectionButton(
+                            icon: Icons.palette_outlined,
+                            title: 'Оформление',
+                            description: 'Тема и внешний вид приложения',
+                            onTap: () => DefaultTabController.of(context).animateTo(3),
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfileSectionButton(
+                            icon: Icons.tune_rounded,
+                            title: 'Элементы',
+                            description: 'Настройка элементов интерфейса',
+                            onTap: () => DefaultTabController.of(context).animateTo(4),
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfileSectionButton(
+                            icon: Icons.download_rounded,
+                            title: 'Приложение',
+                            description: 'Установка и версия BandPlan',
+                            onTap: () => DefaultTabController.of(context).animateTo(5),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -874,14 +869,6 @@ class _ConflictVersionCard extends StatelessWidget {
 
 
 
-Widget _profileSectionDivider(BuildContext context) {
-  final colors = Theme.of(context).colorScheme;
-  return Padding(
-    padding: const EdgeInsets.only(left: 74),
-    child: Divider(height: 1, thickness: 1, color: colors.outlineVariant.withOpacity(0.35)),
-  );
-}
-
 class _ProfileSectionButton extends StatelessWidget {
   const _ProfileSectionButton({
     required this.icon,
@@ -899,8 +886,10 @@ class _ProfileSectionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Material(
-      color: Colors.transparent,
+      color: colors.surfaceContainer,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
