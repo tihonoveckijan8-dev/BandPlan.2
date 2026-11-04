@@ -184,8 +184,10 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
           children: List.generate(_items.length, (index) {
             final item = _items[index];
             final selected = shell.currentIndex == index;
+            // WHY: the active destination uses the app's primary accent,
+            // making the current section immediately recognizable on mobile.
             final foreground = selected
-                ? colors.onSecondaryContainer
+                ? colors.onPrimary
                 : colors.onSurfaceVariant;
 
             return Expanded(
@@ -204,15 +206,13 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 220),
                       curve: Curves.easeOutCubic,
-                      constraints: const BoxConstraints(minHeight: 58),
+                      constraints: const BoxConstraints(minHeight: 62),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 3,
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: selected
-                            ? colors.secondaryContainer
-                            : Colors.transparent,
+                        color: selected ? colors.primary : Colors.transparent,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
