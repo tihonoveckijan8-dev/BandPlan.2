@@ -293,7 +293,7 @@ class _BranchTransitionState extends State<_BranchTransition>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 260),
+    duration: const Duration(milliseconds: 320),
     value: 1,
   );
 
@@ -302,8 +302,8 @@ class _BranchTransitionState extends State<_BranchTransition>
     curve: Curves.easeOutCubic,
   );
 
-  late final Animation<Offset> _slide = Tween<Offset>(
-    begin: const Offset(0.018, 0),
+  late Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0.16, 0),
     end: Offset.zero,
   ).animate(_fade);
 
@@ -311,6 +311,13 @@ class _BranchTransitionState extends State<_BranchTransition>
   void didUpdateWidget(covariant _BranchTransition oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentIndex != widget.currentIndex) {
+      // WHY: Move the incoming page from the side of the selected tab,
+      // matching Telegram's horizontal swipe-like branch transition.
+      final direction = widget.currentIndex > oldWidget.currentIndex ? 1.0 : -1.0;
+      _slide = Tween<Offset>(
+        begin: Offset(direction * 0.16, 0),
+        end: Offset.zero,
+      ).animate(_fade);
       _controller
         ..value = 0
         ..forward();
@@ -324,10 +331,10 @@ class _BranchTransitionState extends State<_BranchTransition>
   }
 
   @override
-  Widget build(BuildContext context) => FadeTransition(
-        opacity: _fade,
-        child: SlideTransition(
-          position: _slide,
+  Widget build(BuildContext context) => SlideTransition(
+        position: _slide,
+        child: FadeTransition(
+          opacity: Tween<double>(begin: 0.92, end: 1).animate(_fade),
           child: widget.child,
         ),
       );
