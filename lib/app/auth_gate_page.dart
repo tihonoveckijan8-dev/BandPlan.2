@@ -141,17 +141,62 @@ class _ConfigurationRequiredPage extends StatelessWidget {
 }
 
 
-class _TelegramStyleNavigationBar extends StatelessWidget {
+class _TelegramStyleNavigationBar extends StatefulWidget {
   const _TelegramStyleNavigationBar({required this.shell});
 
   final StatefulNavigationShell shell;
 
+  @override
+  State<_TelegramStyleNavigationBar> createState() =>
+      _TelegramStyleNavigationBarState();
+}
+
+class _TelegramStyleNavigationBarState
+    extends State<_TelegramStyleNavigationBar>
+    with SingleTickerProviderStateMixin {
   static const _items = [
     (Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Календарь'),
     (Icons.library_music_outlined, Icons.library_music_rounded, 'Песни'),
     (Icons.queue_music_outlined, Icons.queue_music_rounded, 'Сет-листы'),
     (Icons.person_outline_rounded, Icons.person_rounded, 'Профиль'),
   ];
+
+  late int _activeIndex = widget.shell.currentIndex;
+  late final AnimationController _notchController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 360),
+    value: 1,
+  );
+  late Animation<double> _notchPosition = AlwaysStoppedAnimation(
+    _activeIndex.toDouble(),
+  );
+
+  @override
+  void didUpdateWidget(covariant _TelegramStyleNavigationBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextIndex = widget.shell.currentIndex;
+    if (nextIndex == _activeIndex) return;
+
+    final currentPosition = _notchPosition.value;
+    _activeIndex = nextIndex;
+    _notchPosition = Tween<double>(
+      begin: currentPosition,
+      end: nextIndex.toDouble(),
+    ).animate(CurvedAnimation(
+      parent: _notchController,
+      curve: Curves.easeInOutCubic,
+    ));
+    _notchController
+      ..stop()
+      ..value = 0
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _notchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,26 +208,22 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
       minimum: const EdgeInsets.fromLTRB(12, 14, 12, 7),
       child: SizedBox(
         height: 88,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(
-            begin: shell.currentIndex.toDouble(),
-            end: shell.currentIndex.toDouble(),
-          ),
-          duration: const Duration(milliseconds: 430),
-          curve: Curves.easeInOutCubic,
-          builder: (context, activePosition, _) => Stack(
+        child: AnimatedBuilder(
+          animation: _notchPosition,
+          builder: (context, _) => Stack(
             clipBehavior: Clip.none,
             children: [
-              // WHY: The notch is part of the panel silhouette, not a button
-              // floating over an unchanged capsule. It follows the active tab.
+              // WHY: The active-tab recess is carved into the panel outline;
+              // a wider, deeper shoulder makes the shape visible around the
+              // raised button instead of letting the button hide the whole cut.
               Positioned.fill(
                 child: CustomPaint(
                   painter: _FloatingNavigationShape(
-                    activePosition: activePosition,
+                    activePosition: _notchPosition.value,
                     fill: colors.surface,
-                    outline: colors.onSurface.withOpacity(dark ? 0.12 : 0.07),
-                    shadow: colors.shadow.withOpacity(dark ? 0.30 : 0.13),
-                    highlight: colors.onSurface.withOpacity(dark ? 0.07 : 0.045),
+                    outline: colors.onSurface.withOpacity(dark ? 0.16 : 0.09),
+                    shadow: colors.shadow.withOpacity(dark ? 0.30 : 0.15),
+                    highlight: colors.onSurface.withOpacity(dark ? 0.09 : 0.06),
                   ),
                 ),
               ),
@@ -191,7 +232,7 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                 child: Row(
                   children: List.generate(_items.length, (index) {
                     final item = _items[index];
-                    final selected = shell.currentIndex == index;
+                    final selected = widget.shell.currentIndex == index;
                     return Expanded(
                       child: Semantics(
                         button: true,
@@ -199,9 +240,9 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                         label: item.$3,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTap: () => shell.goBranch(
+                          onTap: () => widget.shell.goBranch(
                             index,
-                            initialLocation: index == shell.currentIndex,
+                            initialLocation: index == widget.shell.currentIndex,
                           ),
                           child: SizedBox(
                             height: 88,
@@ -210,13 +251,13 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                               alignment: Alignment.topCenter,
                               children: [
                                 AnimatedPositioned(
-                                  duration: const Duration(milliseconds: 430),
+                                  duration: const Duration(milliseconds: 360),
                                   curve: Curves.easeInOutCubic,
                                   top: selected ? 0 : 31,
                                   width: selected ? 58 : 48,
                                   height: selected ? 58 : 48,
                                   child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 430),
+                                    duration: const Duration(milliseconds: 360),
                                     curve: Curves.easeInOutCubic,
                                     decoration: BoxDecoration(
                                       color: selected
@@ -227,14 +268,15 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                                           ? [
                                               BoxShadow(
                                                 color: colors.shadow.withOpacity(
-                                                  dark ? 0.30 : 0.16,
+                                                  dark ? 0.32 : 0.18,
                                                 ),
-                                                blurRadius: 13,
-                                                offset: const Offset(0, 5),
+                                                blurRadius: 16,
+                                                spreadRadius: 1,
+                                                offset: const Offset(0, 6),
                                               ),
                                               BoxShadow(
-                                                color: colors.onPrimary.withOpacity(0.20),
-                                                blurRadius: 2,
+                                                color: colors.onPrimary.withOpacity(0.22),
+                                                blurRadius: 3,
                                                 offset: const Offset(0, -1),
                                               ),
                                             ]
@@ -242,7 +284,7 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                                     ),
                                     child: Center(
                                       child: AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 300),
+                                        duration: const Duration(milliseconds: 260),
                                         switchInCurve: Curves.easeOutCubic,
                                         switchOutCurve: Curves.easeInCubic,
                                         transitionBuilder: (child, animation) =>
@@ -274,8 +316,6 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                   }),
                 ),
               ),
-              // WHY: A restrained inset mark anchors the floating panel visually
-              // without imitating the operating system's gesture area.
               Positioned(
                 left: 0,
                 right: 0,
@@ -285,7 +325,7 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
                     width: 30,
                     height: 3,
                     decoration: BoxDecoration(
-                      color: colors.onSurface.withOpacity(dark ? 0.22 : 0.16),
+                      color: colors.onSurface.withOpacity(dark ? 0.24 : 0.18),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -318,8 +358,8 @@ class _FloatingNavigationShape extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const top = 18.0;
     const radius = 35.0;
-    const notchHalfWidth = 36.0;
-    const notchDepth = 27.0;
+    const notchHalfWidth = 49.0;
+    const notchDepth = 43.0;
     final centerX = (8.0 + (size.width - 16.0) *
             ((activePosition.clamp(0.0, 3.0) + 0.5) / 4.0))
         .toDouble();
@@ -334,13 +374,13 @@ class _FloatingNavigationShape extends CustomPainter {
       ..moveTo(radius, top)
       ..lineTo(notchStart, top)
       ..cubicTo(
-        notchStart + leftSpan * 0.35, top,
-        centerX - leftSpan * 0.65, top + notchDepth,
+        notchStart + leftSpan * 0.28, top,
+        centerX - leftSpan * 0.72, top + notchDepth,
         centerX, top + notchDepth,
       )
       ..cubicTo(
-        centerX + rightSpan * 0.65, top + notchDepth,
-        notchEnd - rightSpan * 0.35, top,
+        centerX + rightSpan * 0.72, top + notchDepth,
+        notchEnd - rightSpan * 0.28, top,
         notchEnd, top,
       )
       ..lineTo(size.width - radius, top)
