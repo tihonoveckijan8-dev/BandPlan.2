@@ -155,131 +155,230 @@ class _TelegramStyleNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final dark = theme.brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-      child: Container(
-        height: 74,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          // WHY: Keep the floating capsule legible over every page while
-          // using the active theme instead of copying the reference's blur.
-          color: colors.surface.withOpacity(dark ? 0.96 : 0.94),
-          borderRadius: BorderRadius.circular(38),
-          border: Border.all(
-            color: colors.onSurface.withOpacity(dark ? 0.13 : 0.09),
-            width: 1,
+      minimum: const EdgeInsets.fromLTRB(12, 14, 12, 7),
+      child: SizedBox(
+        height: 88,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(
+            begin: shell.currentIndex.toDouble(),
+            end: shell.currentIndex.toDouble(),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.shadow.withOpacity(dark ? 0.30 : 0.13),
-              blurRadius: 24,
-              spreadRadius: 1,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
-              color: colors.onSurface.withOpacity(dark ? 0.07 : 0.045),
-              blurRadius: 2,
-              offset: const Offset(0, -1),
-            ),
-          ],
-        ),
-        child: Row(
-          children: List.generate(_items.length, (index) {
-            final item = _items[index];
-            final selected = shell.currentIndex == index;
-            return Expanded(
-              child: Semantics(
-                button: true,
-                selected: selected,
-                label: item.$3,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => shell.goBranch(
-                    index,
-                    initialLocation: index == shell.currentIndex,
+          duration: const Duration(milliseconds: 430),
+          curve: Curves.easeInOutCubic,
+          builder: (context, activePosition, _) => Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // WHY: The notch is part of the panel silhouette, not a button
+              // floating over an unchanged capsule. It follows the active tab.
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _FloatingNavigationShape(
+                    activePosition: activePosition,
+                    fill: colors.surface,
+                    outline: colors.onSurface.withOpacity(dark ? 0.12 : 0.07),
+                    shadow: colors.shadow.withOpacity(dark ? 0.30 : 0.13),
+                    highlight: colors.onSurface.withOpacity(dark ? 0.07 : 0.045),
                   ),
-                  child: SizedBox(
-                    height: 74,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      alignment: Alignment.center,
-                      children: [
-                        AnimatedAlign(
-                          duration: const Duration(milliseconds: 430),
-                          curve: Curves.easeInOutCubic,
-                          alignment: selected
-                              ? const Alignment(0, -3.3)
-                              : Alignment.center,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 430),
-                            curve: Curves.easeInOutCubic,
-                            width: selected ? 58 : 46,
-                            height: selected ? 58 : 46,
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? colors.primary
-                                  : Colors.transparent,
-                              shape: BoxShape.circle,
-                              boxShadow: selected
-                                  ? [
-                                      BoxShadow(
-                                        color: colors.shadow.withOpacity(
-                                          dark ? 0.30 : 0.16,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: List.generate(_items.length, (index) {
+                    final item = _items[index];
+                    final selected = shell.currentIndex == index;
+                    return Expanded(
+                      child: Semantics(
+                        button: true,
+                        selected: selected,
+                        label: item.$3,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => shell.goBranch(
+                            index,
+                            initialLocation: index == shell.currentIndex,
+                          ),
+                          child: SizedBox(
+                            height: 88,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              alignment: Alignment.topCenter,
+                              children: [
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 430),
+                                  curve: Curves.easeInOutCubic,
+                                  top: selected ? 0 : 31,
+                                  width: selected ? 58 : 48,
+                                  height: selected ? 58 : 48,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 430),
+                                    curve: Curves.easeInOutCubic,
+                                    decoration: BoxDecoration(
+                                      color: selected
+                                          ? colors.primary
+                                          : Colors.transparent,
+                                      shape: BoxShape.circle,
+                                      boxShadow: selected
+                                          ? [
+                                              BoxShadow(
+                                                color: colors.shadow.withOpacity(
+                                                  dark ? 0.30 : 0.16,
+                                                ),
+                                                blurRadius: 13,
+                                                offset: const Offset(0, 5),
+                                              ),
+                                              BoxShadow(
+                                                color: colors.onPrimary.withOpacity(0.20),
+                                                blurRadius: 2,
+                                                offset: const Offset(0, -1),
+                                              ),
+                                            ]
+                                          : const [],
+                                    ),
+                                    child: Center(
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 300),
+                                        switchInCurve: Curves.easeOutCubic,
+                                        switchOutCurve: Curves.easeInCubic,
+                                        transitionBuilder: (child, animation) =>
+                                            ScaleTransition(
+                                          scale: animation,
+                                          child: FadeTransition(
+                                            opacity: animation,
+                                            child: child,
+                                          ),
                                         ),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
+                                        child: Icon(
+                                          selected ? item.$2 : item.$1,
+                                          key: ValueKey(selected),
+                                          size: selected ? 29 : 27,
+                                          color: selected
+                                              ? colors.onPrimary
+                                              : colors.onSurfaceVariant,
+                                        ),
                                       ),
-                                      BoxShadow(
-                                        color: colors.onPrimary.withOpacity(0.20),
-                                        blurRadius: 2,
-                                        offset: const Offset(0, -1),
-                                      ),
-                                    ]
-                                  : const [],
-                            ),
-                            child: Center(
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                switchInCurve: Curves.easeOutCubic,
-                                switchOutCurve: Curves.easeInCubic,
-                                transitionBuilder: (child, animation) =>
-                                    ScaleTransition(
-                                  scale: animation,
-                                  child: FadeTransition(
-                                    opacity: animation,
-                                    child: child,
+                                    ),
                                   ),
                                 ),
-                                child: Icon(
-                                  selected ? item.$2 : item.$1,
-                                  key: ValueKey(selected),
-                                  size: selected ? 29 : 27,
-                                  color: selected
-                                      ? colors.onPrimary
-                                      : colors.onSurfaceVariant,
-                                ),
-                              ),
+                              ],
                             ),
                           ),
                         ),
-                      ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              // WHY: A restrained inset mark anchors the floating panel visually
+              // without imitating the operating system's gesture area.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 7,
+                child: Center(
+                  child: Container(
+                    width: 30,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: colors.onSurface.withOpacity(dark ? 0.22 : 0.16),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),
               ),
-            );
-          }),
+            ],
+          ),
         ),
       ),
     );
   }
 }
- 
+
+class _FloatingNavigationShape extends CustomPainter {
+  const _FloatingNavigationShape({
+    required this.activePosition,
+    required this.fill,
+    required this.outline,
+    required this.shadow,
+    required this.highlight,
+  });
+
+  final double activePosition;
+  final Color fill;
+  final Color outline;
+  final Color shadow;
+  final Color highlight;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const top = 18.0;
+    const radius = 35.0;
+    const notchHalfWidth = 36.0;
+    const notchDepth = 27.0;
+    final centerX = size.width * ((activePosition.clamp(0, 3) + 0.5) / 4);
+    final notchStart = (centerX - notchHalfWidth).clamp(radius, size.width - radius);
+    final notchEnd = (centerX + notchHalfWidth).clamp(radius, size.width - radius);
+
+    final path = Path()
+      ..moveTo(radius, top)
+      ..lineTo(notchStart, top)
+      ..cubicTo(
+        notchStart + 11, top,
+        centerX - 27, top + notchDepth,
+        centerX, top + notchDepth,
+      )
+      ..cubicTo(
+        centerX + 27, top + notchDepth,
+        notchEnd - 11, top,
+        notchEnd, top,
+      )
+      ..lineTo(size.width - radius, top)
+      ..quadraticBezierTo(size.width, top, size.width, top + radius)
+      ..lineTo(size.width, size.height - radius)
+      ..quadraticBezierTo(size.width, size.height, size.width - radius, size.height)
+      ..lineTo(radius, size.height)
+      ..quadraticBezierTo(0, size.height, 0, size.height - radius)
+      ..lineTo(0, top + radius)
+      ..quadraticBezierTo(0, top, radius, top)
+      ..close();
+
+    canvas.drawShadow(path, shadow, 18, true);
+    canvas.drawPath(path, Paint()..color = fill);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = outline,
+    );
+
+    final topHighlight = Path()
+      ..moveTo(radius + 8, top + 1)
+      ..lineTo(notchStart - 5, top + 1);
+    canvas.drawPath(
+      topHighlight,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..strokeCap = StrokeCap.round
+        ..color = highlight,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FloatingNavigationShape oldDelegate) =>
+      oldDelegate.activePosition != activePosition ||
+      oldDelegate.fill != fill ||
+      oldDelegate.outline != outline ||
+      oldDelegate.shadow != shadow ||
+      oldDelegate.highlight != highlight;
+}
+
 // WHY: Keep the indexed branch navigators alive while animating the visible
 // content, so switching tabs does not reset each tab's scroll or route state.
 class _BranchTransition extends StatefulWidget {
