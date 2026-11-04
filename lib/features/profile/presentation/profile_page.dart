@@ -954,28 +954,46 @@ class _ProfileSubpage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       children: [
         SafeArea(
           bottom: false,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                TextButton.icon(
-                  onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  label: const Text('Профиль'),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Material(
+              color: colors.surfaceContainer,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Вернуться в профиль',
+                      onPressed: onBack,
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        title ?? 'Профиль',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
+                  ],
                 ),
-                if (title != null) ...[
-                  const SizedBox(width: 8),
-                  Text(title!, style: Theme.of(context).textTheme.titleMedium),
-                ],
-              ],
+              ),
             ),
           ),
         ),
-        Expanded(child: child),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: child,
+          ),
+        ),
       ],
     );
   }
