@@ -228,7 +228,7 @@ class _TelegramStyleNavigationBarState
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 26),
                 child: Row(
                   children: List.generate(_items.length, (index) {
                     final item = _items[index];
@@ -343,9 +343,9 @@ class _FloatingNavigationShape extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const top = 18.0;
     const radius = 18.0;
-    const notchHalfWidth = 43.0;
-    const notchDepth = 43.0;
-    final centerX = (18.0 + (size.width - 36.0) *
+    const notchHalfWidth = 38.0;
+    const notchDepth = 38.0;
+    final centerX = (26.0 + (size.width - 52.0) *
             ((activePosition.clamp(0.0, 3.0) + 0.5) / 4.0))
         .toDouble();
     final notchStart =
@@ -359,13 +359,13 @@ class _FloatingNavigationShape extends CustomPainter {
       ..moveTo(radius, top)
       ..lineTo(notchStart, top)
       ..cubicTo(
-        notchStart + leftSpan * 0.28, top,
-        centerX - leftSpan * 0.72, top + notchDepth,
+        notchStart + leftSpan * 0.55, top,
+        centerX, top + notchDepth * 0.45,
         centerX, top + notchDepth,
       )
       ..cubicTo(
-        centerX + rightSpan * 0.72, top + notchDepth,
-        notchEnd - rightSpan * 0.28, top,
+        centerX, top + notchDepth * 0.55,
+        notchEnd - rightSpan * 0.55, top,
         notchEnd, top,
       )
       ..lineTo(size.width - radius, top)
