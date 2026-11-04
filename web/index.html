@@ -62,6 +62,40 @@
       color: white;
       font: inherit;
     }
+    #bandplan-update {
+      position: fixed;
+      left: max(16px, env(safe-area-inset-left));
+      right: max(16px, env(safe-area-inset-right));
+      bottom: max(16px, env(safe-area-inset-bottom));
+      z-index: 99998;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 12px 14px 12px 18px;
+      border-radius: 18px;
+      background: #202b49;
+      color: #f4f6ff;
+      box-shadow: 7px 7px 18px #080d1b80, -5px -5px 14px #34436580;
+      font: 600 13px/1.4 Manrope, system-ui, sans-serif;
+    }
+    #bandplan-update[hidden] { display: none; }
+    #bandplan-update button {
+      flex: 0 0 auto;
+      min-height: 40px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 12px;
+      background: #1554ff;
+      color: white;
+      font: inherit;
+    }
+    #bandplan-update button:focus-visible {
+      outline: 2px solid white;
+      outline-offset: 3px;
+    }
     @keyframes bandplan-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) {
       #bandplan-startup .spinner { animation: none; }
@@ -165,6 +199,76 @@
           console.error('BandPlan PWA worker registration failed:', error);
         });
       }
+    })();
+  </script>
+  <aside id="bandplan-update" role="status" aria-live="polite" hidden>
+    <span>Доступна новая версия BandPlan</span>
+    <button id="bandplan-update-apply" type="button">Обновить</button>
+  </aside>
+  <script>
+    // WHY: Keep updates visible while the app is open, but let the user choose
+    // when to activate the waiting worker so an active session is never interrupted.
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      const banner = document.getElementById('bandplan-update');
+      const apply = document.getElementById('bandplan-update-apply');
+      let updateRequested = false;
+      let reloadOnControllerChange = false;
+
+      function showUpdate(registration) {
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          banner.hidden = false;
+        }
+      }
+
+      function watchInstallingWorker(registration) {
+        const installing = registration.installing;
+        if (!installing) return;
+        installing.addEventListener('statechange', function () {
+          if (installing.state === 'installed') showUpdate(registration);
+        });
+      }
+
+      navigator.serviceWorker.getRegistration('./').then(function (registration) {
+        if (!registration) return;
+        showUpdate(registration);
+        registration.addEventListener('updatefound', function () {
+          watchInstallingWorker(registration);
+        });
+
+        // WHY: A page left open for hours should discover a published build without requiring a manual tab restart.
+        function checkForUpdate() {
+          if (document.visibilityState === 'visible') {
+            registration.update().catch(function (error) {
+              console.warn('BandPlan PWA update check failed:', error);
+            });
+          }
+        }
+        window.setInterval(checkForUpdate, 5 * 60 * 1000);
+        document.addEventListener('visibilitychange', checkForUpdate);
+      }).catch(function (error) {
+        console.warn('BandPlan PWA update watcher failed:', error);
+      });
+
+      apply.addEventListener('click', function () {
+        navigator.serviceWorker.getRegistration('./').then(function (registration) {
+          if (!registration || !registration.waiting || updateRequested) return;
+          updateRequested = true;
+          reloadOnControllerChange = true;
+          apply.disabled = true;
+          apply.textContent = 'Обновляем…';
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (reloadOnControllerChange) window.location.reload();
+          }, { once: true });
+          registration.waiting.postMessage({ type: 'BANDPLAN_SKIP_WAITING' });
+        }).catch(function (error) {
+          updateRequested = false;
+          reloadOnControllerChange = false;
+          apply.disabled = false;
+          apply.textContent = 'Повторить';
+          console.error('BandPlan PWA update activation failed:', error);
+        });
+      });
     })();
   </script>
   <script src="flutter_bootstrap.js" async></script>
