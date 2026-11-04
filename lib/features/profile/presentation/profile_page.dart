@@ -166,7 +166,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       initialIndex: widget.initialSection,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(const ['Профиль', 'Группы', 'Оформление', 'Элементы', 'Приложение'][widget.initialSection]),
+          title: const Text('Профиль'),
+          bottom: const TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              Tab(icon: Icon(Icons.person_outline_rounded), text: 'Профиль'),
+              Tab(icon: Icon(Icons.groups_outlined), text: 'Группы'),
+              Tab(icon: Icon(Icons.palette_outlined), text: 'Оформление'),
+              Tab(icon: Icon(Icons.tune_rounded), text: 'Элементы'),
+              Tab(icon: Icon(Icons.download_rounded), text: 'Приложение'),
+            ],
+          ),
           actions: [
             IconButton(
               tooltip: 'Выйти из аккаунта',
@@ -175,13 +186,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: IndexedStack(
-          // WHY: profile menu destinations are independent full-screen routes;
-          // only the selected section is displayed, with no tab/swipe behavior.
-          index: widget.initialSection,
+        body: TabBarView(
           children: [
             SafeArea(
               child: profile.when(
@@ -371,55 +376,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             _AppInstallTab(
               onOpenWeb: _openWebApp,
               onDownloadApk: _downloadAndroidApk,
-            ),
-          ],
-              ),
-            ),
-            // WHY: profile sections are stacked as full-width Telegram-style
-            // menu rows below the current section, not squeezed into a bottom bar.
-            if (widget.showSectionMenu) SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
-                child: Builder(
-                  builder: (navigationContext) {
-                    final controller = DefaultTabController.of(navigationContext);
-                    const sections = [
-                      (Icons.person_outline_rounded, 'Профиль'),
-                      (Icons.groups_outlined, 'Группы'),
-                      (Icons.palette_outlined, 'Оформление'),
-                      (Icons.tune_rounded, 'Элементы'),
-                      (Icons.download_rounded, 'Приложение'),
-                    ];
-                    return AnimatedBuilder(
-                      animation: controller,
-                      builder: (context, _) => Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (var index = 0; index < sections.length; index++) ...[
-                            if (index > 0) const SizedBox(height: 6),
-                            _ProfileSectionButton(
-                              icon: sections[index].$1,
-                              label: sections[index].$2,
-                              selected: controller.index == index,
-                              // WHY: each profile section is a separate route with
-                              // its own AppBar/back navigation, not an in-place tab.
-                              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => ProfilePage(
-                                    initialSection: index,
-                                    showSectionMenu: false,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
             ),
           ],
         ),
