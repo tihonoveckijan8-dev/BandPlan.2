@@ -343,8 +343,8 @@ class _FloatingNavigationShape extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const top = 18.0;
     const radius = 18.0;
-    const notchHalfWidth = 38.0;
-    const notchDepth = 38.0;
+    const notchHalfWidth = 40.0;
+    const notchDepth = 40.0;
     final centerX = (26.0 + (size.width - 52.0) *
             ((activePosition.clamp(0.0, 3.0) + 0.5) / 4.0))
         .toDouble();
@@ -359,13 +359,13 @@ class _FloatingNavigationShape extends CustomPainter {
       ..moveTo(radius, top)
       ..lineTo(notchStart, top)
       ..cubicTo(
-        notchStart + leftSpan * 0.55, top,
-        centerX, top + notchDepth * 0.45,
+        notchStart + leftSpan * 0.42, top,
+        centerX - leftSpan * 0.42, top + notchDepth,
         centerX, top + notchDepth,
       )
       ..cubicTo(
-        centerX, top + notchDepth * 0.55,
-        notchEnd - rightSpan * 0.55, top,
+        centerX + rightSpan * 0.42, top + notchDepth,
+        notchEnd - rightSpan * 0.42, top,
         notchEnd, top,
       )
       ..lineTo(size.width - radius, top)
