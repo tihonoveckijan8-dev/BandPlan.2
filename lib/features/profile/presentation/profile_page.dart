@@ -178,8 +178,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         body: Column(
           children: [
             Expanded(
-              child: TabBarView(
-          physics: const NeverScrollableScrollPhysics(),
+              child: IndexedStack(
+          // WHY: profile menu destinations are independent full-screen routes;
+          // only the selected section is displayed, with no tab/swipe behavior.
+          index: widget.initialSection,
           children: [
             SafeArea(
               child: profile.when(
@@ -402,7 +404,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               selected: controller.index == index,
                               // WHY: each profile section is a separate route with
                               // its own AppBar/back navigation, not an in-place tab.
-                              onTap: () => Navigator.of(context).push(
+                              onTap: () => Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute<void>(
                                   builder: (_) => ProfilePage(
                                     initialSection: index,
