@@ -163,7 +163,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return DefaultTabController(
       length: 6,
       initialIndex: widget.initialSection,
-      child: Scaffold(
+      // WHY: the scaffold must build below DefaultTabController so its
+      // descendants can resolve the controller when profile tiles are tapped.
+      child: Builder(
+        builder: (tabContext) => Scaffold(
         appBar: AppBar(
           title: const Text('Профиль'),
           centerTitle: true,
@@ -569,6 +572,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
