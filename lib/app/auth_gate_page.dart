@@ -232,17 +232,37 @@ class _TelegramStyleNavigationBarState
                 child: Row(
                   children: List.generate(_items.length, (index) {
                     final item = _items[index];
-                    final selected = widget.shell.currentIndex == index;
+                    final semanticallySelected =
+                        widget.shell.currentIndex == index;
+                    // WHY: Derive every button's motion from the same animated
+                    // position as the recess. This prevents the icon, button,
+                    // and carved panel from drifting out of sync.
+                    final distance = (_notchPosition.value - index).abs();
+                    final rawProgress =
+                        (1.0 - distance).clamp(0.0, 1.0).toDouble();
+                    final progress =
+                        Curves.easeInOutCubic.transform(rawProgress);
+                    final diameter = 48.0 + 10.0 * progress;
+                    final top = 31.0 * (1.0 - progress);
+                    final iconSize = 27.0 + 2.0 * progress;
+                    final buttonColor =
+                        Color.lerp(Colors.transparent, colors.primary, progress)!;
+                    final inactiveIconColor = Color.lerp(
+                      colors.onSurfaceVariant,
+                      colors.onPrimary,
+                      progress,
+                    )!;
                     return Expanded(
                       child: Semantics(
                         button: true,
-                        selected: selected,
+                        selected: semanticallySelected,
                         label: item.$3,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => widget.shell.goBranch(
                             index,
-                            initialLocation: index == widget.shell.currentIndex,
+                            initialLocation:
+                                index == widget.shell.currentIndex,
                           ),
                           child: SizedBox(
                             height: 88,
@@ -250,58 +270,58 @@ class _TelegramStyleNavigationBarState
                               clipBehavior: Clip.none,
                               alignment: Alignment.topCenter,
                               children: [
-                                AnimatedPositioned(
-                                  duration: const Duration(milliseconds: 420),
-                                  curve: Curves.easeInOutCubicEmphasized,
-                                  top: selected ? 0 : 31,
-                                  width: selected ? 58 : 48,
-                                  height: selected ? 58 : 48,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 420),
-                                    curve: Curves.easeInOutCubicEmphasized,
+                                Positioned(
+                                  top: top,
+                                  width: diameter,
+                                  height: diameter,
+                                  child: DecoratedBox(
                                     decoration: BoxDecoration(
-                                      color: selected
-                                          ? colors.primary
-                                          : Colors.transparent,
+                                      color: buttonColor,
                                       shape: BoxShape.circle,
-                                      boxShadow: selected
+                                      boxShadow: progress > 0.01
                                           ? [
                                               BoxShadow(
                                                 color: colors.shadow.withOpacity(
-                                                  dark ? 0.32 : 0.18,
+                                                  (dark ? 0.32 : 0.18) * progress,
                                                 ),
-                                                blurRadius: 16,
-                                                spreadRadius: 1,
-                                                offset: const Offset(0, 6),
+                                                blurRadius: 16 * progress,
+                                                spreadRadius: progress,
+                                                offset: Offset(0, 6 * progress),
                                               ),
                                               BoxShadow(
-                                                color: colors.onPrimary.withOpacity(0.22),
-                                                blurRadius: 3,
-                                                offset: const Offset(0, -1),
+                                                color: colors.onPrimary.withOpacity(
+                                                  0.22 * progress,
+                                                ),
+                                                blurRadius: 3 * progress,
+                                                offset: Offset(0, -progress),
                                               ),
                                             ]
                                           : const [],
                                     ),
                                     child: Center(
-                                      child: AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 220),
-                                        switchInCurve: Curves.easeOutCubic,
-                                        switchOutCurve: Curves.easeInCubic,
-                                        transitionBuilder: (child, animation) =>
-                                            ScaleTransition(
-                                          scale: animation,
-                                          child: FadeTransition(
-                                            opacity: animation,
-                                            child: child,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          selected ? item.$2 : item.$1,
-                                          key: ValueKey(selected),
-                                          size: selected ? 29 : 27,
-                                          color: selected
-                                              ? colors.onPrimary
-                                              : colors.onSurfaceVariant,
+                                      child: SizedBox(
+                                        width: iconSize,
+                                        height: iconSize,
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            Opacity(
+                                              opacity: 1.0 - progress,
+                                              child: Icon(
+                                                item.$1,
+                                                size: iconSize,
+                                                color: inactiveIconColor,
+                                              ),
+                                            ),
+                                            Opacity(
+                                              opacity: progress,
+                                              child: Icon(
+                                                item.$2,
+                                                size: iconSize,
+                                                color: colors.onPrimary,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
