@@ -383,35 +383,50 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 12),
-                      _ProfileSectionButton(
-                        icon: Icons.person_outline_rounded,
-                        title: 'Аккаунт',
-                        description: 'Имя и музыкальные роли',
-                        onTap: () => DefaultTabController.of(context).animateTo(0),
-                      ),
-                      _ProfileSectionButton(
-                        icon: Icons.groups_outlined,
-                        title: 'Группы',
-                        description: 'Составы, приглашения и управление группами',
-                        onTap: () => DefaultTabController.of(context).animateTo(1),
-                      ),
-                      _ProfileSectionButton(
-                        icon: Icons.palette_outlined,
-                        title: 'Оформление',
-                        description: 'Тема и внешний вид приложения',
-                        onTap: () => DefaultTabController.of(context).animateTo(2),
-                      ),
-                      _ProfileSectionButton(
-                        icon: Icons.tune_rounded,
-                        title: 'Элементы',
-                        description: 'Настройка элементов интерфейса',
-                        onTap: () => DefaultTabController.of(context).animateTo(3),
-                      ),
-                      _ProfileSectionButton(
-                        icon: Icons.download_rounded,
-                        title: 'Приложение',
-                        description: 'Установка и версия BandPlan',
-                        onTap: () => DefaultTabController.of(context).animateTo(4),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            _ProfileSectionButton(
+                              icon: Icons.person_outline_rounded,
+                              title: 'Аккаунт',
+                              description: 'Имя и музыкальные роли',
+                              onTap: () => DefaultTabController.of(context).animateTo(0),
+                            ),
+                            _profileSectionDivider(context),
+                            _ProfileSectionButton(
+                              icon: Icons.groups_outlined,
+                              title: 'Группы',
+                              description: 'Составы, приглашения и управление группами',
+                              onTap: () => DefaultTabController.of(context).animateTo(1),
+                            ),
+                            _profileSectionDivider(context),
+                            _ProfileSectionButton(
+                              icon: Icons.palette_outlined,
+                              title: 'Оформление',
+                              description: 'Тема и внешний вид приложения',
+                              onTap: () => DefaultTabController.of(context).animateTo(2),
+                            ),
+                            _profileSectionDivider(context),
+                            _ProfileSectionButton(
+                              icon: Icons.tune_rounded,
+                              title: 'Элементы',
+                              description: 'Настройка элементов интерфейса',
+                              onTap: () => DefaultTabController.of(context).animateTo(3),
+                            ),
+                            _profileSectionDivider(context),
+                            _ProfileSectionButton(
+                              icon: Icons.download_rounded,
+                              title: 'Приложение',
+                              description: 'Установка и версия BandPlan',
+                              onTap: () => DefaultTabController.of(context).animateTo(4),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   );
@@ -807,6 +822,14 @@ class _ConflictVersionCard extends StatelessWidget {
 
 
 
+Widget _profileSectionDivider(BuildContext context) {
+  final colors = Theme.of(context).colorScheme;
+  return Padding(
+    padding: const EdgeInsets.only(left: 74),
+    child: Divider(height: 1, thickness: 1, color: colors.outlineVariant.withOpacity(0.35)),
+  );
+}
+
 class _ProfileSectionButton extends StatelessWidget {
   const _ProfileSectionButton({
     required this.icon,
@@ -823,53 +846,47 @@ class _ProfileSectionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: colors.secondaryContainer,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: colors.onSecondaryContainer),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: colors.secondaryContainer,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 3),
-                      Text(
-                        description,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
+                child: Icon(icon, color: colors.onSecondaryContainer),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
-              ],
-            ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+            ],
           ),
         ),
       ),
     );
   }
 }
-
 
 class _ProfileSubpage extends StatelessWidget {
   const _ProfileSubpage({
