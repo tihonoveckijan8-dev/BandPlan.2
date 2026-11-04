@@ -39,39 +39,94 @@ class GroupWorkspacePage extends ConsumerWidget {
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               children: [
-                Text(
-                  'Пространство вашей группы',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.groups_rounded, size: 34,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Музыкальные группы',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    )),
+                            const SizedBox(height: 5),
+                            Text(
+                              'У каждой группы свой репертуар, события и сет-листы.',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    height: 1.35,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Создайте новую группу или присоединитесь к существующей по коду приглашения.',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: repository == null
+                                ? null
+                                : () => _showGroupDialog(context, ref, repository, create: true),
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text('Создать группу'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: repository == null
+                                ? null
+                                : () => _showGroupDialog(context, ref, repository, create: false),
+                            icon: const Icon(Icons.group_add_outlined),
+                            label: const Text('Вступить по коду'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: repository == null
-                      ? null
-                      : () => _showGroupDialog(context, ref, repository, create: true),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Создать группу'),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: repository == null
-                      ? null
-                      : () => _showGroupDialog(context, ref, repository, create: false),
-                  icon: const Icon(Icons.group_add_outlined),
-                  label: const Text('Вступить по коду'),
-                ),
-                const SizedBox(height: 28),
-                Text(
-                  'Мои группы',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Мои группы',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('${items.length}',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              )),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 if (items.isEmpty)
