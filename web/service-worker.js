@@ -50,6 +50,13 @@ self.addEventListener('install', (event) => {
   })());
 });
 
+// WHY: Activate a fully downloaded update only after an explicit user action.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'BANDPLAN_SKIP_WAITING') {
+    event.waitUntil(self.skipWaiting());
+  }
+});
+
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const cacheNames = (await caches.keys())
