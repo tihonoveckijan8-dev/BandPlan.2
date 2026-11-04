@@ -293,19 +293,19 @@ class _BranchTransitionState extends State<_BranchTransition>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    // WHY: A short, gentle settle feels responsive without looking like a
-    // delayed page load when the user switches tabs repeatedly.
-    duration: const Duration(milliseconds: 250),
+    // WHY: A slightly longer ease-in/ease-out gives the movement a natural
+    // acceleration and deceleration instead of a mechanical snap.
+    duration: const Duration(milliseconds: 280),
     value: 1,
   );
 
   late final Animation<double> _motion = CurvedAnimation(
     parent: _controller,
-    curve: Curves.easeOutCubic,
+    curve: Curves.easeInOutCubic,
   );
 
   late Animation<Offset> _slide = Tween<Offset>(
-    begin: const Offset(0.055, 0),
+    begin: const Offset(0.035, 0),
     end: Offset.zero,
   ).animate(_motion);
 
@@ -313,8 +313,8 @@ class _BranchTransitionState extends State<_BranchTransition>
   void didUpdateWidget(covariant _BranchTransition oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentIndex != widget.currentIndex) {
-      // WHY: Keep the swipe direction, but use a much smaller travel distance
-      // so the page glides into place instead of appearing to lag behind.
+      // WHY: A restrained horizontal travel with symmetric easing feels like
+      // one continuous gesture, while avoiding the floating-page effect.
       final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
       if (reduceMotion) {
         _controller
@@ -324,7 +324,7 @@ class _BranchTransitionState extends State<_BranchTransition>
       }
       final direction = widget.currentIndex > oldWidget.currentIndex ? 1.0 : -1.0;
       _slide = Tween<Offset>(
-        begin: Offset(direction * 0.055, 0),
+        begin: Offset(direction * 0.035, 0),
         end: Offset.zero,
       ).animate(_motion);
       _controller
