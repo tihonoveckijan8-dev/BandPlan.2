@@ -177,6 +177,15 @@ for (const buildId of ['101', '102', '103']) {
   assert.equal(worker.skipWaitingCount, 0, 'Updates must not force-reload an app that is already open');
 }
 
+// WHY: A waiting update may activate only after the user presses the update button.
+const userApprovedUpdate = createWorker('104');
+await userApprovedUpdate.dispatch('install', {});
+assert.equal(userApprovedUpdate.skipWaitingCount, 0, 'A newly installed update must wait for user approval');
+await userApprovedUpdate.dispatch('message', {
+  data: { type: 'BANDPLAN_SKIP_WAITING' },
+});
+assert.equal(userApprovedUpdate.skipWaitingCount, 1, 'The explicit update message must activate the waiting worker');
+
 const retainedCaches = (await cacheStorage.keys()).sort();
 assert.deepEqual(retainedCaches, [
   'bandplan-pwa-shell-102',
