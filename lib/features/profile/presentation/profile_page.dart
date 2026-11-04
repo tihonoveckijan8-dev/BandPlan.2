@@ -968,15 +968,15 @@ class _ProfileSectionButton extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   color: colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                child: Icon(icon, color: colors.onPrimaryContainer, size: 22),
+                child: Icon(icon, color: colors.onPrimaryContainer, size: 23),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1001,7 +1001,19 @@ class _ProfileSectionButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHighest.withOpacity(0.72),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 19,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
             ],
           ),
         ),
