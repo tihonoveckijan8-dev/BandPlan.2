@@ -164,7 +164,7 @@ class _TelegramStyleNavigationBarState
   late int _activeIndex = widget.shell.currentIndex;
   late final AnimationController _notchController = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 360),
+    duration: const Duration(milliseconds: 420),
     value: 1,
   );
   late Animation<double> _notchPosition = AlwaysStoppedAnimation(
@@ -184,7 +184,7 @@ class _TelegramStyleNavigationBarState
       end: nextIndex.toDouble(),
     ).animate(CurvedAnimation(
       parent: _notchController,
-      curve: Curves.easeInOutCubic,
+      curve: Curves.easeInOutCubicEmphasized,
     ));
     _notchController
       ..stop()
@@ -228,7 +228,7 @@ class _TelegramStyleNavigationBarState
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Row(
                   children: List.generate(_items.length, (index) {
                     final item = _items[index];
@@ -251,14 +251,14 @@ class _TelegramStyleNavigationBarState
                               alignment: Alignment.topCenter,
                               children: [
                                 AnimatedPositioned(
-                                  duration: const Duration(milliseconds: 360),
-                                  curve: Curves.easeInOutCubic,
+                                  duration: const Duration(milliseconds: 420),
+                                  curve: Curves.easeInOutCubicEmphasized,
                                   top: selected ? 0 : 31,
                                   width: selected ? 58 : 48,
                                   height: selected ? 58 : 48,
                                   child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 360),
-                                    curve: Curves.easeInOutCubic,
+                                    duration: const Duration(milliseconds: 420),
+                                    curve: Curves.easeInOutCubicEmphasized,
                                     decoration: BoxDecoration(
                                       color: selected
                                           ? colors.primary
@@ -316,21 +316,6 @@ class _TelegramStyleNavigationBarState
                   }),
                 ),
               ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 7,
-                child: Center(
-                  child: Container(
-                    width: 30,
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: colors.onSurface.withOpacity(dark ? 0.24 : 0.18),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -357,10 +342,10 @@ class _FloatingNavigationShape extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const top = 18.0;
-    const radius = 35.0;
-    const notchHalfWidth = 49.0;
+    const radius = 18.0;
+    const notchHalfWidth = 43.0;
     const notchDepth = 43.0;
-    final centerX = (8.0 + (size.width - 16.0) *
+    final centerX = (18.0 + (size.width - 36.0) *
             ((activePosition.clamp(0.0, 3.0) + 0.5) / 4.0))
         .toDouble();
     final notchStart =
@@ -444,19 +429,19 @@ class _BranchTransitionState extends State<_BranchTransition>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    // WHY: A slightly longer ease-in/ease-out gives the movement a natural
-    // acceleration and deceleration instead of a mechanical snap.
-    duration: const Duration(milliseconds: 430),
+    // WHY: Keep the page movement short and subtle; the expensive tab subtree
+    // is isolated so navigation does not animate a large composited surface.
+    duration: const Duration(milliseconds: 260),
     value: 1,
   );
 
   late final Animation<double> _motion = CurvedAnimation(
     parent: _controller,
-    curve: Curves.easeInOutCubic,
+    curve: Curves.easeOutCubic,
   );
 
   late Animation<Offset> _slide = Tween<Offset>(
-    begin: const Offset(0.02, 0),
+    begin: const Offset(0.008, 0),
     end: Offset.zero,
   ).animate(_motion);
 
@@ -464,8 +449,8 @@ class _BranchTransitionState extends State<_BranchTransition>
   void didUpdateWidget(covariant _BranchTransition oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentIndex != widget.currentIndex) {
-      // WHY: A restrained horizontal travel with symmetric easing feels like
-      // one continuous gesture, while avoiding the floating-page effect.
+      // WHY: A very short, subtle movement avoids the heavy feel of sliding
+      // the entire page while still making the tab change perceptible.
       final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
       if (reduceMotion) {
         _controller
@@ -475,7 +460,7 @@ class _BranchTransitionState extends State<_BranchTransition>
       }
       final direction = widget.currentIndex > oldWidget.currentIndex ? 1.0 : -1.0;
       _slide = Tween<Offset>(
-        begin: Offset(direction * 0.02, 0),
+        begin: Offset(direction * 0.008, 0),
         end: Offset.zero,
       ).animate(_motion);
       _controller
