@@ -44,7 +44,57 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           final items=expandEventOccurrences(values, DateTime(visibleMonth.year,visibleMonth.month,1), DateTime(visibleMonth.year,visibleMonth.month+1,0));
           final map={for(final s in programs)s.id:s};
           final selectedItems=items.where((o)=>o.date==selectedDate).toList();
-          return ListView(padding:const EdgeInsets.fromLTRB(12,12,12,100),children:[
+          return ListView(padding:const EdgeInsets.fromLTRB(16,12,16,110),children:[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Icon(Icons.calendar_month_rounded,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('План группы',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  )),
+                          const SizedBox(height: 3),
+                          Text(
+                            items.isEmpty
+                                ? 'Пока нет запланированных событий'
+                                : '${items.length} событий в этом месяце',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Сегодня',
+                      onPressed: () => setState(() {
+                        final today = DateTime.now();
+                        visibleMonth = DateTime(today.year, today.month);
+                        selectedDate = _iso(today);
+                      }),
+                      icon: const Icon(Icons.today_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             _monthCalendar(context,visibleMonth,selectedDate,items,
               (month)=>setState((){visibleMonth=month;selectedDate=_iso(month);}),
               (day)=>setState((){
@@ -53,7 +103,37 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               })),
             Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
               _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
-            if(selectedItems.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(18),child:Text('На этот день событий нет.'))),
+            if(selectedItems.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                  child: Column(
+                    children: [
+                      Icon(Icons.event_available_rounded,
+                          size: 34, color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(height: 10),
+                      Text('День свободен',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              )),
+                      const SizedBox(height: 5),
+                      Text(
+                        'На выбранную дату пока ничего не запланировано.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => _edit(context, ref, programs, initialDate: selectedDate),
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('Добавить событие'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ...selectedItems.map((occurrence){final e=occurrence.event;final sl=map[e.setlistId];return Padding(padding:const EdgeInsets.only(bottom:10),
               child:Card(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
                 leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
