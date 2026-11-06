@@ -303,7 +303,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
                 Expanded(child: _StringChip(
                   value: strings[i], selected: i == _selected,
                   onTap: () => setState(() {
-                    _selected = i; _frequency = null; _cents = null; _stabilizer.reset();
+                    _selected = i; _autoString = false; _frequency = null; _cents = null; _stabilizer.reset();
                   }),
                 )),
               ],
