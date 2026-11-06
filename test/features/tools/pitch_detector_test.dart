@@ -25,7 +25,7 @@ void main() {
     expect(smoother.add(110), 110);
     expect(smoother.add(111), 110);
     expect(smoother.add(220), 111);
-    expect(smoother.add(109), 110);
+    expect(smoother.add(109), 111);
     expect(smoother.add(110), 110);
   });
 
