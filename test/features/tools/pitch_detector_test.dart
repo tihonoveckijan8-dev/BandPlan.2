@@ -20,6 +20,23 @@ void main() {
     expect(detected!, closeTo(hz, 1.5));
   });
 
+  test('median smoothing rejects a single octave jump', () {
+    final smoother = PitchStabilizer(windowSize: 5);
+    expect(smoother.add(110), 110);
+    expect(smoother.add(111), 110);
+    expect(smoother.add(220), 111);
+    expect(smoother.add(109), 110);
+    expect(smoother.add(110), 110);
+  });
+
+  test('resets smoothing after silence', () {
+    final smoother = PitchStabilizer();
+    smoother.add(110);
+    smoother.add(111);
+    expect(smoother.add(null), isNull);
+    expect(smoother.add(220), 220);
+  });
+
   test('ignores silence instead of displaying a false note', () {
     expect(detector.detect(Uint8List(8192)), isNull);
   });
