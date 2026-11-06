@@ -5,6 +5,7 @@ import '../features/profile/presentation/profile_page.dart';
 import '../features/songs/presentation/song_library_page.dart';
 import '../features/setlists/presentation/setlists_page.dart';
 import '../features/events/presentation/calendar_page.dart';
+import '../features/tools/presentation/tools_page.dart';
 import 'auth_gate_page.dart';
 
 final GoRouter bandPlanRouter = GoRouter(
@@ -33,6 +34,13 @@ final GoRouter bandPlanRouter = GoRouter(
             path: '/setlists',
             name: 'setlists',
             builder: (context, state) => const SetlistsPage(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/tools',
+            name: 'tools',
+            builder: (context, state) => const ToolsPage(),
           ),
         ]),
         StatefulShellBranch(routes: [
