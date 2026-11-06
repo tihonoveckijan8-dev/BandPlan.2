@@ -28,6 +28,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
   final _recorder = AudioRecorder();
   final _player = AudioPlayer();
   PitchDetector _detector = const PitchDetector();
+  final _stabilizer = PitchStabilizer();
   StreamSubscription<Uint8List>? _subscription;
   Uint8List _buffer = Uint8List(0);
   int _selected = 0;
@@ -76,6 +77,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
         noiseSuppress: false,
       ));
       _buffer = Uint8List(0);
+      _stabilizer.reset();
       _subscription = stream.listen(_onAudio, onError: (Object error) {
         if (mounted) setState(() => _error = 'Ошибка микрофона: $error');
         unawaited(_stop());
@@ -99,24 +101,29 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
     final joined = Uint8List(_buffer.length + chunk.length)
       ..setRange(0, _buffer.length, _buffer)
       ..setRange(_buffer.length, _buffer.length + chunk.length, chunk);
-    const frameBytes = 8192;
+    // WHY: A longer window gives the low E2 string more complete periods,
+    // improving bass-note stability without changing the detector algorithm.
+    const frameBytes = 16384;
     if (joined.length < frameBytes) {
       _buffer = joined;
       return;
     }
     final frame = Uint8List.sublistView(joined, joined.length - frameBytes);
     _buffer = Uint8List.sublistView(joined, joined.length - frameBytes ~/ 2);
-    final hz = _detector.detect(frame);
+    // WHY: Throttle before autocorrelation, not after it, so incoming audio
+    // packets cannot trigger expensive pitch calculations faster than needed.
     final now = DateTime.now();
-    if (now.difference(_lastUpdate).inMilliseconds < 50) return;
+    if (now.difference(_lastUpdate).inMilliseconds < 65) return;
     _lastUpdate = now;
+    final hz = _detector.detect(frame);
     if (!mounted) return;
-    if (hz == null) {
+    final stableHz = _stabilizer.add(hz);
+    if (stableHz == null) {
       if (_frequency != null) setState(() { _frequency = null; _cents = null; });
       return;
     }
-    final cents = 1200 * math.log(hz / target.hz) / math.ln2;
-    setState(() { _frequency = hz; _cents = cents; });
+    final cents = 1200 * math.log(stableHz / target.hz) / math.ln2;
+    setState(() { _frequency = stableHz; _cents = cents; });
   }
 
   Future<void> _stop() async {
@@ -133,6 +140,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
         _starting = false;
         _frequency = null;
         _cents = null;
+        _stabilizer.reset();
       });
     }
   }
@@ -265,7 +273,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
                 Expanded(child: _StringChip(
                   value: strings[i], selected: i == _selected,
                   onTap: () => setState(() {
-                    _selected = i; _frequency = null; _cents = null;
+                    _selected = i; _frequency = null; _cents = null; _stabilizer.reset();
                   }),
                 )),
               ],
