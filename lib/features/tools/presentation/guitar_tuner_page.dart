@@ -345,7 +345,7 @@ class _MeterPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2, y = size.height - 8;
-    final half = math.min(size.width * .43, 190.0);
+    final half = math.min(size.width * .43, 190.0).toDouble();
     final base = Paint()..color = track.withOpacity(.32)
       ..strokeWidth = 3..strokeCap = StrokeCap.round;
     canvas.drawLine(Offset(cx - half, y), Offset(cx + half, y), base);
