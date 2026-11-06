@@ -236,7 +236,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
                 const SizedBox(height: 22),
                 SizedBox(height: 76, child: CustomPaint(
                   painter: _MeterPainter(
-                    position: (cents == null ? 0 : cents / 50).clamp(-1.0, 1.0),
+                    position: (cents == null ? 0.0 : cents / 50).clamp(-1.0, 1.0).toDouble(),
                     color: accent,
                     muted: cents == null,
                     track: theme.colorScheme.onSurfaceVariant,
