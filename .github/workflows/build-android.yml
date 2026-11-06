@@ -58,7 +58,9 @@ jobs:
             /tmp/bandplan_android
           cp -R /tmp/bandplan_android/android ./android
           # WHY: Android requires an explicit runtime microphone permission for the guitar tuner.
-          sed -i '/<application/i\\    <uses-permission android:name="android.permission.RECORD_AUDIO" />' android/app/src/main/AndroidManifest.xml
+          sed -i '/<application/i\    <uses-permission android:name="android.permission.RECORD_AUDIO" />' android/app/src/main/AndroidManifest.xml
+          # WHY: record requires Android API 23 or newer.
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle.kts
 
       # WHY: Reuse one private upload key across builds so Android accepts APK updates
       # over the installed app instead of requiring users to uninstall it first.
