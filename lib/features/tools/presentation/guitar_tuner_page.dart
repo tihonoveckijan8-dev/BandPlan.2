@@ -27,7 +27,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
 
   final _recorder = AudioRecorder();
   final _player = AudioPlayer();
-  final _detector = const PitchDetector();
+  PitchDetector _detector = const PitchDetector();
   StreamSubscription<Uint8List>? _subscription;
   Uint8List _buffer = Uint8List(0);
   int _selected = 0;
@@ -62,6 +62,11 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
       if (!await _recorder.hasPermission()) {
         throw Exception('Разрешите доступ к микрофону в настройках устройства.');
       }
+      // WHY: Some audio devices/browser contexts negotiate a different sample
+      // rate than requested. Use the effective rate to avoid systematic pitch drift.
+      await _recorder.setOnConfigChanged((config) {
+        _detector = PitchDetector(sampleRate: config.sampleRate);
+      });
       final stream = await _recorder.startStream(const RecordConfig(
         encoder: AudioEncoder.pcm16bits,
         sampleRate: 44100,
