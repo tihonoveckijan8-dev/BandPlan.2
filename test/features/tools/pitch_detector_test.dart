@@ -39,7 +39,7 @@ void main() {
   test('median smoothing rejects a single octave jump', () {
     final smoother = PitchStabilizer(windowSize: 5);
     expect(smoother.add(110), 110);
-    expect(smoother.add(111), 110);
+    expect(smoother.add(111), 111);
     expect(smoother.add(220), 111);
     expect(smoother.add(109), 111);
     expect(smoother.add(110), 110);
