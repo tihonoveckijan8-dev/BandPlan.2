@@ -86,6 +86,11 @@ class AuthGatePage extends ConsumerWidget {
                           label: 'Сет-листы',
                         ),
                         NavigationDestination(
+                          icon: Icon(Icons.build_outlined),
+                          selectedIcon: Icon(Icons.build_rounded),
+                          label: 'Инструменты',
+                        ),
+                        NavigationDestination(
                           icon: Icon(Icons.person_outline_rounded),
                           selectedIcon: Icon(Icons.person_rounded),
                           label: 'Профиль',
@@ -158,6 +163,7 @@ class _TelegramStyleNavigationBarState
     (Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Календарь'),
     (Icons.library_music_outlined, Icons.library_music_rounded, 'Песни'),
     (Icons.queue_music_outlined, Icons.queue_music_rounded, 'Сет-листы'),
+    (Icons.build_outlined, Icons.build_rounded, 'Инструменты'),
     (Icons.person_outline_rounded, Icons.person_rounded, 'Профиль'),
   ];
 
@@ -228,7 +234,7 @@ class _TelegramStyleNavigationBarState
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 26),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Row(
                   children: List.generate(_items.length, (index) {
                     final item = _items[index];
@@ -366,7 +372,7 @@ class _FloatingNavigationShape extends CustomPainter {
     const notchHalfWidth = 40.0;
     const notchDepth = 40.0;
     final centerX = (26.0 + (size.width - 52.0) *
-            ((activePosition.clamp(0.0, 3.0) + 0.5) / 4.0))
+            ((activePosition.clamp(0.0, 4.0) + 0.5) / 5.0))
         .toDouble();
     final notchStart =
         (centerX - notchHalfWidth).clamp(radius, size.width - radius).toDouble();
