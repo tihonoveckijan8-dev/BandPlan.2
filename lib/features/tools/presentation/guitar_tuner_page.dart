@@ -230,12 +230,12 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
                 Text(status, style: theme.textTheme.labelMedium?.copyWith(
                   color: accent, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
                 const SizedBox(height: 14),
-                Text('\${target.note}', style: theme.textTheme.displayLarge?.copyWith(
+                Text('${target.note}', style: theme.textTheme.displayLarge?.copyWith(
                   fontSize: 76, height: 1, fontWeight: FontWeight.w700, color: accent)),
                 const SizedBox(height: 8),
                 Text(_frequency == null
-                    ? 'Цель \${target.hz.toStringAsFixed(2)} Hz'
-                    : '\${_frequency!.toStringAsFixed(2)} Hz',
+                    ? 'Цель ${target.hz.toStringAsFixed(2)} Hz'
+                    : '${_frequency!.toStringAsFixed(2)} Hz',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 22),
@@ -253,7 +253,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
                 ]),
                 const SizedBox(height: 10),
                 Text(cents == null ? (_listening ? 'Слушаю…' : 'Микрофон выключен')
-                    : '\${cents > 0 ? '+' : ''}\${cents.toStringAsFixed(1)} cents',
+                    : '${cents > 0 ? '+' : ''}${cents.toStringAsFixed(1)} cents',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: accent, fontWeight: FontWeight.w700)),
               ]),
@@ -286,7 +286,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
               onPressed: _playing ? null : _reference,
               icon: const Icon(Icons.volume_up_rounded),
               label: Text(_playing ? 'Воспроизводим…'
-                  : 'Послушать эталон \${target.note}'),
+                  : 'Послушать эталон ${target.note}'),
               style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
             ),
             if (_error != null) ...[
