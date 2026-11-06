@@ -25,8 +25,8 @@ class PitchDetector {
     }
     if (math.sqrt(energy / count) < 0.008) return null;
 
-    final minLag = (sampleRate / 700).floor().clamp(2, count ~/ 4);
-    final maxLag = (sampleRate / 65).ceil().clamp(minLag + 2, count ~/ 2);
+    final minLag = (sampleRate / 700).floor().clamp(2, count ~/ 4).toInt();
+    final maxLag = (sampleRate / 65).ceil().clamp(minLag + 2, count ~/ 2).toInt();
     final scores = Float64List(maxLag + 1);
     for (var lag = minLag; lag <= maxLag; lag++) {
       var dot = 0.0, a = 0.0, b = 0.0;
