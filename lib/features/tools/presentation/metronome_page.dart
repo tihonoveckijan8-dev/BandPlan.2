@@ -33,7 +33,7 @@ class _MetronomePageState extends State<MetronomePage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _player.setReleaseMode(ReleaseMode.stop);
+    unawaited(_player.setReleaseMode(ReleaseMode.stop));
   }
 
   @override
