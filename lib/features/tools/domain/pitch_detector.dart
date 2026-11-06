@@ -63,3 +63,24 @@ class PitchDetector {
     return sampleRate / (best + shift);
   }
 }
+
+/// Median-based pitch smoothing to ignore brief octave/noise jumps.
+/// Reset it when the input goes silent or the selected string changes.
+class PitchStabilizer {
+  PitchStabilizer({this.windowSize = 5}) : assert(windowSize > 0);
+  final int windowSize;
+  final List<double> _samples = [];
+
+  double? add(double? frequency) {
+    if (frequency == null || !frequency.isFinite || frequency <= 0) {
+      reset();
+      return null;
+    }
+    _samples.add(frequency);
+    if (_samples.length > windowSize) _samples.removeAt(0);
+    final sorted = List<double>.of(_samples)..sort();
+    return sorted[sorted.length ~/ 2];
+  }
+
+  void reset() => _samples.clear();
+}
