@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'guitar_tuner_page.dart';
+import 'metronome_page.dart';
 
 class ToolsPage extends StatelessWidget {
   const ToolsPage({super.key});
@@ -36,10 +37,13 @@ class ToolsPage extends StatelessWidget {
             subtitle: 'G3 · D4 · A4 · E5',
           ),
           const SizedBox(height: 12),
-          const _ToolCard(
+          _ToolCard(
             icon: Icons.speed_rounded,
             title: 'Метроном',
             subtitle: 'Темп, размер, доли и акценты',
+            active: true,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const MetronomePage())),
           ),
           const SizedBox(height: 12),
           const _ToolCard(
