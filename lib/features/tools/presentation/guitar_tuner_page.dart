@@ -32,6 +32,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
   StreamSubscription<Uint8List>? _subscription;
   Uint8List _buffer = Uint8List(0);
   int _selected = 0;
+  bool _autoString = true;
   double? _frequency, _cents;
   bool _listening = false, _starting = false, _playing = false;
   String? _error;
@@ -121,6 +122,20 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
     if (stableHz == null) {
       if (_frequency != null) setState(() { _frequency = null; _cents = null; });
       return;
+    }
+    if (_autoString) {
+      // WHY: Choose the closest standard guitar string by cents distance,
+      // so the tuner can follow the played open string without manual tapping.
+      var closestIndex = 0;
+      var closestDistance = double.infinity;
+      for (var i = 0; i < strings.length; i++) {
+        final distance = (1200 * math.log(stableHz / strings[i].hz) / math.ln2).abs();
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = i;
+        }
+      }
+      _selected = closestIndex;
     }
     final cents = 1200 * math.log(stableHz / target.hz) / math.ln2;
     setState(() { _frequency = stableHz; _cents = cents; });
@@ -267,6 +282,21 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
               ]),
             ),
             const SizedBox(height: 18),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: true, label: Text('Автоопределение')),
+                ButtonSegment(value: false, label: Text('Вручную')),
+              ],
+              selected: {_autoString},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) => setState(() {
+                _autoString = selection.first;
+                _frequency = null;
+                _cents = null;
+                _stabilizer.reset();
+              }),
+            ),
+            const SizedBox(height: 12),
             Row(children: [
               for (var i = 0; i < strings.length; i++) ...[
                 if (i > 0) const SizedBox(width: 6),
