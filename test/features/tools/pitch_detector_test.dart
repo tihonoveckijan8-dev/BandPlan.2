@@ -20,6 +20,22 @@ void main() {
     expect(detected!, closeTo(hz, 1.5));
   });
 
+  test('nearest standard string follows the closest pitch', () {
+    const targets = [82.4069, 110.0, 146.8324, 195.9977, 246.9417, 329.6276];
+    int nearest(double hz) {
+      var index = 0;
+      var distance = double.infinity;
+      for (var i = 0; i < targets.length; i++) {
+        final cents = (1200 * math.log(hz / targets[i]) / math.ln2).abs();
+        if (cents < distance) { distance = cents; index = i; }
+      }
+      return index;
+    }
+    expect(nearest(110.8), 1);
+    expect(nearest(82.5), 0);
+    expect(nearest(329.0), 5);
+  });
+
   test('median smoothing rejects a single octave jump', () {
     final smoother = PitchStabilizer(windowSize: 5);
     expect(smoother.add(110), 110);
