@@ -137,7 +137,7 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
     await _stop();
     setState(() { _playing = true; _error = null; });
     try {
-      await _player.play(BytesSource(_wav(target.hz)));
+      await _player.play(BytesSource(_wav(target.hz), mimeType: 'audio/wav'));
       await _player.onPlayerComplete.first;
     } catch (_) {
       if (mounted) setState(() => _error = 'Не удалось воспроизвести эталонную ноту.');
