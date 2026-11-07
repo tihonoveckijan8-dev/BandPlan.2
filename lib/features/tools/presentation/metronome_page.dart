@@ -82,8 +82,8 @@ class _MetronomePageState extends State<MetronomePage>
       // WHY: The click is synthesized locally; no network or bundled media
       // is needed, and the accent uses a higher, stronger transient.
       await _player.stop();
-      await _player.play(BytesSource(_clickWav(accented)),
-          mimeType: 'audio/wav');
+      await _player.play(BytesSource(_clickWav(accented),
+          mimeType: 'audio/wav'));
     } catch (_) {
       if (mounted) setState(() => _running = false);
       _timer?.cancel();
