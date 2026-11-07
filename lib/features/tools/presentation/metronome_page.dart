@@ -153,10 +153,28 @@ class _MetronomePageState extends State<MetronomePage>
       appBar: AppBar(title: const Text('Метроном')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
           children: [
-            Text('Темп', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('РИТМ И ТЕМП',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: accent, fontWeight: FontWeight.w800,
+                      letterSpacing: 1.3)),
+                  const SizedBox(height: 5),
+                  Text('Настройте пульс композиции',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant)),
+                ],
+              )),
+              _MetronomeStatus(running: _running),
+            ]),
+            const SizedBox(height: 18),
+            Text('Темп', style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
@@ -199,7 +217,8 @@ class _MetronomePageState extends State<MetronomePage>
               ]),
             ),
             const SizedBox(height: 24),
-            Text('Музыкальный размер', style: theme.textTheme.titleMedium),
+            _MetronomeSectionTitle(title: 'Музыкальный размер',
+              subtitle: 'Выберите размер такта'),
             const SizedBox(height: 10),
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final item in _signatures)
@@ -211,25 +230,33 @@ class _MetronomePageState extends State<MetronomePage>
                 ),
             ]),
             const SizedBox(height: 24),
-            Text('Акценты по долям', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 10),
-            Row(children: [
-              for (var i = 0; i < _pattern.beatsPerBar; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(child: _BeatDot(
-                  index: i,
-                  active: _beat == i,
-                  accented: _pattern.isAccented(i),
-                  onTap: _running ? null : () => setState(() =>
-                      _pattern = _pattern.toggleAccent(i)),
-                )),
-              ],
-            ]),
-            const SizedBox(height: 10),
-            Text('Нажмите на долю, чтобы включить или выключить её акцент.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 28),
+            _MetronomeSectionTitle(title: 'Акценты по долям',
+              subtitle: 'Коснитесь доли, чтобы включить или выключить акцент'),
+            const SizedBox(height: 12),
+            LayoutBuilder(builder: (context, constraints) {
+              const spacing = 8.0;
+              final columns = constraints.maxWidth >= 390 ? 7 : 6;
+              final width = (constraints.maxWidth -
+                  spacing * (columns - 1)) / columns;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: [
+                  for (var i = 0; i < _pattern.beatsPerBar; i++)
+                    SizedBox(
+                      width: width,
+                      child: _BeatDot(
+                        index: i,
+                        active: _beat == i,
+                        accented: _pattern.isAccented(i),
+                        onTap: _running ? null : () => setState(() =>
+                            _pattern = _pattern.toggleAccent(i)),
+                      ),
+                    ),
+                ],
+              );
+            }),
+            const SizedBox(height: 26),
             FilledButton.icon(
               onPressed: _running ? _stop : _start,
               icon: Icon(_running ? Icons.stop_rounded : Icons.play_arrow_rounded),
@@ -283,6 +310,49 @@ class _BeatDot extends StatelessWidget {
                   accented ? color : theme.colorScheme.onSurfaceVariant),
           ]),
         ),
+      ),
+    );
+  }
+}
+
+
+class _MetronomeSectionTitle extends StatelessWidget {
+  const _MetronomeSectionTitle({required this.title, required this.subtitle});
+  final String title;
+  final String subtitle;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w800)),
+      const SizedBox(height: 4),
+      Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant)),
+    ]);
+  }
+}
+
+class _MetronomeStatus extends StatelessWidget {
+  const _MetronomeStatus({required this.running});
+  final bool running;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = running ? const Color(0xFF249B68) : theme.colorScheme.primary;
+    return DecoratedBox(
+      decoration: BoxDecoration(color: color.withOpacity(.09),
+        borderRadius: BorderRadius.circular(30)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 7, height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 7),
+          Text(running ? 'ИГРАЕТ' : 'ГОТОВ',
+            style: theme.textTheme.labelSmall?.copyWith(color: color,
+              fontWeight: FontWeight.w800, letterSpacing: .7)),
+        ]),
       ),
     );
   }
