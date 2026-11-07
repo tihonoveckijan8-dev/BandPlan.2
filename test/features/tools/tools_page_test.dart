@@ -1,0 +1,302 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:bandplan/features/tools/presentation/chord_library_page.dart';
+import 'package:bandplan/features/tools/presentation/guitar_tuner_page.dart';
+import 'package:bandplan/features/tools/presentation/metronome_page.dart';
+import 'package:bandplan/features/tools/presentation/tools_page.dart';
+import 'package:bandplan/features/tools/presentation/violin_tuner_page.dart';
+
+void main() {
+  testWidgets('tools workshop fits a phone viewport and shows all tools',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+        ),
+        home: const ToolsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Звучать точнее.\nИграть увереннее.'), findsOneWidget);
+    expect(find.text('Гитарный тюнер'), findsOneWidget);
+    expect(find.text('Скрипичный тюнер'), findsOneWidget);
+    expect(find.text('Метроном'), findsOneWidget);
+    expect(find.text('Библиотека аккордов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+
+  testWidgets('violin tuner uses the shared tuner layout on a phone',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+        ),
+        home: const ViolinTunerPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Стандартный строй'), findsOneWidget);
+    expect(find.text('G3 · D4 · A4 · E5'), findsOneWidget);
+    expect(find.byType(SegmentedButton<bool>), findsOneWidget);
+    expect(find.text('Автоопределение'), findsOneWidget);
+    expect(find.text('Вручную'), findsOneWidget);
+    expect(find.text('Начать настройку'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('metronome controls fit a phone viewport', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF))),
+      home: const MetronomePage(),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('РИТМ И ТЕМП'), findsOneWidget);
+    expect(find.text('Музыкальный размер'), findsOneWidget);
+    expect(find.text('Акценты по долям'), findsOneWidget);
+    // WHY: The ListView lazily builds controls below the first viewport.
+    await tester.scrollUntilVisible(
+      find.text('Запустить метроном'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Запустить метроном'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('chord library filters and renders on a phone', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF))),
+      home: const ChordLibraryPage(),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Найдите своё звучание'), findsOneWidget);
+    expect(find.text('Тип аккорда'), findsOneWidget);
+    expect(find.text('Инструмент'), findsOneWidget);
+    expect(find.text('C'), findsWidgets);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Минор'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Am'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Am'), findsOneWidget);
+    expect(find.text('C'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('metronome card opens the existing metronome screen',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+        ),
+        home: const ToolsPage(),
+      ),
+    );
+
+    final metronome = find.text('Метроном');
+    final metronomeCard = find.ancestor(
+      of: metronome,
+      matching: find.byType(InkWell),
+    ).first;
+    await tester.ensureVisible(metronomeCard);
+    await tester.tap(metronomeCard);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MetronomePage), findsOneWidget);
+    expect(find.text('Метроном'), findsOneWidget);
+    expect(find.text('Темп'), findsOneWidget);
+
+    // WHY: ListView builds lower controls lazily, so scroll before asserting
+    // the start button exists in the rendered viewport.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Запустить метроном'), findsOneWidget);
+    expect(find.text('Музыкальный размер'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tools workshop adapts to a wide dark-theme viewport',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1024, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1554FF),
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: const ToolsPage(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Рабочие инструменты'), findsOneWidget);
+    expect(find.text('4 инструмента'), findsOneWidget);
+    expect(find.text('Гитарный тюнер'), findsOneWidget);
+    expect(find.text('Скрипичный тюнер'), findsOneWidget);
+    expect(find.text('Метроном'), findsOneWidget);
+    expect(find.text('Библиотека аккордов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('all tool screens render in a dark phone theme',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF1554FF),
+        brightness: Brightness.dark,
+      ),
+    );
+    final pages = <Widget>[
+      const GuitarTunerPage(),
+      const ViolinTunerPage(),
+      const MetronomePage(),
+      const ChordLibraryPage(),
+    ];
+
+    for (final page in pages) {
+      await tester.pumpWidget(MaterialApp(theme: darkTheme, home: page));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+
+  testWidgets('tools workshop adapts to a tablet-width viewport',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(768, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1554FF),
+          brightness: Brightness.light,
+        ),
+      ),
+      home: const ToolsPage(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Рабочие инструменты'), findsOneWidget);
+    expect(find.text('Гитарный тюнер'), findsOneWidget);
+    expect(find.text('Скрипичный тюнер'), findsOneWidget);
+    expect(find.text('Метроном'), findsOneWidget);
+    expect(find.text('Библиотека аккордов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('all tool screens render in a light phone theme',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final lightTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF1554FF),
+        brightness: Brightness.light,
+      ),
+    );
+    final pages = <Widget>[
+      const GuitarTunerPage(),
+      const ViolinTunerPage(),
+      const MetronomePage(),
+      const ChordLibraryPage(),
+    ];
+
+    for (final page in pages) {
+      await tester.pumpWidget(MaterialApp(theme: lightTheme, home: page));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+
+  testWidgets('guitar string selectors keep comfortable touch width on compact phones',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+      ),
+      home: const GuitarTunerPage(),
+    ));
+    await tester.pumpAndSettle();
+
+    for (final stringNumber in ['6', '5', '4', '3', '2', '1']) {
+      final selector = find.ancestor(
+        of: find.text(stringNumber),
+        matching: find.byType(InkWell),
+      ).first;
+      expect(tester.getSize(selector).width, greaterThanOrEqualTo(48));
+      expect(tester.getSize(selector).height, greaterThanOrEqualTo(48));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('all tool screens remain usable at a compact phone width',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final theme = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+    );
+    final pages = <Widget>[
+      const ToolsPage(),
+      const GuitarTunerPage(),
+      const ViolinTunerPage(),
+      const MetronomePage(),
+      const ChordLibraryPage(),
+    ];
+
+    for (final page in pages) {
+      await tester.pumpWidget(MaterialApp(theme: theme, home: page));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+}
