@@ -34,31 +34,64 @@ class _ChordLibraryPageState extends State<ChordLibraryPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
         children: [
-          Text('Аккорды для гитары и клавишных', style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text('Аппликатуры и состав аккордов',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 16),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('АККОРДЫ И ГАРМОНИЯ',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                const SizedBox(height: 7),
+                Text('Найдите своё звучание',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800, letterSpacing: -.5)),
+                const SizedBox(height: 5),
+                Text('Аппликатуры и состав аккордов',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            )),
+            const SizedBox(width: 8),
+            _ChordCount(count: visible.length),
+          ]),
+          const SizedBox(height: 18),
           TextField(
             decoration: InputDecoration(
               hintText: 'Найти аккорд или ноту',
               prefixIcon: const Icon(Icons.search_rounded),
-              filled: true, fillColor: theme.colorScheme.surfaceContainerLow,
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerLow,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16, vertical: 16),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                borderRadius: BorderRadius.circular(18),
+                borderSide: BorderSide.none),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.primary.withOpacity(.45),
+                  width: 1.2)),
             ),
             onChanged: (value) => setState(() => search = value.trim()),
           ),
-          const SizedBox(height: 12),
-          Wrap(spacing: 8, children: [
+          const SizedBox(height: 16),
+          Text('Тип аккорда', style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
             for (final item in ['Все', 'Мажор', 'Минор'])
               ChoiceChip(label: Text(item), selected: filter == item,
                 onSelected: (_) => setState(() => filter = item)),
           ]),
-          const SizedBox(height: 10),
-          Wrap(spacing: 8, children: [
+          const SizedBox(height: 14),
+          Text('Инструмент', style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
             for (final item in ['Гитара', 'Клавишные'])
               ChoiceChip(label: Text(item), selected: instrument == item,
                 onSelected: (_) => setState(() => instrument = item)),
@@ -98,26 +131,36 @@ class _ChordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: theme.colorScheme.shadow.withOpacity(.06),
-            blurRadius: 16, offset: const Offset(0, 6)),
-          BoxShadow(color: theme.colorScheme.surface.withOpacity(.8),
-            blurRadius: 1, offset: const Offset(0, -1)),
+          BoxShadow(color: theme.colorScheme.shadow.withOpacity(
+            theme.brightness == Brightness.dark ? .2 : .06),
+            blurRadius: 18, offset: const Offset(0, 7)),
+          BoxShadow(color: theme.colorScheme.surface.withOpacity(
+            theme.brightness == Brightness.dark ? .16 : .86),
+            blurRadius: 2, offset: const Offset(0, -1)),
         ],
       ),
       child: Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(chord.name, style: theme.textTheme.headlineMedium?.copyWith(
-            color: theme.colorScheme.primary, fontWeight: FontWeight.w800)),
+            color: theme.colorScheme.primary, fontWeight: FontWeight.w800,
+            height: 1)),
+          const SizedBox(height: 4),
           Text(chord.quality, style: theme.textTheme.labelLarge?.copyWith(
             color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 10),
-          Text('Ноты: ' + chord.notes.join(' · '),
-            style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 12),
+          Text('СОСТАВ АККОРДА',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w800, letterSpacing: .8)),
+          const SizedBox(height: 4),
+          Text(chord.notes.join(' · '),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600)),
         ])),
         const SizedBox(width: 10),
         showPiano ? _PianoDiagram(chord: chord) : _ChordDiagram(chord: chord),
@@ -281,4 +324,31 @@ class _PianoPainter extends CustomPainter {
       old.blackColor != blackColor ||
       old.activeColor != activeColor ||
       old.lineColor != lineColor;
+}
+
+
+class _ChordCount extends StatelessWidget {
+  const _ChordCount({required this.count});
+  final int count;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(.09),
+        borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+        child: Column(children: [
+          Text('$count', style: theme.textTheme.titleLarge?.copyWith(
+            color: theme.colorScheme.primary, fontWeight: FontWeight.w800,
+            height: 1)),
+          const SizedBox(height: 3),
+          Text('НАЙДЕНО', style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.primary, fontSize: 8,
+            fontWeight: FontWeight.w800, letterSpacing: .5)),
+        ]),
+      ),
+    );
+  }
 }
