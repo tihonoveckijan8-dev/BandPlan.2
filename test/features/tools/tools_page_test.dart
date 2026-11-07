@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bandplan/features/tools/presentation/metronome_page.dart';
 import 'package:bandplan/features/tools/presentation/tools_page.dart';
+import 'package:bandplan/features/tools/presentation/violin_tuner_page.dart';
 
 void main() {
   testWidgets('tools workshop fits a phone viewport and shows all tools',
@@ -25,6 +26,32 @@ void main() {
     expect(find.text('Скрипичный тюнер'), findsOneWidget);
     expect(find.text('Метроном'), findsOneWidget);
     expect(find.text('Библиотека аккордов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+
+  testWidgets('violin tuner uses the shared tuner layout on a phone',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+        ),
+        home: const ViolinTunerPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Стандартный строй'), findsOneWidget);
+    expect(find.text('G3 · D4 · A4 · E5'), findsOneWidget);
+    expect(find.byType(SegmentedButton<bool>), findsOneWidget);
+    expect(find.text('Автоопределение'), findsOneWidget);
+    expect(find.text('Вручную'), findsOneWidget);
+    expect(find.text('Начать настройку'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
