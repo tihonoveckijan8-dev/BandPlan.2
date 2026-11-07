@@ -87,6 +87,11 @@ void main() {
     expect(find.text('C'), findsWidgets);
     await tester.tap(find.widgetWithText(ChoiceChip, 'Минор'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Am'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Am'), findsOneWidget);
     expect(find.text('C'), findsNothing);
     expect(tester.takeException(), isNull);
