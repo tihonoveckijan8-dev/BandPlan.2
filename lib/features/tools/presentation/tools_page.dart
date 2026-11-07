@@ -40,7 +40,7 @@ class ToolsPage extends StatelessWidget {
           _ToolCard(icon: Icons.piano_rounded, title: 'Библиотека аккордов',
             subtitle: 'Гитарные аппликатуры и ноты',
             onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const ChordLibraryPage())),
+              builder: (_) => const ChordLibraryPage()))),
         ],
       ),
     );
