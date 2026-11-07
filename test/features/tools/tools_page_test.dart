@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:bandplan/features/tools/presentation/chord_library_page.dart';
 import 'package:bandplan/features/tools/presentation/metronome_page.dart';
 import 'package:bandplan/features/tools/presentation/tools_page.dart';
 import 'package:bandplan/features/tools/presentation/violin_tuner_page.dart';
@@ -52,6 +53,42 @@ void main() {
     expect(find.text('Автоопределение'), findsOneWidget);
     expect(find.text('Вручную'), findsOneWidget);
     expect(find.text('Начать настройку'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('metronome controls fit a phone viewport', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF))),
+      home: const MetronomePage(),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('РИТМ И ТЕМП'), findsOneWidget);
+    expect(find.text('Музыкальный размер'), findsOneWidget);
+    expect(find.text('Акценты по долям'), findsOneWidget);
+    expect(find.text('Запустить метроном'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('chord library filters and renders on a phone', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF))),
+      home: const ChordLibraryPage(),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Найдите своё звучание'), findsOneWidget);
+    expect(find.text('Тип аккорда'), findsOneWidget);
+    expect(find.text('Инструмент'), findsOneWidget);
+    expect(find.text('C'), findsWidgets);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Минор'));
+    await tester.pumpAndSettle();
+    expect(find.text('Am'), findsOneWidget);
+    expect(find.text('C'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
