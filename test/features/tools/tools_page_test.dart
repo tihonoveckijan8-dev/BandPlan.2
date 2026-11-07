@@ -250,6 +250,31 @@ void main() {
   });
 
 
+  testWidgets('guitar string selectors keep comfortable touch width on compact phones',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+      ),
+      home: const GuitarTunerPage(),
+    ));
+    await tester.pumpAndSettle();
+
+    for (final stringNumber in ['6', '5', '4', '3', '2', '1']) {
+      final selector = find.ancestor(
+        of: find.text(stringNumber),
+        matching: find.byType(InkWell),
+      ).first;
+      expect(tester.getSize(selector).width, greaterThanOrEqualTo(48));
+      expect(tester.getSize(selector).height, greaterThanOrEqualTo(48));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('all tool screens remain usable at a compact phone width',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(320, 640));
