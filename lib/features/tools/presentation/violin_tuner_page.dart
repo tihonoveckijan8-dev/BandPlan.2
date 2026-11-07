@@ -16,10 +16,10 @@ class ViolinTunerPage extends StatefulWidget {
 class _ViolinTunerPageState extends State<ViolinTunerPage>
     with WidgetsBindingObserver {
   static const notes = <_ViolinNote>[
-    _ViolinNote('G', 3, 195.9977, '4'),
-    _ViolinNote('D', 4, 293.6648, '3'),
-    _ViolinNote('A', 4, 440, '2'),
-    _ViolinNote('E', 5, 659.2551, '1'),
+    _ViolinNote('G', 3, 195.9977),
+    _ViolinNote('D', 4, 293.6648),
+    _ViolinNote('A', 4, 440),
+    _ViolinNote('E', 5, 659.2551),
   ];
   final recorder = AudioRecorder();
   final detector = const PitchDetector(sampleRate: 44100);
@@ -181,7 +181,7 @@ class _ViolinTunerPageState extends State<ViolinTunerPage>
                 label: Text(notes[i].name),
                 selected: selected == i,
                 onSelected: (_) => setState(() {
-                  selected = i; stabilizer.reset(); frequency = null; cents = null;
+                  selected = i; autoSelect = false; stabilizer.reset(); frequency = null; cents = null;
                 }),
               )),
             ],
@@ -218,7 +218,6 @@ class _ViolinNote {
   final String note;
   final int octave;
   final double hz;
-  final String stringNumber;
   String get name => note + octave.toString();
 }
 
@@ -237,7 +236,7 @@ class _TunerMeter extends CustomPainter {
       canvas.drawLine(Offset(x, y - (i == 0 ? 14 : 7)), Offset(x, y + 2), tick);
     }
     final marker = Paint()..color = color;
-    canvas.drawCircle(Offset(center + cents.clamp(-50, 50) * (size.width - 12) / 100, y - 18), 6, marker);
+    canvas.drawCircle(Offset(center + cents.clamp(-50, 50).toDouble() * (size.width - 12) / 100, y - 18), 6, marker);
   }
   @override
   bool shouldRepaint(covariant _TunerMeter old) => old.cents != cents || old.color != color;
