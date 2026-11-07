@@ -249,4 +249,29 @@ void main() {
     }
   });
 
+
+  testWidgets('all tool screens remain usable at a compact phone width',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final theme = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+    );
+    final pages = <Widget>[
+      const ToolsPage(),
+      const GuitarTunerPage(),
+      const ViolinTunerPage(),
+      const MetronomePage(),
+      const ChordLibraryPage(),
+    ];
+
+    for (final page in pages) {
+      await tester.pumpWidget(MaterialApp(theme: theme, home: page));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
+
 }
