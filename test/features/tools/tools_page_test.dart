@@ -53,6 +53,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(MetronomePage), findsOneWidget);
+    expect(find.text('Метроном'), findsOneWidget);
+    expect(find.text('Темп'), findsOneWidget);
+
+    // WHY: ListView builds lower controls lazily, so scroll before asserting
+    // the start button exists in the rendered viewport.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -600));
+    await tester.pumpAndSettle();
+
     expect(find.text('Запустить метроном'), findsOneWidget);
     expect(find.text('Музыкальный размер'), findsOneWidget);
     expect(tester.takeException(), isNull);
