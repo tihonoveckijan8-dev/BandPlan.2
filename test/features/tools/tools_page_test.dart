@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:bandplan/features/tools/presentation/metronome_page.dart';
 import 'package:bandplan/features/tools/presentation/tools_page.dart';
 
 void main() {
@@ -43,10 +44,15 @@ void main() {
     );
 
     final metronome = find.text('Метроном');
-    await tester.ensureVisible(metronome);
-    await tester.tap(metronome);
+    final metronomeCard = find.ancestor(
+      of: metronome,
+      matching: find.byType(InkWell),
+    ).first;
+    await tester.ensureVisible(metronomeCard);
+    await tester.tap(metronomeCard);
     await tester.pumpAndSettle();
 
+    expect(find.byType(MetronomePage), findsOneWidget);
     expect(find.text('Запустить метроном'), findsOneWidget);
     expect(find.text('Музыкальный размер'), findsOneWidget);
     expect(tester.takeException(), isNull);
