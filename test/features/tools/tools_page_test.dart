@@ -68,6 +68,12 @@ void main() {
     expect(find.text('РИТМ И ТЕМП'), findsOneWidget);
     expect(find.text('Музыкальный размер'), findsOneWidget);
     expect(find.text('Акценты по долям'), findsOneWidget);
+    // WHY: The ListView lazily builds controls below the first viewport.
+    await tester.scrollUntilVisible(
+      find.text('Запустить метроном'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Запустить метроном'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
