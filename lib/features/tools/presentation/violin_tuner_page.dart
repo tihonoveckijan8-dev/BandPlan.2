@@ -214,7 +214,7 @@ class _ViolinTunerPageState extends State<ViolinTunerPage>
 }
 
 class _ViolinNote {
-  const _ViolinNote(this.note, this.octave, this.hz, this.stringNumber);
+  const _ViolinNote(this.note, this.octave, this.hz);
   final String note;
   final int octave;
   final double hz;
