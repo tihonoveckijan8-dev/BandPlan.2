@@ -125,90 +125,138 @@ class _ViolinTunerPageState extends State<ViolinTunerPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tuned = cents != null && cents!.abs() <= 5;
-    final accent = cents == null ? theme.colorScheme.primary
+    final currentCents = cents;
+    final tuned = currentCents != null && currentCents.abs() <= 5;
+    final accent = currentCents == null
+        ? theme.colorScheme.primary
         : tuned ? const Color(0xFF249B68) : theme.colorScheme.primary;
-    final status = cents == null ? (listening ? 'ИГРАЙТЕ НА СТРУНЕ' : 'ГОТОВ К НАСТРОЙКЕ')
-        : tuned ? 'НАСТРОЕНО' : cents! < 0 ? 'НИЖЕ ЭТАЛОНА' : 'ВЫШЕ ЭТАЛОНА';
+    final status = currentCents == null
+        ? (listening ? 'ИГРАЙТЕ НА СТРУНЕ' : 'ГОТОВ К НАСТРОЙКЕ')
+        : tuned ? 'НАСТРОЕНО'
+        : currentCents < 0 ? 'НИЖЕ ЭТАЛОНА' : 'ВЫШЕ ЭТАЛОНА';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Скрипичный тюнер')),
-      body: SafeArea(child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 28),
-        children: [
-          Text('Стандартный строй G3 · D4 · A4 · E5',
-            style: theme.textTheme.titleMedium),
-          const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(26),
-              boxShadow: [
-                BoxShadow(color: theme.colorScheme.shadow.withOpacity(.08),
-                  blurRadius: 20, offset: const Offset(0, 8)),
-                BoxShadow(color: theme.colorScheme.surface.withOpacity(.9),
-                  blurRadius: 1, offset: const Offset(0, -1)),
-              ],
-            ),
-            child: Column(children: [
-              Text(status, style: theme.textTheme.labelMedium?.copyWith(
-                color: accent, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
-              const SizedBox(height: 12),
-              Text(target.name, style: theme.textTheme.displayLarge?.copyWith(
-                fontSize: 76, fontWeight: FontWeight.w700, color: accent)),
-              Text(frequency == null
-                  ? 'Цель ' + target.hz.toStringAsFixed(1) + ' Гц'
-                  : frequency!.toStringAsFixed(1) + ' Гц  ·  ' +
-                    (cents! >= 0 ? '+' : '') + cents!.toStringAsFixed(1) + ' центов',
-                style: theme.textTheme.titleMedium),
-              const SizedBox(height: 18),
-              SizedBox(height: 22, child: CustomPaint(
-                painter: _TunerMeter(cents: cents ?? 0, color: accent),
-                child: const SizedBox.expand())),
-            ]),
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Автоматический выбор струны'),
-            value: autoSelect,
-            onChanged: (value) => setState(() => autoSelect = value),
-          ),
-          Row(children: [
-            for (var i = 0; i < notes.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              Expanded(child: ChoiceChip(
-                label: Text(notes[i].name),
-                selected: selected == i,
-                onSelected: (_) => setState(() {
-                  selected = i; autoSelect = false; stabilizer.reset(); frequency = null; cents = null;
-                }),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
+          children: [
+            Text('Стандартный строй', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text('G3 · D4 · A4 · E5',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                letterSpacing: 1.1,
               )),
-            ],
-          ]),
-          const SizedBox(height: 20),
-          FilledButton.icon(
-            onPressed: starting ? null : (listening ? stop : start),
-            icon: starting
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : Icon(listening ? Icons.stop_rounded : Icons.mic_rounded),
-            label: Text(starting ? 'Запуск микрофона…'
-                : listening ? 'Остановить настройку' : 'Начать настройку'),
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-          ),
-          if (error != null) ...[
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(color: theme.colorScheme.shadow.withOpacity(.08),
+                    blurRadius: 20, offset: const Offset(0, 8)),
+                  BoxShadow(color: theme.colorScheme.surface.withOpacity(.9),
+                    blurRadius: 1, offset: const Offset(0, -1)),
+                ],
+              ),
+              child: Column(children: [
+                Text(status, style: theme.textTheme.labelMedium?.copyWith(
+                  color: accent, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+                const SizedBox(height: 14),
+                Text(target.name, style: theme.textTheme.displayLarge?.copyWith(
+                  fontSize: 76, height: 1, fontWeight: FontWeight.w700, color: accent)),
+                const SizedBox(height: 8),
+                Text(frequency == null
+                    ? 'Цель ${target.hz.toStringAsFixed(2)} Hz'
+                    : '${frequency!.toStringAsFixed(2)} Hz',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 22),
+                SizedBox(height: 76, child: CustomPaint(
+                  painter: _ViolinMeterPainter(
+                    position: (currentCents == null
+                        ? 0.0 : currentCents / 50).clamp(-1.0, 1.0).toDouble(),
+                    color: accent,
+                    muted: currentCents == null,
+                    track: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  child: const SizedBox.expand(),
+                )),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  const Text('−50'), const Text('0'), const Text('+50'),
+                ]),
+                const SizedBox(height: 10),
+                Text(currentCents == null
+                    ? (listening ? 'Слушаю…' : 'Микрофон выключен')
+                    : '${currentCents > 0 ? '+' : ''}${currentCents.toStringAsFixed(1)} cents',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: accent, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+            const SizedBox(height: 18),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: true, label: Text('Автоопределение')),
+                ButtonSegment(value: false, label: Text('Вручную')),
+              ],
+              selected: {autoSelect},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) => setState(() {
+                autoSelect = selection.first;
+                frequency = null;
+                cents = null;
+                stabilizer.reset();
+              }),
+            ),
             const SizedBox(height: 12),
-            Text(error!, textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+            Row(children: [
+              for (var i = 0; i < notes.length; i++) ...[
+                if (i > 0) const SizedBox(width: 6),
+                Expanded(child: _ViolinStringChip(
+                  value: notes[i],
+                  selected: selected == i,
+                  onTap: () => setState(() {
+                    selected = i;
+                    autoSelect = false;
+                    frequency = null;
+                    cents = null;
+                    stabilizer.reset();
+                  }),
+                )),
+              ],
+            ]),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: starting ? null : (listening ? stop : start),
+              icon: starting
+                  ? const SizedBox(width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(listening ? Icons.stop_rounded : Icons.mic_rounded),
+              label: Text(starting ? 'Запуск микрофона…'
+                  : listening ? 'Остановить настройку' : 'Начать настройку'),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(14)),
+                child: Text(error!,
+                  style: TextStyle(color: theme.colorScheme.onErrorContainer)),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Text('Выберите струну и сыграйте открытый звук. Индикатор покажет, '
+                'насколько нота ниже или выше эталона.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant)),
           ],
-          const SizedBox(height: 12),
-          Text('Играйте по одной открытой струне. Для точного результата уменьшите фоновый шум.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant)),
-        ],
-      )),
+        ),
+      ),
     );
   }
 }
@@ -221,23 +269,86 @@ class _ViolinNote {
   String get name => note + octave.toString();
 }
 
-class _TunerMeter extends CustomPainter {
-  const _TunerMeter({required this.cents, required this.color});
-  final double cents;
-  final Color color;
+class _ViolinStringChip extends StatelessWidget {
+  const _ViolinStringChip({
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _ViolinNote value;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: selected
+          ? theme.colorScheme.primaryContainer
+          : theme.colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          child: Column(children: [
+            Text(value.note, style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: selected ? theme.colorScheme.onPrimaryContainer
+                  : theme.colorScheme.onSurface)),
+            Text(value.octave.toString(), style: theme.textTheme.labelSmall),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _ViolinMeterPainter extends CustomPainter {
+  const _ViolinMeterPainter({
+    required this.position,
+    required this.color,
+    required this.muted,
+    required this.track,
+  });
+
+  final double position;
+  final Color color, track;
+  final bool muted;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final center = size.width / 2, y = size.height - 4;
-    final line = Paint()..color = color.withOpacity(.25)..strokeWidth = 3;
-    canvas.drawLine(Offset(4, y), Offset(size.width - 4, y), line);
-    final tick = Paint()..color = color.withOpacity(.55)..strokeWidth = 1.4;
+    final cx = size.width / 2, y = size.height - 8;
+    final half = math.min(size.width * .43, 190.0).toDouble();
+    final base = Paint()
+      ..color = track.withOpacity(.32)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(cx - half, y), Offset(cx + half, y), base);
     for (var i = -5; i <= 5; i++) {
-      final x = center + i * (size.width - 12) / 10;
-      canvas.drawLine(Offset(x, y - (i == 0 ? 14 : 7)), Offset(x, y + 2), tick);
+      final x = cx + half * i / 5;
+      canvas.drawLine(
+        Offset(x, y - (i == 0 || i.abs() == 5 ? 25 : 13)),
+        Offset(x, y + 1),
+        Paint()
+          ..color = track.withOpacity(.55)
+          ..strokeWidth = i == 0 ? 2 : 1.2,
+      );
     }
-    final marker = Paint()..color = color;
-    canvas.drawCircle(Offset(center + cents.clamp(-50, 50).toDouble() * (size.width - 12) / 100, y - 18), 6, marker);
+    final x = cx + half * position;
+    final needle = Paint()
+      ..color = muted ? track.withOpacity(.7) : color
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(x, y - 35), Offset(x, y + 3), needle);
+    canvas.drawCircle(Offset(x, y - 38), 5, Paint()..color = needle.color);
+    canvas.drawCircle(Offset(cx, y), 5, Paint()..color = needle.color);
   }
+
   @override
-  bool shouldRepaint(covariant _TunerMeter old) => old.cents != cents || old.color != color;
+  bool shouldRepaint(covariant _ViolinMeterPainter old) =>
+      old.position != position || old.color != color ||
+      old.muted != muted || old.track != track;
 }
