@@ -74,7 +74,7 @@ class ToolsPage extends StatelessWidget {
                 mainAxisSpacing: 12,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: columns == 1 ? 2.7 : 0.92,
+                childAspectRatio: columns == 1 ? 1.8 : 0.92,
                 children: [
                   _ToolTile(
                     icon: Icons.graphic_eq_rounded,
