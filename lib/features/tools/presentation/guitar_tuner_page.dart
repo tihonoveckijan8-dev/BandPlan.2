@@ -64,11 +64,10 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
       if (!await _recorder.hasPermission()) {
         throw Exception('Разрешите доступ к микрофону в настройках устройства.');
       }
-      // WHY: Some audio devices/browser contexts negotiate a different sample
-      // rate than requested. Use the effective rate to avoid systematic pitch drift.
-      await _recorder.setOnConfigChanged((config) {
-        _detector = PitchDetector(sampleRate: config.sampleRate);
-      });
+      // WHY: record 6.2.1 exposes the requested stream sample rate through
+      // RecordConfig but has no config-change listener; keep detector and PCM
+      // stream aligned to the explicitly requested 44.1 kHz.
+      _detector = const PitchDetector(sampleRate: 44100);
       final stream = await _recorder.startStream(const RecordConfig(
         encoder: AudioEncoder.pcm16bits,
         sampleRate: 44100,
