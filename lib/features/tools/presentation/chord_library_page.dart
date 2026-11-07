@@ -20,6 +20,7 @@ class _ChordLibraryPageState extends State<ChordLibraryPage> {
     _Chord('Bm', 'Минор', ['B', 'D', 'F♯'], [null, 2, 4, 4, 3, 2], baseFret: 2),
   ];
   String filter = 'Все', search = '';
+  String instrument = 'Гитара';
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +34,7 @@ class _ChordLibraryPageState extends State<ChordLibraryPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
         children: [
-          Text('Аккорды для гитары', style: theme.textTheme.headlineSmall?.copyWith(
+          Text('Аккорды для гитары и клавишных', style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text('Аппликатуры и состав аккордов',
@@ -56,13 +57,19 @@ class _ChordLibraryPageState extends State<ChordLibraryPage> {
               ChoiceChip(label: Text(item), selected: filter == item,
                 onSelected: (_) => setState(() => filter = item)),
           ]),
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, children: [
+            for (final item in ['Гитара', 'Клавишные'])
+              ChoiceChip(label: Text(item), selected: instrument == item,
+                onSelected: (_) => setState(() => instrument = item)),
+          ]),
           const SizedBox(height: 14),
           if (visible.isEmpty)
             const Padding(padding: EdgeInsets.all(28),
               child: Text('Аккорды не найдены', textAlign: TextAlign.center))
           else
             for (final chord in visible) ...[
-              _ChordCard(chord: chord),
+              _ChordCard(chord: chord, showPiano: instrument == 'Клавишные'),
               const SizedBox(height: 12),
             ],
           const SizedBox(height: 8),
@@ -84,8 +91,9 @@ class _Chord {
 }
 
 class _ChordCard extends StatelessWidget {
-  const _ChordCard({required this.chord});
+  const _ChordCard({required this.chord, required this.showPiano});
   final _Chord chord;
+  final bool showPiano;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -112,7 +120,7 @@ class _ChordCard extends StatelessWidget {
             style: theme.textTheme.bodyMedium),
         ])),
         const SizedBox(width: 10),
-        _ChordDiagram(chord: chord),
+        showPiano ? _PianoDiagram(chord: chord) : _ChordDiagram(chord: chord),
       ]),
     );
   }
@@ -187,4 +195,90 @@ class _DiagramPainter extends CustomPainter {
   bool shouldRepaint(covariant _DiagramPainter old) =>
     old.frets != frets || old.baseFret != baseFret ||
     old.lineColor != lineColor || old.dotColor != dotColor;
+}
+
+
+class _PianoDiagram extends StatelessWidget {
+  const _PianoDiagram({required this.chord});
+  final _Chord chord;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: 'Клавиши аккорда ' + chord.name,
+      child: SizedBox(
+        width: 126,
+        height: 142,
+        child: Column(children: [
+          Text('Клавиши', style: theme.textTheme.labelSmall),
+          Expanded(child: CustomPaint(
+            painter: _PianoPainter(
+              notes: chord.notes.toSet(),
+              whiteColor: theme.colorScheme.surface,
+              blackColor: theme.colorScheme.onSurface,
+              activeColor: theme.colorScheme.primary,
+              lineColor: theme.colorScheme.outlineVariant,
+            ),
+            child: const SizedBox.expand(),
+          )),
+          Text('C · D · E · F · G · A · B',
+            style: theme.textTheme.labelSmall?.copyWith(fontSize: 8)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _PianoPainter extends CustomPainter {
+  const _PianoPainter({
+    required this.notes,
+    required this.whiteColor,
+    required this.blackColor,
+    required this.activeColor,
+    required this.lineColor,
+  });
+
+  final Set<String> notes;
+  final Color whiteColor, blackColor, activeColor, lineColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const whiteNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    const blackNotes = ['C♯', 'D♯', '', 'F♯', 'G♯', 'A♯'];
+    final whiteWidth = size.width / 7;
+    final whitePaint = Paint()..style = PaintingStyle.fill;
+    final borderPaint = Paint()
+      ..color = lineColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (var i = 0; i < whiteNotes.length; i++) {
+      whitePaint.color = notes.contains(whiteNotes[i]) ? activeColor : whiteColor;
+      final rect = Rect.fromLTWH(i * whiteWidth, 0, whiteWidth, size.height);
+      canvas.drawRect(rect, whitePaint);
+      canvas.drawRect(rect, borderPaint);
+    }
+
+    final blackWidth = whiteWidth * .56;
+    final blackHeight = size.height * .62;
+    final blackPaint = Paint()..style = PaintingStyle.fill;
+    for (var i = 0; i < blackNotes.length; i++) {
+      if (blackNotes[i].isEmpty) continue;
+      final left = (i + 1) * whiteWidth - blackWidth / 2;
+      final rect = Rect.fromLTWH(left, 0, blackWidth, blackHeight);
+      blackPaint.color = notes.contains(blackNotes[i]) ? activeColor : blackColor;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(3)),
+        blackPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PianoPainter old) =>
+      old.notes != notes ||
+      old.whiteColor != whiteColor ||
+      old.blackColor != blackColor ||
+      old.activeColor != activeColor ||
+      old.lineColor != lineColor;
 }
