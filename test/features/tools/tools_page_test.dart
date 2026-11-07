@@ -196,4 +196,57 @@ void main() {
     }
   });
 
+
+  testWidgets('tools workshop adapts to a tablet-width viewport',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(768, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1554FF),
+          brightness: Brightness.light,
+        ),
+      ),
+      home: const ToolsPage(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Рабочие инструменты'), findsOneWidget);
+    expect(find.text('Гитарный тюнер'), findsOneWidget);
+    expect(find.text('Скрипичный тюнер'), findsOneWidget);
+    expect(find.text('Метроном'), findsOneWidget);
+    expect(find.text('Библиотека аккордов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('all tool screens render in a light phone theme',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final lightTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF1554FF),
+        brightness: Brightness.light,
+      ),
+    );
+    final pages = <Widget>[
+      const GuitarTunerPage(),
+      const ViolinTunerPage(),
+      const MetronomePage(),
+      const ChordLibraryPage(),
+    ];
+
+    for (final page in pages) {
+      await tester.pumpWidget(MaterialApp(theme: lightTheme, home: page));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
+
 }
