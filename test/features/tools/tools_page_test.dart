@@ -42,7 +42,9 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Метроном'));
+    final metronome = find.text('Метроном');
+    await tester.ensureVisible(metronome);
+    await tester.tap(metronome);
     await tester.pumpAndSettle();
 
     expect(find.text('Запустить метроном'), findsOneWidget);
