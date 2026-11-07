@@ -296,17 +296,37 @@ class _GuitarTunerPageState extends State<GuitarTunerPage>
               }),
             ),
             const SizedBox(height: 12),
-            Row(children: [
-              for (var i = 0; i < strings.length; i++) ...[
-                if (i > 0) const SizedBox(width: 6),
-                Expanded(child: _StringChip(
-                  value: strings[i], selected: i == _selected,
-                  onTap: () => setState(() {
-                    _selected = i; _autoString = false; _frequency = null; _cents = null; _stabilizer.reset();
-                  }),
-                )),
-              ],
-            ]),
+            // WHY: Six equal-width controls fall below comfortable touch
+            // width on compact phones; use two rows there, keeping one row on
+            // wider screens without changing string selection behavior.
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth < 370 ? 3 : 6;
+                final chipWidth =
+                    (constraints.maxWidth - (columns - 1) * 6) / columns;
+                return Wrap(
+                  spacing: 6,
+                  runSpacing: 8,
+                  children: [
+                    for (var i = 0; i < strings.length; i++)
+                      SizedBox(
+                        width: chipWidth,
+                        child: _StringChip(
+                          value: strings[i],
+                          selected: i == _selected,
+                          onTap: () => setState(() {
+                            _selected = i;
+                            _autoString = false;
+                            _frequency = null;
+                            _cents = null;
+                            _stabilizer.reset();
+                          }),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: _starting ? null : (_listening ? _stop : _start),
