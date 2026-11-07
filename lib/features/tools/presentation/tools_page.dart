@@ -38,14 +38,18 @@ class ToolsPage extends StatelessWidget {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  Text(
-                    'Рабочие инструменты',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
+                  Expanded(
+                    child: Text(
+                      'Рабочие инструменты',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 12),
                   DecoratedBox(
                     decoration: BoxDecoration(
                       color: colors.primary.withOpacity(.09),
