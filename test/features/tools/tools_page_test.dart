@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bandplan/features/tools/presentation/chord_library_page.dart';
+import 'package:bandplan/features/tools/presentation/guitar_tuner_page.dart';
 import 'package:bandplan/features/tools/presentation/metronome_page.dart';
 import 'package:bandplan/features/tools/presentation/tools_page.dart';
 import 'package:bandplan/features/tools/presentation/violin_tuner_page.dart';
@@ -140,4 +141,59 @@ void main() {
     expect(find.text('Музыкальный размер'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('tools workshop adapts to a wide dark-theme viewport',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1024, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1554FF),
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: const ToolsPage(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Рабочие инструменты'), findsOneWidget);
+    expect(find.text('4 инструмента'), findsOneWidget);
+    expect(find.text('Гитарный тюнер'), findsOneWidget);
+    expect(find.text('Скрипичный тюнер'), findsOneWidget);
+    expect(find.text('Метроном'), findsOneWidget);
+    expect(find.text('Библиотека аккордов'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('all tool screens render in a dark phone theme',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF1554FF),
+        brightness: Brightness.dark,
+      ),
+    );
+    final pages = <Widget>[
+      const GuitarTunerPage(),
+      const ViolinTunerPage(),
+      const MetronomePage(),
+      const ChordLibraryPage(),
+    ];
+
+    for (final page in pages) {
+      await tester.pumpWidget(MaterialApp(theme: darkTheme, home: page));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
+
 }
