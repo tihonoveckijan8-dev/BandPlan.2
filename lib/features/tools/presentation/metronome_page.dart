@@ -244,6 +244,7 @@ class _MetronomePageState extends State<MetronomePage>
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final item in _signatures)
                 ChoiceChip(
+                  key: ValueKey('metronome-signature-${item.$1}-${item.$2}'),
                   label: Text('${item.$1}/${item.$2}'),
                   selected: item.$1 == _pattern.beatsPerBar &&
                       item.$2 == _pattern.denominator,
