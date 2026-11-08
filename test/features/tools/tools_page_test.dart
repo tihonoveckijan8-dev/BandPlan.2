@@ -90,6 +90,14 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
+    // WHY: The metronome lives in a lazy ListView, so scroll its beat grid
+    // into the tree before checking the compact touch targets.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('metronome-beat-0')),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+
     for (var beat = 0; beat < 4; beat++) {
       final tile = find.byKey(ValueKey('metronome-beat-$beat'));
       expect(tile, findsOneWidget);
