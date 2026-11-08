@@ -201,6 +201,7 @@ class _ChordDiagram extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Semantics(
+      key: ValueKey('chord-diagram-${chord.name}'),
       label: 'Аппликатура ' + chord.name,
       child: SizedBox(
         width: 126, height: 142,
