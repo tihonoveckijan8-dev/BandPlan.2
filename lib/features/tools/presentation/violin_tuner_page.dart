@@ -211,22 +211,28 @@ class _ViolinTunerPageState extends State<ViolinTunerPage>
               }),
             ),
             const SizedBox(height: 12),
-            Row(children: [
-              for (var i = 0; i < notes.length; i++) ...[
-                if (i > 0) const SizedBox(width: 6),
-                Expanded(child: _ViolinStringChip(
-                  value: notes[i],
-                  selected: selected == i,
-                  onTap: () => setState(() {
-                    selected = i;
-                    autoSelect = false;
-                    frequency = null;
-                    cents = null;
-                    stabilizer.reset();
-                  }),
-                )),
+            // WHY: Keep the four string selectors evenly sized while
+            // reserving a reliable touch target on compact PWA viewports.
+            Row(
+              children: [
+                for (var i = 0; i < notes.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 6),
+                  Expanded(
+                    child: _ViolinStringChip(
+                      value: notes[i],
+                      selected: selected == i,
+                      onTap: () => setState(() {
+                        selected = i;
+                        autoSelect = false;
+                        frequency = null;
+                        cents = null;
+                        stabilizer.reset();
+                      }),
+                    ),
+                  ),
+                ],
               ],
-            ]),
+            ),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: starting ? null : (listening ? stop : start),
@@ -291,15 +297,21 @@ class _ViolinStringChip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          child: Column(children: [
-            Text(value.note, style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: selected ? theme.colorScheme.onPrimaryContainer
-                  : theme.colorScheme.onSurface)),
-            Text(value.octave.toString(), style: theme.textTheme.labelSmall),
-          ]),
+        child: SizedBox(
+          height: 56,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(value.note, style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: selected ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurface)),
+                Text(value.octave.toString(), style: theme.textTheme.labelSmall),
+              ],
+            ),
+          ),
         ),
       ),
     );
