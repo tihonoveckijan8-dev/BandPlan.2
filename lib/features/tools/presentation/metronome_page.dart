@@ -235,7 +235,11 @@ class _MetronomePageState extends State<MetronomePage>
             const SizedBox(height: 12),
             LayoutBuilder(builder: (context, constraints) {
               const spacing = 8.0;
-              final columns = constraints.maxWidth >= 390 ? 7 : 6;
+              // WHY: Keep every beat tile at least 48 px wide on narrow
+              // phones; the grid gains columns only when there is room.
+              final columns = (constraints.maxWidth / 56)
+                  .floor()
+                  .clamp(1, 7);
               final width = (constraints.maxWidth -
                   spacing * (columns - 1)) / columns;
               return Wrap(
