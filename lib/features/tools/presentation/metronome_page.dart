@@ -216,6 +216,27 @@ class _MetronomePageState extends State<MetronomePage>
                 ]),
               ]),
             ),
+            const SizedBox(height: 12),
+            Text('Быстрый выбор BPM',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurfaceVariant,
+              )),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                for (final tempo in const [60, 80, 100, 120, 140])
+                  ChoiceChip(
+                    key: ValueKey('metronome-tempo-$tempo'),
+                    label: Text('$tempo'),
+                    selected: _bpm == tempo,
+                    onSelected: _running ? null : (_) =>
+                        setState(() => _bpm = tempo),
+                  ),
+              ],
+            ),
             const SizedBox(height: 24),
             _MetronomeSectionTitle(title: 'Музыкальный размер',
               subtitle: 'Выберите размер такта'),
