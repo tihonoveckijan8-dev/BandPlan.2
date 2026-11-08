@@ -130,6 +130,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('metronome accent controls toggle individual beats',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF))),
+      home: const MetronomePage(),
+    ));
+    await tester.pumpAndSettle();
+
+    // WHY: The beat controls are below the fold in the lazy ListView.
+    final firstBeat = find.byKey(const ValueKey('metronome-beat-0'));
+    await tester.scrollUntilVisible(
+      firstBeat,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final secondBeat = find.byKey(const ValueKey('metronome-beat-1'));
+
+    expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+    await tester.tap(secondBeat);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.volume_up_rounded), findsNWidgets(2));
+
+    await tester.tap(firstBeat);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('metronome time-signature chips keep touch targets on compact phones',
       (tester) async {
     for (final width in [320.0, 360.0]) {
