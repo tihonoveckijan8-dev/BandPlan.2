@@ -130,6 +130,39 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('metronome time-signature chips keep touch targets on compact phones',
+      (tester) async {
+    for (final width in [320.0, 360.0]) {
+      await tester.binding.setSurfaceSize(Size(width, 640));
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF))),
+        home: const MetronomePage(),
+      ));
+      await tester.pumpAndSettle();
+
+      // WHY: Scroll the lazy list to measure the actual interactive chip bounds.
+      final firstSignature =
+          find.byKey(const ValueKey('metronome-signature-2-4'));
+      await tester.scrollUntilVisible(
+        firstSignature,
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      for (final signature in [
+        '2-4', '3-4', '4-4', '5-4', '6-8', '9-8', '12-8',
+      ]) {
+        final chip = find.byKey(ValueKey('metronome-signature-$signature'));
+        expect(chip, findsOneWidget);
+        expect(tester.getSize(chip).width, greaterThanOrEqualTo(48));
+        expect(tester.getSize(chip).height, greaterThanOrEqualTo(48));
+      }
+      expect(tester.takeException(), isNull);
+    }
+    await tester.binding.setSurfaceSize(null);
+  });
+
   testWidgets('chord library filters and renders on a phone', (tester) async {
     await tester.binding.setSurfaceSize(const Size(360, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
