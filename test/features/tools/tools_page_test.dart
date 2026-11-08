@@ -90,11 +90,9 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    for (final beat in ['1', '2', '3', '4']) {
-      final tile = find.ancestor(
-        of: find.text(beat),
-        matching: find.byType(InkWell),
-      ).first;
+    for (var beat = 0; beat < 4; beat++) {
+      final tile = find.byKey(ValueKey('metronome-beat-$beat'));
+      expect(tile, findsOneWidget);
       expect(tester.getSize(tile).width, greaterThanOrEqualTo(48));
       expect(tester.getSize(tile).height, greaterThanOrEqualTo(48));
     }
