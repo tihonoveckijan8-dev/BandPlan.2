@@ -79,6 +79,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('metronome beat controls keep touch targets on compact phones',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF))),
+      home: const MetronomePage(),
+    ));
+    await tester.pumpAndSettle();
+
+    for (final beat in ['1', '2', '3', '4']) {
+      final tile = find.ancestor(
+        of: find.text(beat),
+        matching: find.byType(InkWell),
+      ).first;
+      expect(tester.getSize(tile).width, greaterThanOrEqualTo(48));
+      expect(tester.getSize(tile).height, greaterThanOrEqualTo(48));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('chord library filters and renders on a phone', (tester) async {
     await tester.binding.setSurfaceSize(const Size(360, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
