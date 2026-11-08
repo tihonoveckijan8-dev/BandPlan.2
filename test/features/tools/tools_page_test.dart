@@ -67,9 +67,14 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('РИТМ И ТЕМП'), findsOneWidget);
+    // WHY: The ListView lazily builds lower sections only after scrolling.
+    await tester.scrollUntilVisible(
+      find.text('Акценты по долям'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Музыкальный размер'), findsOneWidget);
     expect(find.text('Акценты по долям'), findsOneWidget);
-    // WHY: The ListView lazily builds controls below the first viewport.
     await tester.scrollUntilVisible(
       find.text('Запустить метроном'),
       240,
