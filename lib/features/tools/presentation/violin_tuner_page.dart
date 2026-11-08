@@ -300,7 +300,7 @@ class _ViolinStringChip extends StatelessWidget {
         child: SizedBox(
           height: 56,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 7),
+            padding: const EdgeInsets.symmetric(vertical: 5),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
