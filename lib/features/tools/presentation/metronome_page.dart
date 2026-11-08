@@ -248,6 +248,7 @@ class _MetronomePageState extends State<MetronomePage>
                 children: [
                   for (var i = 0; i < _pattern.beatsPerBar; i++)
                     SizedBox(
+                      key: ValueKey('metronome-beat-$i'),
                       width: width,
                       child: _BeatDot(
                         index: i,
