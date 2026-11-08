@@ -79,6 +79,24 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('metronome tempo presets update the BPM display',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF))),
+      home: const MetronomePage(),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('metronome-tempo-120')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('120'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('metronome beat controls keep touch targets on compact phones',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(320, 640));
