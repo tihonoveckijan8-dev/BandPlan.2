@@ -314,7 +314,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final diagram = find.bySemanticsLabel('Аппликатура C');
+    final diagram = find.byKey(const ValueKey('chord-diagram-C'));
     await tester.scrollUntilVisible(
       diagram,
       180,
