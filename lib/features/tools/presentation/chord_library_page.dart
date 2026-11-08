@@ -144,27 +144,52 @@ class _ChordCard extends StatelessWidget {
             blurRadius: 2, offset: const Offset(0, -1)),
         ],
       ),
-      child: Row(children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(chord.name, style: theme.textTheme.headlineMedium?.copyWith(
-            color: theme.colorScheme.primary, fontWeight: FontWeight.w800,
-            height: 1)),
-          const SizedBox(height: 4),
-          Text(chord.quality, style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 12),
-          Text('СОСТАВ АККОРДА',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w800, letterSpacing: .8)),
-          const SizedBox(height: 4),
-          Text(chord.notes.join(' · '),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600)),
-        ])),
-        const SizedBox(width: 10),
-        showPiano ? _PianoDiagram(chord: chord) : _ChordDiagram(chord: chord),
-      ]),
+      // WHY: A fixed side-by-side diagram squeezes chord notes on narrow
+      // phones; stack the same content only when the card's inner width is
+      // too small, preserving the desktop/tablet composition.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final details = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(chord.name, style: theme.textTheme.headlineMedium?.copyWith(
+                color: theme.colorScheme.primary, fontWeight: FontWeight.w800,
+                height: 1)),
+              const SizedBox(height: 4),
+              Text(chord.quality, style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 12),
+              Text('СОСТАВ АККОРДА',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w800, letterSpacing: .8)),
+              const SizedBox(height: 4),
+              Text(chord.notes.join(' · '),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600)),
+            ],
+          );
+          final diagram =
+              showPiano ? _PianoDiagram(chord: chord) : _ChordDiagram(chord: chord);
+          if (constraints.maxWidth < 280) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                details,
+                const SizedBox(height: 12),
+                Center(child: diagram),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: details),
+              const SizedBox(width: 10),
+              diagram,
+            ],
+          );
+        },
+      ),
     );
   }
 }
