@@ -275,6 +275,57 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('violin string selectors keep touch targets on compact phones',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+      ),
+      home: const ViolinTunerPage(),
+    ));
+    await tester.pumpAndSettle();
+
+    for (final note in ['G', 'D', 'A', 'E']) {
+      final selector = find.ancestor(
+        of: find.text(note),
+        matching: find.byType(InkWell),
+      ).first;
+      expect(tester.getSize(selector).width, greaterThanOrEqualTo(48));
+      expect(tester.getSize(selector).height, greaterThanOrEqualTo(48));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('chord cards stack diagrams on compact phone screens',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1554FF)),
+      ),
+      home: const ChordLibraryPage(),
+    ));
+    await tester.pumpAndSettle();
+
+    final diagram = find.bySemanticsLabel('Аппликатура C');
+    await tester.scrollUntilVisible(
+      diagram,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final notesHeading = find.text('СОСТАВ АККОРДА').first;
+    expect(tester.getRect(diagram).top,
+        greaterThan(tester.getRect(notesHeading).top));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('all tool screens remain usable at a compact phone width',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(320, 640));
