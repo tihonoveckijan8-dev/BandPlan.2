@@ -40,7 +40,15 @@ class UserStateRepository {
           .select('user_id,state,updated_at')
           .eq('user_id', user.id)
           .maybeSingle();
-      if (row == null) return const <String, Object?>{};
+      if (row == null) {
+        // WHY: If a previously cached row disappeared remotely, retain its
+        // contents locally; the compare-and-swap sync path will surface a
+        // deletion conflict instead of silently recreating or discarding it.
+        final previous = cached.isEmpty ? null : cached.first['payload'];
+        return previous is Map
+            ? _stateFromPayload(previous['state'])
+            : const <String, Object?>{};
+      }
 
       final payload = Map<String, Object?>.from(row);
       await _store.cacheRemoteRecord(
