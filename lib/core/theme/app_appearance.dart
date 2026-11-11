@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../local/offline_providers.dart';
 import '../local/user_state_repository.dart';
+import '../supabase/supabase_bootstrap.dart';
 import 'bandplan_theme.dart';
 
 enum AppThemeChoice { system, light, dark, amoled }
@@ -137,6 +138,9 @@ class AppAppearanceController extends AsyncNotifier<AppAppearance> {
   Future<AppAppearance> build() async {
     final store = await ref.watch(offlineStoreProvider.future);
     final localPreferences = await store.readAppPreferences();
+    if (!SupabaseBootstrap.isInitialized) {
+      return AppAppearance.fromMap(localPreferences);
+    }
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return AppAppearance.fromMap(localPreferences);
 
@@ -170,7 +174,9 @@ class AppAppearanceController extends AsyncNotifier<AppAppearance> {
     // rejection remains visible in the profile sync/conflict controls.
     state = AsyncData(appearance);
 
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = SupabaseBootstrap.isInitialized
+        ? Supabase.instance.client.auth.currentUser
+        : null;
     if (user != null) {
       final syncEngine = await ref.read(offlineSyncEngineProvider.future);
       final repository = UserStateRepository(
