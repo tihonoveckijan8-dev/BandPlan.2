@@ -169,8 +169,12 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       Row(children:weekdays.map((day)=>Expanded(child:Center(child:Padding(padding:const EdgeInsets.symmetric(vertical:8),
         child:Text(day,style:Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight:FontWeight.w700,
           color:day=='Сб'||day=='Вс'?scheme.primary:scheme.onSurfaceVariant)))))).toList()),
-      GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:cells,
-        gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:7,childAspectRatio:1.12),
+      LayoutBuilder(builder: (context, constraints) {
+        // WHY: Wide desktop calendars should read as a compact month overview,
+        // not expand each date cell into a tall card that wastes vertical space.
+        final cellAspectRatio = constraints.maxWidth >= 640 ? 1.9 : 1.12;
+        return GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:cells,
+        gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:7,childAspectRatio:cellAspectRatio),
         itemBuilder:(context,index){
           final dayNumber=index-offset+1;
           if(dayNumber<1||dayNumber>days)return const SizedBox.shrink();
@@ -188,7 +192,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   color:isSelected?scheme.onPrimary:scheme.primary,shape:BoxShape.circle)),
               ])),
           ));
-        }),
+        });
+      }),
       const SizedBox(height:4),
       Align(alignment:Alignment.centerRight,child:TextButton.icon(
         onPressed:()=>onDaySelected(DateTime.now()),icon:const Icon(Icons.today_rounded,size:18),label:const Text('Сегодня'))),
