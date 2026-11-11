@@ -107,9 +107,9 @@ class _AdaptiveAppShell extends StatelessWidget {
         final isTabletLandscape =
             width >= 700 && width < 1100 && width > height;
         final useBottomNavigation = isMobile || isTabletLandscape;
-        // WHY: Desktop browsers often have a 900–1099px content viewport after
-        // browser chrome or split-screen; give them the full labeled sidebar.
-        final isDesktop = width >= 900;
+        // WHY: Keep the tablet-landscape bottom bar as the winning layout.
+        // A 900–1099px tablet must not also match the desktop-sidebar branch.
+        final isDesktop = width >= 1100;
         final colors = Theme.of(context).colorScheme;
 
         return Scaffold(
