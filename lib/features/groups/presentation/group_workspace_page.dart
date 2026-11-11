@@ -300,7 +300,9 @@ class _GroupTile extends StatelessWidget {
             if (repo != null)
               PopupMenuButton<String>(
               onSelected: (action) async {
-                if (action == 'activate') {
+                if (action == 'members') {
+                  await _showGroupMembersDialog(context, repo, group);
+                } else if (action == 'activate') {
                   try {
                     await repo.setActiveGroup(id);
                     onActivated();
@@ -433,6 +435,7 @@ class _GroupTile extends StatelessWidget {
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(value: 'members', child: Text('Участники группы')),
                 // WHY: don't offer an action that cannot change the current active group.
                 if (!isActive)
                   const PopupMenuItem(value: 'activate', child: Text('Сделать активной')),
@@ -446,6 +449,91 @@ class _GroupTile extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _showGroupMembersDialog(
+  BuildContext context,
+  GroupRepository repository,
+  GroupSummary group,
+) async {
+  // WHY: load the roster only after the user explicitly opens this menu item.
+  final membersFuture = repository.getGroupMembers(
+    groupId: group.id,
+    ownerId: group.ownerId,
+  );
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('Участники — ${group.name}'),
+      content: SizedBox(
+        width: 420,
+        height: 360,
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: membersFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Не удалось загрузить участников.\\n${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+            final members = snapshot.data ?? const <Map<String, dynamic>>[];
+            if (members.isEmpty) {
+              return const Center(child: Text('В группе пока нет участников.'));
+            }
+            return ListView.separated(
+              itemCount: members.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final member = members[index];
+                final name = (member['display_name'] ?? '').toString().trim();
+                final roles = member['roles'] is List
+                    ? (member['roles'] as List).map((role) => role.toString()).join(' · ')
+                    : '';
+                final isOwner = member['is_owner'] == true;
+                final joinedAt = DateTime.tryParse(
+                  (member['joined_at'] ?? '').toString(),
+                );
+                final joinedLabel = joinedAt == null
+                    ? ''
+                    : 'В группе с ${MaterialLocalizations.of(context).formatMediumDate(joinedAt.toLocal())}';
+                final subtitle = [
+                  if (isOwner) 'Владелец',
+                  if (roles.isNotEmpty) roles,
+                  if (joinedLabel.isNotEmpty) joinedLabel,
+                ].join(' · ');
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    child: Text(
+                      name.isEmpty ? 'У' : name.characters.first.toUpperCase(),
+                    ),
+                  ),
+                  title: Text(name.isEmpty ? 'Участник' : name),
+                  subtitle: subtitle.isEmpty ? null : Text(subtitle),
+                  trailing: isOwner
+                      ? Icon(Icons.workspace_premium_rounded,
+                          color: Theme.of(context).colorScheme.primary)
+                      : null,
+                );
+              },
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Закрыть'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _EmptyGroups extends StatelessWidget {
