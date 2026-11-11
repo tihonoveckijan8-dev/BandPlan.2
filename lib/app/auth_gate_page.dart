@@ -107,49 +107,34 @@ class _AdaptiveAppShell extends StatelessWidget {
         return Scaffold(
           body: Row(
             children: [
-              if (!isMobile)
+              if (isDesktop)
+                _DesktopSidebar(
+                  selectedIndex: navigationShell.currentIndex,
+                  onSelect: _select,
+                )
+              else if (!isMobile)
                 SafeArea(
                   right: false,
                   child: Container(
-                    width: isDesktop ? 248 : 88,
+                    width: 88,
                     color: colors.surface,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isDesktop ? 12 : 4,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
                       vertical: 16,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (isDesktop) ...[
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 8, 8, 24),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: colors.primary,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Icons.graphic_eq_rounded,
-                                    color: colors.onPrimary,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'BandPlan',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.w800),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        Expanded(
+                    child: NavigationRail(
+                      backgroundColor: Colors.transparent,
+                      selectedIndex: navigationShell.currentIndex,
+                      onDestinationSelected: _select,
+                      minWidth: 76,
+                      groupAlignment: -0.72,
+                      labelType: NavigationRailLabelType.selected,
+                      useIndicator: true,
+                      destinations: _destinations,
+                    ),
+                  ),
+                ),
+              Expanded(
                           child: NavigationRail(
                             backgroundColor: Colors.transparent,
                             selectedIndex: navigationShell.currentIndex,
@@ -205,6 +190,188 @@ class _AdaptiveAppShell extends StatelessWidget {
               : null,
         );
       },
+    );
+  }
+}
+
+/// WHY: Desktop gets a true fixed-width sidebar (not a floating rail),
+/// keeping every destination visible and easy to target with a mouse.
+class _DesktopSidebar extends StatelessWidget {
+  const _DesktopSidebar({
+    required this.selectedIndex,
+    required this.onSelect,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  static const _items = <(IconData, IconData, String)>[
+    (Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Календарь'),
+    (Icons.library_music_outlined, Icons.library_music_rounded, 'Песни'),
+    (Icons.queue_music_outlined, Icons.queue_music_rounded, 'Сет-листы'),
+    (Icons.build_outlined, Icons.build_rounded, 'Инструменты'),
+    (Icons.person_outline_rounded, Icons.person_rounded, 'Профиль'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return SafeArea(
+      right: false,
+      child: Container(
+        width: 264,
+        height: double.infinity,
+        color: colors.surfaceContainerLow,
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 34),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(
+                      Icons.graphic_eq_rounded,
+                      color: colors.onPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'BandPlan',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+              child: Text(
+                'РАБОЧЕЕ ПРОСТРАНСТВО',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  letterSpacing: 1.15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            for (var i = 0; i < _items.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: _DesktopSidebarItem(
+                  icon: _items[i].$1,
+                  selectedIcon: _items[i].$2,
+                  label: _items[i].$3,
+                  selected: selectedIndex == i,
+                  onTap: () => onSelect(i),
+                ),
+              ),
+            const Spacer(),
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.surfaceContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.music_note_rounded,
+                      color: colors.onSurfaceVariant, size: 20),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      'Music Group OS',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopSidebarItem extends StatelessWidget {
+  const _DesktopSidebarItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
+    return Material(
+      color: selected ? colors.primaryContainer : Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        hoverColor: colors.primary.withOpacity(0.07),
+        child: SizedBox(
+          height: 48,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? selectedIcon : icon,
+                  size: 21,
+                  color: selected
+                      ? colors.onPrimaryContainer
+                      : colors.onSurfaceVariant,
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: selected
+                          ? colors.onPrimaryContainer
+                          : colors.onSurface,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (selected)
+                  Icon(
+                    Icons.circle,
+                    size: 7,
+                    color: colors.primary,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
