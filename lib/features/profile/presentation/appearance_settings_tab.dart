@@ -161,7 +161,7 @@ class AppearanceSettingsTab extends ConsumerWidget {
             Text('Внешний вид', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 6),
             Text(
-              'Настрой приложение под себя. Изменения применяются сразу и сохраняются на устройстве.',
+              'Настрой приложение под себя. Изменения применяются сразу и сохраняются в аккаунте.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.45,
