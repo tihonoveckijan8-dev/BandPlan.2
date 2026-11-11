@@ -1,7 +1,7 @@
 # Supabase data contract — audit snapshot
 
 **Audit source:** legacy repository main, especially supabase.js and the SQL migrations listed below.  
-**Status:** partial source-code audit, not a live database introspection. This is enough to define investigation targets, not permission to ship production queries yet.
+**Status:** combined source-code and live catalog audit. The sections below distinguish verified live schema/security from legacy-client payload observations; re-check before release.
 
 ## 1. Project and client configuration
 - Existing project reference: oczcjphvzoadfqntoqlc.
@@ -13,8 +13,8 @@
 
 | Table | Fields observed | Purpose / scope | Verification |
 |---|---|---|---|
-| bandplan_user_state | user_id, state, updated_at | Per-account JSON state; includes profile, settings, onboardingDone, activeGroupId, personalSongs, personalSetlists | Client read/upsert observed; full DDL/RLS not yet located |
-| bandplan_accounts | user_id, display_name, roles, personal_settings, updated_at | Durable account identity, musician roles, personal settings | Client selects/upserts these fields; full DDL/RLS not yet located |
+| bandplan_user_state | user_id, state, updated_at | Per-account JSON state; includes profile, settings, onboardingDone, activeGroupId, personalSongs, personalSetlists | Live schema, owner-only RLS, and authenticated SELECT/INSERT/UPDATE grants verified |
+| bandplan_accounts | user_id, display_name, roles, personal_settings, updated_at | Shared account identity and musician roles | Live schema and RLS verified; authenticated has SELECT only (no direct INSERT/UPDATE table grants) |
 | bandplan_groups | id, name, owner_id, created_at; generated normalized_name in initial migration | Group/workspace identity | DDL confirmed in 20261001000000_shared_groups.sql |
 | bandplan_group_members | group_id, user_id, joined_at | Many-to-many memberships | DDL confirmed in 20261001000000_shared_groups.sql |
 | bandplan_group_state | group_id, state, updated_at | Shared JSON group state; includes roster snapshot and legacy arrays | DDL confirmed in 20261001000000_shared_groups.sql |
@@ -430,3 +430,27 @@ joining by that code, a member leaving, and the sole owner leaving. It completed
 without SQL errors and was rolled back, so the diagnostic group and membership
 rows were not retained. The migration is tracked in
 `supabase/migrations/20261102190000_fix_group_rpc_ambiguous_column_references.sql`.
+
+
+
+## 14. Profile and appearance persistence — live verification (2026-11-11)
+
+The live schema was inspected directly before wiring profile preferences.
+
+### `bandplan_user_state`
+- Columns: `user_id uuid` primary key referencing `auth.users(id)`, `state jsonb` (default empty object), and `updated_at timestamptz` (default now()).
+- RLS is enabled. Authenticated users have own-row SELECT, INSERT, and UPDATE policies; UPDATE has both `USING` and `WITH CHECK` ownership predicates.
+- The `authenticated` role has SELECT, INSERT, and UPDATE table privileges. No DELETE privilege was observed.
+- No user-state trigger was observed; clients must set `updated_at` when updating the row.
+- The table is already part of the `supabase_realtime` publication.
+
+### `bandplan_accounts`
+- Authenticated clients currently have SELECT table privilege only. Although own-row INSERT/UPDATE policies exist in the catalog, the corresponding table privileges are not granted.
+- Do not issue direct client upserts to this table. Existing trusted group RPCs may update account identity as part of their documented workflows; do not invent a new RPC call or add grants without a separately reviewed security change.
+
+### Flutter persistence contract
+- Personal editable name and musician roles are stored in the existing `bandplan_user_state.state.profile` object using the legacy-compatible `name`, `role`, and `roles` keys.
+- App appearance is stored in `bandplan_user_state.state.settings.bandplanAppearance`. This namespaced key avoids overwriting legacy settings and unknown keys.
+- Local preferences remain a fast startup/offline mirror. The authenticated user's Supabase row is the cross-device source of truth.
+- Offline changes use the existing account-scoped outbox and the same authenticated Supabase session/RLS. Sync compares the captured `updated_at` version and surfaces conflicts rather than blindly overwriting another device's changes.
+- No production schema, RLS policy, table grant, Auth flow, or RPC was changed for this feature.
