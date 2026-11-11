@@ -27,6 +27,92 @@ class SupabaseOfflineMutationHandler {
     }
     final payload = Map<String, dynamic>.from(rawPayload);
 
+    if (collection == 'user_state') {
+      if (operation != 'upsert' || payload['state'] is! Map) {
+        throw const FormatException('Некорректное изменение личного состояния.');
+      }
+
+      final table = _client.from('bandplan_user_state');
+      final baselineCaptured = mutation['baseVersionCaptured'] == true;
+      final rawBaseline = mutation['basePayload'];
+      final baseline = rawBaseline is Map
+          ? Map<String, dynamic>.from(rawBaseline)
+          : null;
+      final existing = await table
+          .select('user_id,state,updated_at')
+          .eq('user_id', ownerUserId)
+          .maybeSingle();
+
+      if (existing == null) {
+        if (baselineCaptured && rawBaseline is Map) {
+          throw OfflineMutationConflict(
+            message: 'Личное состояние было удалено на сервере. Локальные изменения сохранены.',
+            remoteVersionExists: false,
+          );
+        }
+        // WHY: INSERT is deliberate. If another device creates the row after
+        // our read, the unique key turns that race into a visible conflict.
+        try {
+          await table.insert({
+            'user_id': ownerUserId,
+            'state': payload['state'],
+            if (payload['updated_at'] != null) 'updated_at': payload['updated_at'],
+          }).select('user_id').single();
+        } on PostgrestException catch (error) {
+          if (error.code != '23505') rethrow;
+          final latest = await table
+              .select('user_id,state,updated_at')
+              .eq('user_id', ownerUserId)
+              .maybeSingle();
+          throw OfflineMutationConflict(
+            message: 'Личное состояние создано на другом устройстве. Локальная версия сохранена.',
+            remoteVersionExists: latest != null,
+            remotePayload: latest == null
+                ? null
+                : Map<String, Object?>.from(latest),
+          );
+        }
+        return;
+      }
+
+      final baselineUpdatedAt = baseline?['updated_at']?.toString();
+      final remoteUpdatedAt = existing['updated_at']?.toString();
+      if (!baselineCaptured ||
+          baselineUpdatedAt == null ||
+          remoteUpdatedAt != baselineUpdatedAt) {
+        throw OfflineMutationConflict(
+          message: 'Профиль или настройки изменились на сервере. Локальная версия сохранена.',
+          remoteVersionExists: true,
+          remotePayload: Map<String, Object?>.from(existing),
+        );
+      }
+
+      // WHY: Compare-and-swap on the existing row prevents an offline edit
+      // from replacing newer settings written by another device.
+      final updated = await table
+          .update({
+            'state': payload['state'],
+            if (payload['updated_at'] != null) 'updated_at': payload['updated_at'],
+          })
+          .eq('user_id', ownerUserId)
+          .eq('updated_at', baselineUpdatedAt)
+          .select('user_id');
+      if (updated.isEmpty) {
+        final latest = await table
+            .select('user_id,state,updated_at')
+            .eq('user_id', ownerUserId)
+            .maybeSingle();
+        throw OfflineMutationConflict(
+          message: 'Профиль или настройки изменились на сервере. Локальная версия сохранена.',
+          remoteVersionExists: latest != null,
+          remotePayload: latest == null
+              ? null
+              : Map<String, Object?>.from(latest),
+        );
+      }
+      return;
+    }
+
     if (collection == 'profile') {
       if (operation != 'upsert') {
         throw UnsupportedError('Удаление профиля не поддерживается.');
