@@ -107,7 +107,9 @@ class _AdaptiveAppShell extends StatelessWidget {
         final isTabletLandscape =
             width >= 700 && width < 1100 && width > height;
         final useBottomNavigation = isMobile || isTabletLandscape;
-        final isDesktop = width >= 1100;
+        // WHY: Desktop browsers often have a 900–1099px content viewport after
+        // browser chrome or split-screen; give them the full labeled sidebar.
+        final isDesktop = width >= 900;
         final colors = Theme.of(context).colorScheme;
 
         return Scaffold(
@@ -194,7 +196,12 @@ class _DesktopSidebar extends StatelessWidget {
       child: Container(
         width: 264,
         height: double.infinity,
-        color: colors.surfaceContainerLow,
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHigh,
+          border: Border(
+            right: BorderSide(color: colors.outlineVariant.withOpacity(0.28)),
+          ),
+        ),
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -301,7 +308,7 @@ class _DesktopSidebarItem extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Material(
-      color: selected ? colors.primaryContainer : Colors.transparent,
+      color: selected ? colors.primary.withOpacity(0.16) : Colors.transparent,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -317,7 +324,7 @@ class _DesktopSidebarItem extends StatelessWidget {
                   selected ? selectedIcon : icon,
                   size: 21,
                   color: selected
-                      ? colors.onPrimaryContainer
+                      ? colors.primary
                       : colors.onSurfaceVariant,
                 ),
                 const SizedBox(width: 13),
@@ -326,7 +333,7 @@ class _DesktopSidebarItem extends StatelessWidget {
                     label,
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: selected
-                          ? colors.onPrimaryContainer
+                          ? colors.primary
                           : colors.onSurface,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     ),
