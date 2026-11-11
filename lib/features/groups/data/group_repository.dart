@@ -89,6 +89,54 @@ class GroupRepository {
     );
   }
 
+  /// Returns the current roster using the canonical membership table.
+  /// Profile fields are fetched separately because account directory access is
+  /// restricted to members and the membership table stores only user IDs.
+  Future<List<Map<String, dynamic>>> getGroupMembers({
+    required String groupId,
+    String? ownerId,
+  }) async {
+    final memberships = await _client
+        .from('bandplan_group_members')
+        .select('user_id, joined_at')
+        .eq('group_id', groupId)
+        .order('joined_at');
+
+    final rows = List<Map<String, dynamic>>.from(memberships);
+    if (rows.isEmpty) return const <Map<String, dynamic>>[];
+
+    final userIds = rows
+        .map((row) => row['user_id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+    if (userIds.isEmpty) return const <Map<String, dynamic>>[];
+
+    final accounts = await _client
+        .from('bandplan_accounts')
+        .select('user_id, display_name, roles')
+        .inFilter('user_id', userIds);
+    final accountById = <String, Map<String, dynamic>>{
+      for (final account in accounts)
+        account['user_id'].toString(): Map<String, dynamic>.from(account),
+    };
+
+    return rows.map((membership) {
+      final userId = membership['user_id']?.toString() ?? '';
+      final account = accountById[userId] ?? const <String, dynamic>{};
+      final rawRoles = account['roles'];
+      final roles = rawRoles is List
+          ? rawRoles.map((role) => role.toString()).toList(growable: false)
+          : const <String>[];
+      return <String, dynamic>{
+        'user_id': userId,
+        'display_name': (account['display_name'] ?? '').toString().trim(),
+        'roles': roles,
+        'joined_at': membership['joined_at'],
+        'is_owner': ownerId != null && userId == ownerId,
+      };
+    }).toList(growable: false);
+  }
+
   Future<void> setActiveGroup(String groupId) async {
     final result = await _client.rpc(
       'bandplan_set_active_group',
