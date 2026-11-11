@@ -44,106 +44,96 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           final items=expandEventOccurrences(values, DateTime(visibleMonth.year,visibleMonth.month,1), DateTime(visibleMonth.year,visibleMonth.month+1,0));
           final map={for(final s in programs)s.id:s};
           final selectedItems=items.where((o)=>o.date==selectedDate).toList();
-          return ListView(padding:const EdgeInsets.fromLTRB(16,12,16,110),children:[
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Icon(Icons.calendar_month_rounded,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer),
+          final calendarPanel = _monthCalendar(context,visibleMonth,selectedDate,items,
+            (month)=>setState((){visibleMonth=month;selectedDate=_iso(month);}),
+            (day)=>setState((){
+              // WHY: the Today shortcut must bring the visible month along with the selected date.
+              visibleMonth=DateTime(day.year,day.month);selectedDate=_iso(day);
+            }));
+          final selectedDayPanel = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
+                _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
+              if(selectedItems.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                    child: Column(
+                      children: [
+                        Icon(Icons.event_available_rounded,
+                            size: 34, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(height: 10),
+                        Text('День свободен',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 5),
+                        Text('На выбранную дату пока ничего не запланировано.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () => _edit(context, ref, programs, initialDate: selectedDate),
+                          icon: const Icon(Icons.add_rounded), label: const Text('Добавить событие')),
+                      ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('План группы',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  )),
-                          const SizedBox(height: 3),
-                          Text(
-                            items.isEmpty
-                                ? 'Пока нет запланированных событий'
-                                : '${items.length} событий в этом месяце',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Сегодня',
-                      onPressed: () => setState(() {
-                        final today = DateTime.now();
-                        visibleMonth = DateTime(today.year, today.month);
-                        selectedDate = _iso(today);
-                      }),
-                      icon: const Icon(Icons.today_rounded),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            _monthCalendar(context,visibleMonth,selectedDate,items,
-              (month)=>setState((){visibleMonth=month;selectedDate=_iso(month);}),
-              (day)=>setState((){
-                // WHY: the Today shortcut must bring the visible month along with the selected date.
-                visibleMonth=DateTime(day.year,day.month);selectedDate=_iso(day);
-              })),
-            Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
-              _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
-            if(selectedItems.isEmpty)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-                  child: Column(
-                    children: [
-                      Icon(Icons.event_available_rounded,
-                          size: 34, color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(height: 10),
-                      Text('День свободен',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              )),
-                      const SizedBox(height: 5),
-                      Text(
-                        'На выбранную дату пока ничего не запланировано.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => _edit(context, ref, programs, initialDate: selectedDate),
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('Добавить событие'),
-                      ),
-                    ],
                   ),
                 ),
-              ),
-            ...selectedItems.map((occurrence){final e=occurrence.event;final sl=map[e.setlistId];return Padding(padding:const EdgeInsets.only(bottom:10),
-              child:Card(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
-                leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
-                title:Text(e.title,style:const TextStyle(fontWeight:FontWeight.w700)),
-                subtitle:Text([if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location,
-                  if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено',if(e.status=='cancelled')'Отменено'].join(' · '),
-                  maxLines:3,overflow:TextOverflow.ellipsis),
-                trailing:const Icon(Icons.chevron_right_rounded),
-                onTap:()=>_details(context,ref,e,sl,programs,occurrenceDate:occurrence.date,seriesEvent:occurrence.series))));}),
-          ]);
+              ...selectedItems.map((occurrence){
+                final e=occurrence.event;final sl=map[e.setlistId];
+                return Padding(padding:const EdgeInsets.only(bottom:10),
+                  child:Card(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
+                    leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
+                    title:Text(e.title,style:const TextStyle(fontWeight:FontWeight.w700)),
+                    subtitle:Text([if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location,
+                      if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено',if(e.status=='cancelled')'Отменено'].join(' · '),
+                      maxLines:3,overflow:TextOverflow.ellipsis),
+                    trailing:const Icon(Icons.chevron_right_rounded),
+                    onTap:()=>_details(context,ref,e,sl,programs,occurrenceDate:occurrence.date,seriesEvent:occurrence.series))));
+              }),
+            ],
+          );
+          return LayoutBuilder(builder:(context,constraints){
+            // WHY: A desktop viewport has room for a month navigator and its selected-day
+            // agenda side by side; keep the stacked flow on phones and narrow tablets.
+            final isWide = constraints.maxWidth >= 1180;
+            return Center(child:ConstrainedBox(
+              constraints:const BoxConstraints(maxWidth:1680),
+              child:ListView(padding:EdgeInsets.fromLTRB(isWide?24:16,12,isWide?24:16,110),children:[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                    child: Row(children: [
+                      Container(width:46,height:46,decoration:BoxDecoration(
+                        color:Theme.of(context).colorScheme.primaryContainer,borderRadius:BorderRadius.circular(15)),
+                        child:Icon(Icons.calendar_month_rounded,color:Theme.of(context).colorScheme.onPrimaryContainer)),
+                      const SizedBox(width:14),
+                      Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                        Text('План группы',style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.w800)),
+                        const SizedBox(height:3),
+                        Text(items.isEmpty?'Пока нет запланированных событий':'${items.length} событий в этом месяце',
+                          style:Theme.of(context).textTheme.bodySmall?.copyWith(color:Theme.of(context).colorScheme.onSurfaceVariant)),
+                      ])),
+                      IconButton(tooltip:'Сегодня',onPressed:()=>setState((){
+                        final today=DateTime.now();visibleMonth=DateTime(today.year,today.month);selectedDate=_iso(today);
+                      }),icon:const Icon(Icons.today_rounded)),
+                    ]),
+                  ),
+                ),
+                const SizedBox(height:8),
+                if(isWide)
+                  Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                    Expanded(flex:11,child:calendarPanel),
+                    const SizedBox(width:20),
+                    Expanded(flex:9,child:selectedDayPanel),
+                  ])
+                else ...[
+                  calendarPanel,
+                  selectedDayPanel,
+                ],
+              ]),
+            ));
+          });
         })),
     );
   }
