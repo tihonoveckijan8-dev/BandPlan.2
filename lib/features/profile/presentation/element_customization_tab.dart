@@ -42,7 +42,7 @@ class ElementCustomizationTab extends ConsumerWidget {
             Text('Кастомизация элементов', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 6),
             Text(
-              'Настрой карточки, кнопки, поля и расстояния между элементами. Изменения применяются сразу.',
+              'Настрой карточки, кнопки, поля и расстояния между элементами. Изменения применяются сразу и сохраняются в аккаунте.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.45,
               ),
