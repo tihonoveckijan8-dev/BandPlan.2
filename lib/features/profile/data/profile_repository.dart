@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/local/network_error.dart';
 import '../../../core/local/offline_store.dart';
 import '../../../core/local/offline_sync_engine.dart';
+import '../../../core/local/user_state_repository.dart';
 
 class AccountProfile {
   const AccountProfile({
@@ -50,9 +51,32 @@ class ProfileRepository {
     try {
       final row = await _client.from('bandplan_accounts')
           .select('user_id, display_name, roles, updated_at').eq('user_id', user.id).maybeSingle();
-      final profile = row == null
+      final account = row == null
           ? AccountProfile(userId: user.id, displayName: user.email?.split('@').first ?? '', roles: const [])
           : AccountProfile.fromJson(row);
+
+      // WHY: bandplan_accounts is intentionally read-only for authenticated
+      // clients. Personal edits live in the owner's existing private state row.
+      final state = await _stateRepository().readState();
+      final rawProfile = state['profile'];
+      final personal = rawProfile is Map
+          ? Map<String, Object?>.from(rawProfile)
+          : <String, Object?>{};
+      final rawRoles = personal['roles'];
+      final personalRoles = rawRoles is List
+          ? rawRoles.map((role) => role.toString().trim()).where((role) => role.isNotEmpty).toList(growable: false)
+          : (personal['role']?.toString().trim().isNotEmpty == true
+              ? <String>[personal['role'].toString().trim()]
+              : account.roles);
+      final personalName = personal['name']?.toString().trim();
+      final profile = AccountProfile(
+        userId: user.id,
+        displayName: personalName == null || personalName.isEmpty
+            ? account.displayName
+            : personalName,
+        roles: personalRoles,
+        updatedAt: row?['updated_at']?.toString(),
+      );
       await _cacheProfile(profile);
       return profile;
     } catch (error) {
@@ -80,23 +104,44 @@ class ProfileRepository {
   Future<SyncReport> saveMyProfile({required String displayName, required List<String> roles}) async {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Требуется авторизация.');
-    final payload = <String, Object?>{
-      'user_id': user.id,
-      'display_name': displayName.trim(),
-      'roles': roles,
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    };
-    final store = _offlineStore;
-    if (store == null) {
-      await _client.from('bandplan_accounts').upsert(payload, onConflict: 'user_id')
-          .select('user_id').single();
-      return const SyncReport();
+
+    final stateRepository = _stateRepository();
+    final state = await stateRepository.readState();
+    final rawProfile = state['profile'];
+    final personal = rawProfile is Map
+        ? Map<String, Object?>.from(rawProfile)
+        : <String, Object?>{};
+    // WHY: Merge only the edited fields; legacy profile keys such as
+    // defaultParticipation and unknown future values must survive.
+    personal['name'] = displayName.trim();
+    personal['roles'] = roles;
+    if (roles.isEmpty) {
+      personal.remove('role');
+    } else {
+      personal['role'] = roles.first;
     }
-    await store.saveAndQueue(
-      operationId: '${user.id}:profile:${DateTime.now().microsecondsSinceEpoch}',
-      ownerUserId: user.id, collection: 'profile', recordId: 'profile', payload: payload,
+    state['profile'] = personal;
+
+    final report = await stateRepository.saveState(state);
+    await _cacheProfile(AccountProfile(
+      userId: user.id,
+      displayName: displayName.trim(),
+      roles: roles,
+    ));
+    return report;
+  }
+
+  UserStateRepository _stateRepository() {
+    final store = _offlineStore;
+    final syncEngine = _syncEngine;
+    if (store == null || syncEngine == null) {
+      throw StateError('Хранилище профиля не инициализировано.');
+    }
+    return UserStateRepository(
+      client: _client,
+      store: store,
+      syncEngine: syncEngine,
     );
-    return _syncEngine?.syncPending(force: true) ?? const SyncReport(pendingCount: 1);
   }
 
   Future<void> _cacheProfile(AccountProfile profile) async {
