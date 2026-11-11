@@ -166,6 +166,9 @@ class AppAppearanceController extends AsyncNotifier<AppAppearance> {
     final store = await ref.read(offlineStoreProvider.future);
     // WHY: Apply immediately and keep a durable local copy before network sync.
     await store.saveAppPreferences(appearance.toMap());
+    // WHY: Theme changes should take effect immediately; a later server
+    // rejection remains visible in the profile sync/conflict controls.
+    state = AsyncData(appearance);
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
