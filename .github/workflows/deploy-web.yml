@@ -1,6 +1,8 @@
 name: Deploy Flutter Web
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -11,7 +13,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages
+  # WHY: PR validation must not cancel a production Pages deployment.
+  group: ${{ github.event_name == 'pull_request' && format('pwa-pr-{0}', github.event.pull_request.number) || 'github-pages' }}
   cancel-in-progress: true
 
 jobs:
@@ -211,6 +214,7 @@ jobs:
           path: build/web
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
