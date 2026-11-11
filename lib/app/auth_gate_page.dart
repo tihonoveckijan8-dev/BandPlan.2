@@ -101,23 +101,20 @@ class _AdaptiveAppShell extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
-        final shortestSide = width < height ? width : height;
         final isMobile = width < 700;
-        // WHY: A tablet can have a landscape CSS width above 1100px. Detect
-        // tablets by their shorter side instead of width alone, otherwise they
-        // are mistaken for desktop monitors and keep the left sidebar.
-        final isTablet = !isMobile && shortestSide < 900;
-        // WHY: On tablets the navigation changes with physical orientation:
-        // portrait keeps the labeled sidebar; landscape uses the phone bottom bar.
+        // WHY: Use the tablet's app viewport width for a stable breakpoint.
+        // This keeps portrait tablets in the full sidebar layout and switches
+        // 700–1099px landscape tablet viewports to the phone-style bottom bar.
+        final isTablet = width >= 700 && width < 1100;
         final isTabletLandscape = isTablet && width > height;
         final useBottomNavigation = isMobile || isTabletLandscape;
-        final isDesktop = width >= 1100 && !isTablet;
+        final isDesktop = width >= 1100;
         final colors = Theme.of(context).colorScheme;
 
         return Scaffold(
           body: Row(
             children: [
-              if (isDesktop)
+              if (isDesktop || (isTablet && !isTabletLandscape))
                 _DesktopSidebar(
                   selectedIndex: navigationShell.currentIndex,
                   onSelect: _select,
