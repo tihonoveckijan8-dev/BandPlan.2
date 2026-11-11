@@ -47,61 +47,164 @@ class AuthGatePage extends ConsumerWidget {
         ),
       ),
       data: (complete) => complete
-          ? Scaffold(
-              body: _BranchTransition(
-                currentIndex: navigationShell.currentIndex,
-                child: navigationShell,
-              ),
-              bottomNavigationBar: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isMobile = MediaQuery.sizeOf(context).width < 700;
-                  if (isMobile) {
-                    return _TelegramStyleNavigationBar(shell: navigationShell);
-                  }
+          ? _AdaptiveAppShell(navigationShell: navigationShell)
+          : const OnboardingPage(),
+    );
+  }
+}
 
-                  return SafeArea(
-                    top: false,
-                    child: NavigationBar(
-                      selectedIndex: navigationShell.currentIndex,
-                      onDestinationSelected: (index) {
-                        navigationShell.goBranch(
-                          index,
-                          initialLocation: index == navigationShell.currentIndex,
-                        );
-                      },
-                      destinations: const [
-                        NavigationDestination(
-                          icon: Icon(Icons.calendar_month_outlined),
-                          selectedIcon: Icon(Icons.calendar_month_rounded),
-                          label: 'Календарь',
+/// WHY: Large screens need persistent navigation and a wider working
+/// canvas; keeping the same branch navigator preserves tab state on every size.
+class _AdaptiveAppShell extends StatelessWidget {
+  const _AdaptiveAppShell({required this.navigationShell});
+
+  final StatefulNavigationShell navigationShell;
+
+  static const _destinations = <NavigationRailDestination>[
+    NavigationRailDestination(
+      icon: Icon(Icons.calendar_month_outlined),
+      selectedIcon: Icon(Icons.calendar_month_rounded),
+      label: Text('Календарь'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.library_music_outlined),
+      selectedIcon: Icon(Icons.library_music_rounded),
+      label: Text('Песни'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.queue_music_outlined),
+      selectedIcon: Icon(Icons.queue_music_rounded),
+      label: Text('Сет-листы'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.build_outlined),
+      selectedIcon: Icon(Icons.build_rounded),
+      label: Text('Инструменты'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.person_outline_rounded),
+      selectedIcon: Icon(Icons.person_rounded),
+      label: Text('Профиль'),
+    ),
+  ];
+
+  void _select(int index) {
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final isMobile = width < 700;
+        final isDesktop = width >= 1100;
+        final colors = Theme.of(context).colorScheme;
+
+        return Scaffold(
+          body: Row(
+            children: [
+              if (!isMobile)
+                SafeArea(
+                  right: false,
+                  child: Container(
+                    width: isDesktop ? 248 : 88,
+                    color: colors.surface,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 12 : 4,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (isDesktop) ...[
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 8, 8, 24),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.graphic_eq_rounded,
+                                    color: colors.onPrimary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'BandPlan',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        Expanded(
+                          child: NavigationRail(
+                            backgroundColor: Colors.transparent,
+                            selectedIndex: navigationShell.currentIndex,
+                            onDestinationSelected: _select,
+                            extended: isDesktop,
+                            minWidth: 76,
+                            minExtendedWidth: 216,
+                            groupAlignment: -0.72,
+                            labelType: isDesktop
+                                ? NavigationRailLabelType.none
+                                : NavigationRailLabelType.selected,
+                            useIndicator: true,
+                            destinations: _destinations,
+                          ),
                         ),
-                        NavigationDestination(
-                          icon: Icon(Icons.library_music_outlined),
-                          selectedIcon: Icon(Icons.library_music_rounded),
-                          label: 'Песни',
-                        ),
-                        NavigationDestination(
-                          icon: Icon(Icons.queue_music_outlined),
-                          selectedIcon: Icon(Icons.queue_music_rounded),
-                          label: 'Сет-листы',
-                        ),
-                        NavigationDestination(
-                          icon: Icon(Icons.build_outlined),
-                          selectedIcon: Icon(Icons.build_rounded),
-                          label: 'Инструменты',
-                        ),
-                        NavigationDestination(
-                          icon: Icon(Icons.person_outline_rounded),
-                          selectedIcon: Icon(Icons.person_rounded),
-                          label: 'Профиль',
-                        ),
+                        if (isDesktop)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                            child: Text(
+                              'MUSIC GROUP OS',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                    letterSpacing: 1.2,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ),
                       ],
                     ),
-                  );
-                },
+                  ),
+                ),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1680),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isDesktop ? 20 : (isMobile ? 0 : 10),
+                      ),
+                      child: RepaintBoundary(child: navigationShell),
+                    ),
+                  ),
+                ),
               ),
-            )
-          : const OnboardingPage(),
+            ],
+          ),
+          bottomNavigationBar: isMobile
+              ? _TelegramStyleNavigationBar(shell: navigationShell)
+              : null,
+        );
+      },
     );
   }
 }
