@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../local/offline_providers.dart';
+import '../local/user_state_repository.dart';
 import 'bandplan_theme.dart';
 
 enum AppThemeChoice { system, light, dark, amoled }
@@ -133,13 +136,61 @@ class AppAppearanceController extends AsyncNotifier<AppAppearance> {
   @override
   Future<AppAppearance> build() async {
     final store = await ref.watch(offlineStoreProvider.future);
-    return AppAppearance.fromMap(await store.readAppPreferences());
+    final localPreferences = await store.readAppPreferences();
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return AppAppearance.fromMap(localPreferences);
+
+    final syncEngine = await ref.watch(offlineSyncEngineProvider.future);
+    final repository = UserStateRepository(
+      client: Supabase.instance.client,
+      store: store,
+      syncEngine: syncEngine,
+    );
+    final userState = await repository.readState();
+    final rawSettings = userState['settings'];
+    final settings = rawSettings is Map
+        ? Map<String, Object?>.from(rawSettings)
+        : <String, Object?>{};
+    final rawAppearance = settings['bandplanAppearance'];
+    if (rawAppearance is Map) {
+      final preferences = Map<String, Object?>.from(rawAppearance);
+      // WHY: Mirror the confirmed account settings locally for fast startup
+      // and offline rendering, while Supabase remains the source of truth.
+      await store.saveAppPreferences(preferences);
+      return AppAppearance.fromMap(preferences);
+    }
+    return AppAppearance.fromMap(localPreferences);
   }
+
   Future<void> saveAppearance(AppAppearance appearance) async {
     final store = await ref.read(offlineStoreProvider.future);
-    // WHY: Keep preferences durable and editable while offline.
+    // WHY: Apply immediately and keep a durable local copy before network sync.
     await store.saveAppPreferences(appearance.toMap());
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final syncEngine = await ref.read(offlineSyncEngineProvider.future);
+      final repository = UserStateRepository(
+        client: Supabase.instance.client,
+        store: store,
+        syncEngine: syncEngine,
+      );
+      final userState = await repository.readState();
+      final rawSettings = userState['settings'];
+      final settings = rawSettings is Map
+          ? Map<String, Object?>.from(rawSettings)
+          : <String, Object?>{};
+      // WHY: Namespace new preferences so legacy settings and unknown keys
+      // remain intact for older clients and future migrations.
+      settings['bandplanAppearance'] = appearance.toMap();
+      userState['settings'] = settings;
+      final report = await repository.saveState(userState);
+      if (report.hasPermanentFailure || report.conflictCount > 0) {
+        throw StateError(report.lastError ?? 'Не удалось синхронизировать настройки профиля.');
+      }
+    }
     state = AsyncData(appearance);
   }
+
   Future<void> reset() => saveAppearance(AppAppearance.defaults);
 }
