@@ -135,41 +135,6 @@ class _AdaptiveAppShell extends StatelessWidget {
                   ),
                 ),
               Expanded(
-                          child: NavigationRail(
-                            backgroundColor: Colors.transparent,
-                            selectedIndex: navigationShell.currentIndex,
-                            onDestinationSelected: _select,
-                            extended: isDesktop,
-                            minWidth: 76,
-                            minExtendedWidth: 216,
-                            groupAlignment: -0.72,
-                            labelType: isDesktop
-                                ? NavigationRailLabelType.none
-                                : NavigationRailLabelType.selected,
-                            useIndicator: true,
-                            destinations: _destinations,
-                          ),
-                        ),
-                        if (isDesktop)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                            child: Text(
-                              'MUSIC GROUP OS',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: colors.onSurfaceVariant,
-                                    letterSpacing: 1.2,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              Expanded(
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
