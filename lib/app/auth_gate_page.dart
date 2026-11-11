@@ -100,7 +100,13 @@ class _AdaptiveAppShell extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+        final height = constraints.maxHeight;
         final isMobile = width < 700;
+        // WHY: A tablet in landscape should keep the familiar phone-style
+        // bottom panel; the side rail consumes too much of its shorter canvas.
+        final isTabletLandscape =
+            width >= 700 && width < 1100 && width > height;
+        final useBottomNavigation = isMobile || isTabletLandscape;
         final isDesktop = width >= 1100;
         final colors = Theme.of(context).colorScheme;
 
@@ -112,7 +118,7 @@ class _AdaptiveAppShell extends StatelessWidget {
                   selectedIndex: navigationShell.currentIndex,
                   onSelect: _select,
                 )
-              else if (!isMobile)
+              else if (!useBottomNavigation && !isDesktop)
                 SafeArea(
                   right: false,
                   child: Container(
@@ -141,7 +147,7 @@ class _AdaptiveAppShell extends StatelessWidget {
                     constraints: const BoxConstraints(maxWidth: 1680),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: isDesktop ? 20 : (isMobile ? 0 : 10),
+                        horizontal: isDesktop ? 20 : (useBottomNavigation ? 0 : 10),
                       ),
                       child: RepaintBoundary(child: navigationShell),
                     ),
@@ -150,7 +156,7 @@ class _AdaptiveAppShell extends StatelessWidget {
               ),
             ],
           ),
-          bottomNavigationBar: isMobile
+          bottomNavigationBar: useBottomNavigation
               ? _TelegramStyleNavigationBar(shell: navigationShell)
               : null,
         );
