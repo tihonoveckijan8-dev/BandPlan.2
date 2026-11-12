@@ -185,6 +185,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
     );
     final lyricsController = TextEditingController(text: existing?.lyrics ?? '');
     var selectedKey = existing?.key.isNotEmpty == true ? existing!.key : 'Am';
+    var selectedColumns = existing?.lyricsColumns ?? 1;
     var saving = false;
     final formKey = GlobalKey<FormState>();
     var syncPending = false;
@@ -322,6 +323,25 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                         label: const Text('Вставить аккорд'),
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text('Колонки текста',
+                            style: Theme.of(context).textTheme.titleSmall),
+                        ),
+                        SegmentedButton<int>(
+                          segments: const [
+                            ButtonSegment(value: 1, label: Text('1')),
+                            ButtonSegment(value: 2, label: Text('2')),
+                            ButtonSegment(value: 3, label: Text('3')),
+                          ],
+                          selected: {selectedColumns},
+                          onSelectionChanged: (value) =>
+                              setSheetState(() => selectedColumns = value.first),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: lyricsController,
@@ -337,6 +357,29 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                         alignLabelWithHint: true,
                         helperText: 'Поставьте курсор перед нужным слогом и вставьте аккорд — пробелы вручную не нужны.',
                         border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Предпросмотр документа',
+                      style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 220),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: SingleChildScrollView(
+                        child: SongLyricsView(
+                          lyrics: lyricsController.text,
+                          columns: selectedColumns,
+                          textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontFamily: 'monospace',
+                            height: 1.45,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -374,6 +417,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                                   bpm: bpmText.isEmpty ? null : int.parse(bpmText),
                                   tags: tags,
                                   lyrics: lyricsController.text,
+                                  lyricsColumns: selectedColumns,
                                 );
                                 final sync = await repository.saveGroupSong(group.id, edited);
                                 syncPending = sync.hasPending;
@@ -564,6 +608,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                           ? const Text('Текст песни пока не добавлен.')
                           : SongLyricsView(
                               lyrics: displayedSong.lyrics,
+                              columns: displayedSong.lyricsColumns,
                               textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 fontFamily: 'monospace',
                                 height: 1.5,
