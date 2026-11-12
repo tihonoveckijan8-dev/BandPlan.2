@@ -336,6 +336,7 @@ class SupabaseOfflineMutationHandler {
       'id': recordId,
       'data': payload,
       'updated_by': ownerUserId,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
 
     if (baselineCaptured && rawBaseline is Map) {
