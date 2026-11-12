@@ -530,7 +530,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
       if (saved == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(syncFailed
-              ? 'Песня сохранена на устройстве, но сервер не принял изменение: ${sync.lastError ?? 'проверьте конфликт синхронизации'}'
+              ? 'Песня сохранена на устройстве, но сервер не подтвердил изменение. Проверьте синхронизацию группы.'
               : syncPending
                   ? 'Песня сохранена на устройстве. Ожидает синхронизации.'
                   : 'Песня сохранена на сервере и доступна участникам группы')),
