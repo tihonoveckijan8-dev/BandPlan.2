@@ -66,6 +66,45 @@ class OfflineSyncEngine {
     return tracked;
   }
 
+  /// Drains the shared outbox but reports the result for this exact save.
+  ///
+  /// WHY: unrelated old failures must not make a successfully saved song,
+  /// setlist, profile, or preference look rejected by the server.
+  Future<SyncReport> syncMutation({
+    required String operationId,
+    bool force = true,
+    bool retryFailed = true,
+  }) async {
+    final userId = _currentUserId();
+    if (userId == null || userId.trim().isEmpty) {
+      return const SyncReport();
+    }
+
+    await syncPending(force: force, retryFailed: retryFailed);
+    final remaining = await _store.readPendingMutations(ownerUserId: userId);
+    Map<String, Object?>? ownMutation;
+    for (final mutation in remaining) {
+      if (mutation['operationId'] == operationId) {
+        ownMutation = mutation;
+        break;
+      }
+    }
+
+    // No outbox entry means this exact operation was acknowledged and removed.
+    if (ownMutation == null) {
+      return const SyncReport(syncedCount: 1);
+    }
+
+    final status = ownMutation['status']?.toString() ?? 'pending';
+    final error = ownMutation['lastError']?.toString();
+    return SyncReport(
+      pendingCount: 1,
+      failedCount: status == 'failed' ? 1 : 0,
+      conflictCount: status == 'conflict' ? 1 : 0,
+      lastError: error,
+    );
+  }
+
   Future<SyncReport> _run({
     required bool force,
     required bool retryFailed,
