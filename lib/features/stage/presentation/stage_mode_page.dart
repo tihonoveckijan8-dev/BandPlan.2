@@ -98,6 +98,9 @@ class _StageModePageState extends State<StageModePage> {
                 Positioned.fill(
                   child: InteractiveViewer(
                     transformationController: _transformController,
+                    // WHY: let long lyrics keep their natural height so the performer
+                    // can pan through the complete document instead of seeing a clipped viewport.
+                    constrained: false,
                     minScale: 0.55,
                     maxScale: 3.2,
                     boundaryMargin: const EdgeInsets.all(240),
@@ -128,6 +131,18 @@ class _StageModePageState extends State<StageModePage> {
                                 ),
                               ),
                       ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: SafeArea(
+                    child: _StageNavigationButton(
+                      tooltip: 'Выйти из режима сцены',
+                      icon: Icons.close_rounded,
+                      enabled: true,
+                      onPressed: () => Navigator.of(context).maybePop(),
                     ),
                   ),
                 ),
