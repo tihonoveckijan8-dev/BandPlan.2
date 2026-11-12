@@ -10,52 +10,68 @@ class SongLyricsView extends StatelessWidget {
     required this.lyrics,
     this.textStyle,
     this.columns = 1,
+    this.columnBreaks = const [],
   });
 
   final String lyrics;
   final TextStyle? textStyle;
   final int columns;
+  final List<int> columnBreaks;
 
   @override
   Widget build(BuildContext context) {
-    final document = SongDocument.fromLegacyLyrics(lyrics);
-    final lines = document.lines;
-    final count = columns.clamp(1, 3);
-    // WHY: divide the source lines into balanced reading columns while keeping
-    // each lyric line and its chord anchors intact.
-    final columnWidgets = <Widget>[];
-    for (var column = 0; column < count; column++) {
-      final start = (lines.length * column / count).floor();
-      final end = (lines.length * (column + 1) / count).floor();
-      columnWidgets.add(Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final line in lines.skip(start).take(end - start))
-              if (line.sectionLabel != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 14, bottom: 8),
-                  child: Text(
-                    line.sectionLabel!,
-                    style: textStyle?.copyWith(fontWeight: FontWeight.w700),
+    final columnSources = SongDocument.splitIntoColumns(
+      lyrics,
+      columns: columns,
+      columnBreaks: columnBreaks,
+    );
+    final content = columnSources.length == 1
+        ? _SongLyricsColumn(source: columnSources.single, textStyle: textStyle)
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var index = 0; index < columnSources.length; index++)
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: index == columnSources.length - 1 ? 0 : 28,
+                    ),
+                    child: _SongLyricsColumn(
+                      source: columnSources[index],
+                      textStyle: textStyle,
+                    ),
                   ),
-                )
-              else
-                _SongLyricsLine(line: line, textStyle: textStyle),
-          ],
-        ),
-      ));
-      if (column != count - 1) columnWidgets.add(const SizedBox(width: 28));
-    }
-    return SelectionArea(
-      child: count == 1
-          ? columnWidgets.first is Expanded
-              ? (columnWidgets.first as Expanded).child
-              : columnWidgets.first
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: columnWidgets,
-            ),
+                ),
+            ],
+          );
+    return SelectionArea(child: content);
+  }
+}
+
+class _SongLyricsColumn extends StatelessWidget {
+  const _SongLyricsColumn({required this.source, this.textStyle});
+
+  final String source;
+  final TextStyle? textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final document = SongDocument.fromLegacyLyrics(source);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final line in document.lines)
+          if (line.sectionLabel != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 14, bottom: 8),
+              child: Text(
+                line.sectionLabel!,
+                style: textStyle?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            )
+          else
+            _SongLyricsLine(line: line, textStyle: textStyle),
+      ],
     );
   }
 }
@@ -68,7 +84,7 @@ class _SongLyricsLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final words = RegExp(r'\S+').allMatches(line.lyricText).toList();
+    final words = RegExp(r'\\S+').allMatches(line.lyricText).toList();
     if (words.isEmpty) {
       return SizedBox(height: (textStyle?.fontSize ?? 16) * 1.5);
     }
