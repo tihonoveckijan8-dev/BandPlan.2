@@ -136,7 +136,7 @@ void main() {
   });
 
   testWidgets('keeps stage lyrics at 14px and chords at 18px on every display', (tester) async {
-    final song = makeSong('responsive', 'Responsive', 'Responsive lyric line');
+    final song = makeSong('responsive', 'Responsive', '[Am]Responsive lyric line');
 
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
