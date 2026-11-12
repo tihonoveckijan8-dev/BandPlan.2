@@ -245,14 +245,14 @@ void main() {
     });
 
     test('splits lyrics into balanced columns and joins without losing lines', () {
-      const lyrics = 'line 1\\nline 2\\nline 3\\nline 4';
+      const lyrics = 'line 1\nline 2\nline 3\nline 4';
       final columns = SongDocument.splitIntoColumns(lyrics, columns: 2);
-      expect(columns, ['line 1\\nline 2', 'line 3\\nline 4']);
+      expect(columns, ['line 1\nline 2', 'line 3\nline 4']);
       expect(SongDocument.joinColumns(columns), lyrics);
     });
 
     test('keeps explicit column boundaries when text is edited', () {
-      final columns = ['Куплет\\nстрока 2', 'Припев\\nстрока 2'];
+      final columns = ['Куплет\nстрока 2', 'Припев\nстрока 2'];
       final breaks = SongDocument.columnBreaksFor(columns);
       final lyrics = SongDocument.joinColumns(columns);
       expect(breaks, [2]);
@@ -270,7 +270,7 @@ void main() {
       final song = Song.fromJson({
         'id': 'columns-1',
         'title': 'Колонки',
-        'lyrics': 'A\\nB\\nC',
+        'lyrics': 'A\nB\nC',
         'lyricsColumns': 2,
         'lyricsColumnBreaks': [1],
       });
