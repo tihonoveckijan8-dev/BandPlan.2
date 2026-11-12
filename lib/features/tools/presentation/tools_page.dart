@@ -369,8 +369,7 @@ class _ToolTile extends StatelessWidget {
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant, height: 1.3)),
                   ],
-                )
-          ),
+                ),
         ),
       ),
     );
