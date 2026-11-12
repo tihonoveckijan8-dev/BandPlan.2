@@ -340,8 +340,26 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                             ButtonSegment(value: 3, label: Text('3')),
                           ],
                           selected: {selectedColumns},
-                          onSelectionChanged: (value) =>
-                              setSheetState(() => selectedColumns = value.first),
+                          onSelectionChanged: (value) {
+                            final nextCount = value.first;
+                            final merged = SongDocument.joinColumns(
+                              lyricsControllers.map((controller) => controller.text).toList(),
+                            );
+                            final split = SongDocument.splitIntoColumns(
+                              merged,
+                              columns: nextCount,
+                            );
+                            for (final controller in lyricsControllers) {
+                              controller.dispose();
+                            }
+                            setSheetState(() {
+                              selectedColumns = nextCount;
+                              activeLyricsColumn = 0;
+                              lyricsControllers = split
+                                  .map((text) => TextEditingController(text: text))
+                                  .toList();
+                            });
+                          },
                         ),
                       ],
                     ),
