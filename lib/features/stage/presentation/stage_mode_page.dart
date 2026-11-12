@@ -118,6 +118,7 @@ class _StageModePageState extends State<StageModePage> {
                                 child: SongLyricsView(
                                   lyrics: song.lyrics,
                                   columns: song.lyricsColumns,
+                                  columnBreaks: song.lyricsColumnBreaks,
                                   textStyle: TextStyle(
                                     fontFamily: 'monospace',
                                     fontSize: 30,
