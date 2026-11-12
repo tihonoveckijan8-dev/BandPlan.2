@@ -3,6 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:bandplan/features/songs/domain/song.dart';
 import 'package:bandplan/features/stage/presentation/stage_mode_page.dart';
 
+Finder lyricText(String value) => find.byWidgetPredicate(
+      (widget) => widget is RichText && widget.text.toPlainText().contains(value),
+    );
+
 void main() {
   Song makeSong(String id, String title, String lyrics, {int columns = 1}) =>
       Song.fromJson({
@@ -19,8 +23,8 @@ void main() {
     final song = makeSong('song-1', 'Stage song', '[Am]First line\n[Куплет]\nSecond line');
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
 
-    expect(find.text('First'), findsOneWidget);
-    expect(find.text('line'), findsWidgets);
+    expect(lyricText('First'), findsOneWidget);
+    expect(lyricText('line'), findsWidgets);
     expect(find.text('Куплет'), findsOneWidget);
     expect(find.text('Stage song'), findsNothing);
     expect(find.text('96 BPM'), findsNothing);
@@ -37,9 +41,9 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
 
     expect(find.byType(InteractiveViewer), findsOneWidget);
-    expect(find.text('Line'), findsNWidgets(4));
-    expect(find.text('one'), findsOneWidget);
-    expect(find.text('four'), findsOneWidget);
+    expect(lyricText('Line'), findsNWidgets(4));
+    expect(lyricText('one'), findsOneWidget);
+    expect(lyricText('four'), findsOneWidget);
   });
 
   testWidgets('navigates through setlist tracks using only previous and next', (tester) async {
@@ -61,12 +65,12 @@ void main() {
 
     await tester.tap(find.byTooltip('Следующая песня'));
     await tester.pumpAndSettle();
-    expect(find.text('second'), findsOneWidget);
+    expect(lyricText('second'), findsOneWidget);
     expect(find.text('Second track'), findsNothing);
 
     await tester.tap(find.byTooltip('Предыдущая песня'));
     await tester.pumpAndSettle();
-    expect(find.text('first'), findsOneWidget);
+    expect(lyricText('first'), findsOneWidget);
   });
 
   testWidgets('shows an explicit exit control and returns to the previous page', (tester) async {
@@ -111,11 +115,11 @@ void main() {
       ),
     ));
 
-    expect(find.text('First'), findsOneWidget);
+    expect(lyricText('First'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.byTooltip('Следующая песня'));
     await tester.pumpAndSettle();
-    expect(find.text('Second'), findsOneWidget);
+    expect(lyricText('Second'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
