@@ -4,6 +4,10 @@ import 'package:bandplan/features/setlists/domain/setlist.dart';
 import 'package:bandplan/features/setlists/presentation/setlist_run_page.dart';
 import 'package:bandplan/features/songs/domain/song.dart';
 
+Finder lyricText(String value) => find.byWidgetPredicate(
+      (widget) => widget is RichText && widget.text.toPlainText().contains(value),
+    );
+
 void main() {
   testWidgets('executes songs in order and applies item shift without changing source song', (tester) async {
     final setlist = Setlist.fromJson({
@@ -54,8 +58,8 @@ void main() {
     expect(find.text('Start after intro'), findsOneWidget);
     expect(find.text('[A#m]First line'), findsNothing);
     expect(find.text('A#m'), findsWidgets);
-    expect(find.text('First'), findsOneWidget);
-    expect(find.text('line'), findsOneWidget);
+    expect(lyricText('First'), findsOneWidget);
+    expect(lyricText('line'), findsOneWidget);
     expect(firstSong.key, 'Am');
     expect(firstSong.lyrics, '[Am]First line');
 
@@ -63,8 +67,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Second song'), findsOneWidget);
-    expect(find.text('Second'), findsOneWidget);
-    expect(find.text('lyrics'), findsOneWidget);
+    expect(lyricText('Second'), findsOneWidget);
+    expect(lyricText('lyrics'), findsOneWidget);
     expect(find.text('2 / 2'), findsOneWidget);
 
     await tester.tap(find.text('Завершить'));
@@ -125,10 +129,10 @@ void main() {
     await tester.tap(find.byTooltip('Сценический режим'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Selected'), findsOneWidget);
+    expect(lyricText('Selected'), findsOneWidget);
     expect(find.text('song'), findsWidgets);
-    expect(find.text('lyrics'), findsOneWidget);
-    expect(find.text('Following'), findsNothing);
+    expect(lyricText('lyrics'), findsOneWidget);
+    expect(lyricText('Following'), findsNothing);
   });
 
 }
