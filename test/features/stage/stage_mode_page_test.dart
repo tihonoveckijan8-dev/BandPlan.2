@@ -124,6 +124,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('adapts stage typography for phone and desktop widths', (tester) async {
+    final song = makeSong('responsive', 'Responsive', 'Responsive lyric line');
+
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
+    var richText = tester.widget<RichText>(lyricText('Responsive'));
+    expect(richText.text.style?.fontSize, 28);
+
+    tester.view.physicalSize = const Size(1200, 800);
+    await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
+    richText = tester.widget<RichText>(lyricText('Responsive'));
+    expect(richText.text.style?.fontSize, 34);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('stage mode works on a phone-sized screen', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
