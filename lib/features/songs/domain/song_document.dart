@@ -35,20 +35,16 @@ class SongDocument {
 
     final lines = source.split('\\n');
     List<int> breaks;
-    final validStoredBreaks = columnBreaks.length == count - 1 &&
-        columnBreaks.every((value) => value >= 0 && value <= lines.length) &&
-        columnBreaks.toList()..sort();
-    if (validStoredBreaks) {
-      breaks = List<int>.of(columnBreaks);
-      for (var i = 1; i < breaks.length; i++) {
-        if (breaks[i] < breaks[i - 1]) {
-          breaks = _balancedBreaks(lines.length, count);
-          break;
-        }
+    var validStoredBreaks = columnBreaks.length == count - 1 &&
+        columnBreaks.every((value) => value >= 0 && value <= lines.length);
+    for (var i = 1; i < columnBreaks.length; i++) {
+      if (columnBreaks[i] < columnBreaks[i - 1]) {
+        validStoredBreaks = false;
       }
-    } else {
-      breaks = _balancedBreaks(lines.length, count);
     }
+    breaks = validStoredBreaks
+        ? List<int>.of(columnBreaks)
+        : _balancedBreaks(lines.length, count);
 
     final result = <String>[];
     var start = 0;
