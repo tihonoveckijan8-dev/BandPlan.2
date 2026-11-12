@@ -192,8 +192,10 @@ class ProfileRepository {
 
     final stateReport = await stateRepository.saveState(state);
     final updatedAt = DateTime.now().toUtc().toIso8601String();
+    final profileOperationId =
+        '${user.id}:profile:profile:${DateTime.now().microsecondsSinceEpoch}';
     await store.saveAndQueue(
-      operationId: '${user.id}:profile:profile:${DateTime.now().microsecondsSinceEpoch}',
+      operationId: profileOperationId,
       ownerUserId: user.id,
       collection: 'profile',
       recordId: 'profile',
@@ -204,9 +206,9 @@ class ProfileRepository {
         'updated_at': updatedAt,
       },
     );
-    // WHY: persist both the private profile preferences and the shared
-    // directory profile; the latter is what group member lists display.
-    final profileReport = await syncEngine.syncPending(
+    // WHY: report only this profile mutation, not stale failures in other records.
+    final profileReport = await syncEngine.syncMutation(
+      operationId: profileOperationId,
       force: true,
       retryFailed: true,
     );
