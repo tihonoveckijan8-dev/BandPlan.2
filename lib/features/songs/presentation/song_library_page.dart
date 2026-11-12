@@ -541,7 +541,9 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
       artistController.dispose();
       bpmController.dispose();
       tagsController.dispose();
-      for (final controller in lyricsControllers) {\n        controller.dispose();\n      }
+      for (final controller in lyricsControllers) {
+        controller.dispose();
+      }
     }
   }
 
