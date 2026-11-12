@@ -100,6 +100,7 @@ class SongRepository {
     if (store == null) {
       await _client.from('bandplan_songs').upsert({
         'group_id': groupId, 'id': song.id, 'data': song.toLegacyJson(), 'updated_by': user.id,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'group_id,id').select('id').single();
       return const SyncReport();
     }
