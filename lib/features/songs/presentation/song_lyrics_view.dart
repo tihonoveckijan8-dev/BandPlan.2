@@ -149,27 +149,3 @@ class _SongLyricsLine extends StatelessWidget {
     );
   }
 }
-
-class _SongLyricsPiece extends StatelessWidget {
-  const _SongLyricsPiece({required this.text, required this.style, this.chord});
-
-  final String text;
-  final String? chord;
-  final TextStyle? style;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (chord != null)
-            Text(
-              chord!,
-              style: style?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          Text(text, style: style),
-        ],
-      );
-}
