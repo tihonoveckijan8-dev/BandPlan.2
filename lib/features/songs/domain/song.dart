@@ -9,6 +9,7 @@ class Song {
         artist = _string(raw['artist']),
         key = _string(raw['key']),
         lyrics = _string(raw['lyrics']),
+        lyricsColumns = (_integer(raw['lyricsColumns']) ?? 1).clamp(1, 3),
         bpm = _integer(raw['bpm']),
         durationSeconds = _integer(raw['duration']),
         tags = _stringList(raw['tags']),
@@ -20,6 +21,8 @@ class Song {
   final String artist;
   final String key;
   final String lyrics;
+  /// Number of Word-like reading columns used for this song.
+  final int lyricsColumns;
   final int? bpm;
   final int? durationSeconds;
   final List<String> tags;
@@ -41,6 +44,7 @@ class Song {
     required int? bpm,
     required List<String> tags,
     required String lyrics,
+    int? lyricsColumns,
   }) {
     return Song._({
       ...raw,
@@ -50,6 +54,7 @@ class Song {
       'bpm': bpm,
       'tags': tags,
       'lyrics': lyrics,
+      'lyricsColumns': (lyricsColumns ?? this.lyricsColumns).clamp(1, 3),
     });
   }
 
