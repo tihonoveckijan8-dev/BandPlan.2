@@ -7,6 +7,16 @@ Finder lyricText(String value) => find.byWidgetPredicate(
       (widget) => widget is RichText && widget.text.toPlainText().contains(value),
     );
 
+double? _firstExplicitFontSize(InlineSpan span) {
+  if (span is! TextSpan) return null;
+  if (span.style?.fontSize != null) return span.style!.fontSize;
+  for (final child in span.children ?? const <InlineSpan>[]) {
+    final size = _firstExplicitFontSize(child);
+    if (size != null) return size;
+  }
+  return null;
+}
+
 void main() {
   Song makeSong(String id, String title, String lyrics, {int columns = 1}) =>
       Song.fromJson({
@@ -134,7 +144,7 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
     var richText = tester.widget<RichText>(lyricText('Responsive'));
-    expect((richText.text.children!.first as TextSpan).style?.fontSize, 28);
+    expect(_firstExplicitFontSize(richText.text), 28);
 
     tester.view.physicalSize = const Size(1200, 800);
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
