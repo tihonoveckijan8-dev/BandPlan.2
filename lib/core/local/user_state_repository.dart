@@ -76,15 +76,21 @@ class UserStateRepository {
       'state': state,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
+    final operationId =
+        '${user.id}:user-state:${DateTime.now().microsecondsSinceEpoch}';
     await _store.saveAndQueue(
-      operationId: '${user.id}:user-state:${DateTime.now().microsecondsSinceEpoch}',
+      operationId: operationId,
       ownerUserId: user.id,
       collection: 'user_state',
       recordId: 'state',
       payload: payload,
     );
-    // WHY: a corrected later profile/settings edit can unblock an older failed write.
-    return _syncEngine.syncPending(force: true, retryFailed: true);
+    // WHY: report this state write independently of unrelated outbox failures.
+    return _syncEngine.syncMutation(
+      operationId: operationId,
+      force: true,
+      retryFailed: true,
+    );
   }
 
   Map<String, Object?> _stateFromPayload(Object? raw) {
