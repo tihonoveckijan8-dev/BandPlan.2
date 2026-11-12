@@ -382,6 +382,146 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                               visualDensity: VisualDensity.compact,
                             ),
                           ),
+                          // WHY: keep section editing beside section insertion,
+                          // while operating only on the active lyrics column.
+                          PopupMenuButton<String>(
+                            tooltip: 'Управление разделом',
+                            onSelected: (action) async {
+                              final target = lyricsControllers[activeLyricsColumn];
+                              final selection = target.selection;
+                              final cursor = selection.isValid
+                                  ? selection.start.clamp(0, target.text.length).toInt()
+                                  : target.text.length;
+                              final cursorLine =
+                                  target.text.substring(0, cursor).split('\\n').length - 1;
+                              final sectionLines =
+                                  SongDocument.sectionLineIndices(target.text);
+                              var sectionIndex = -1;
+                              for (var i = 0; i < sectionLines.length; i++) {
+                                if (sectionLines[i] <= cursorLine) {
+                                  sectionIndex = i;
+                                } else {
+                                  break;
+                                }
+                              }
+                              if (sectionIndex < 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Поставьте курсор внутри нужного раздела'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              var updated = target.text;
+                              switch (action) {
+                                case 'rename':
+                                  final lines = target.text.split('\\n');
+                                  final heading = lines[sectionLines[sectionIndex]].trim();
+                                  final currentLabel = heading.substring(1, heading.length - 1);
+                                  final controller =
+                                      TextEditingController(text: currentLabel);
+                                  String? label;
+                                  try {
+                                    label = await showDialog<String>(
+                                      context: context,
+                                      builder: (dialogContext) => AlertDialog(
+                                        title: const Text('Название раздела'),
+                                        content: TextField(
+                                          controller: controller,
+                                          autofocus: true,
+                                          decoration: const InputDecoration(
+                                            hintText: 'Например, Припев',
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(dialogContext),
+                                            child: const Text('Отмена'),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () => Navigator.pop(
+                                              dialogContext,
+                                              controller.text,
+                                            ),
+                                            child: const Text('Сохранить'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  } finally {
+                                    controller.dispose();
+                                  }
+                                  if (label == null || !context.mounted) return;
+                                  updated = SongDocument.renameSection(
+                                    target.text,
+                                    sectionIndex,
+                                    label,
+                                  );
+                                  break;
+                                case 'up':
+                                  updated = SongDocument.moveSection(
+                                    target.text, sectionIndex, -1,
+                                  );
+                                  break;
+                                case 'down':
+                                  updated = SongDocument.moveSection(
+                                    target.text, sectionIndex, 1,
+                                  );
+                                  break;
+                                case 'duplicate':
+                                  updated = SongDocument.duplicateSection(
+                                    target.text, sectionIndex,
+                                  );
+                                  break;
+                                case 'delete':
+                                  updated = SongDocument.removeSection(
+                                    target.text, sectionIndex,
+                                  );
+                                  break;
+                              }
+
+                              if (updated == target.text) return;
+                              target.value = TextEditingValue(
+                                text: updated,
+                                selection: TextSelection.collapsed(
+                                  offset: updated.length,
+                                ),
+                              );
+                              setSheetState(() {});
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'rename',
+                                child: Text('Переименовать'),
+                              ),
+                              PopupMenuItem(
+                                value: 'up',
+                                child: Text('Переместить выше'),
+                              ),
+                              PopupMenuItem(
+                                value: 'down',
+                                child: Text('Переместить ниже'),
+                              ),
+                              PopupMenuItem(
+                                value: 'duplicate',
+                                child: Text('Дублировать раздел'),
+                              ),
+                              PopupMenuDivider(),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(
+                                  'Удалить раздел',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                            child: const Chip(
+                              avatar: Icon(Icons.tune_rounded, size: 17),
+                              label: Text('Управление разделом'),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
                           Chip(
                             avatar: const Icon(Icons.keyboard_rounded, size: 16),
                             label: const Text('[Am] — аккорд в тексте'),
