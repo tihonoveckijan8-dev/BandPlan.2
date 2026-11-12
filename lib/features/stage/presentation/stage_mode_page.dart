@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:vector_math/vector_math_64.dart' show Matrix4;
 
-import '../../core/stage_mode_visibility.dart';
+import '../../../core/stage_mode_visibility.dart';
 import '../../songs/domain/song.dart';
 import '../../songs/presentation/song_lyrics_view.dart';
 
