@@ -337,6 +337,51 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                             icon: const Icon(Icons.music_note_rounded, size: 18),
                             label: const Text('Вставить аккорд'),
                           ),
+                          PopupMenuButton<String>(
+                            tooltip: 'Добавить раздел песни',
+                            onSelected: (section) {
+                              final target = lyricsControllers[activeLyricsColumn];
+                              final selection = target.selection;
+                              final start = selection.isValid
+                                  ? selection.start
+                                  : target.text.length;
+                              final end = selection.isValid
+                                  ? selection.end
+                                  : target.text.length;
+                              // WHY: section markers use the existing legacy lyric syntax,
+                              // so all clients and stage mode can read them without a schema change.
+                              final prefix = start > 0 && target.text[start - 1] != '\\n'
+                                  ? '\\n'
+                                  : '';
+                              final suffix = end < target.text.length &&
+                                      target.text[end] != '\\n'
+                                  ? '\\n'
+                                  : '';
+                              final marker = '${prefix}[$section]\\n';
+                              final updated = target.text.replaceRange(
+                                start, end, marker + suffix,
+                              );
+                              final cursor = start + marker.length;
+                              target.value = TextEditingValue(
+                                text: updated,
+                                selection: TextSelection.collapsed(offset: cursor),
+                              );
+                              setSheetState(() {});
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(value: 'Куплет 1', child: Text('Куплет 1')),
+                              PopupMenuItem(value: 'Куплет 2', child: Text('Куплет 2')),
+                              PopupMenuItem(value: 'Припев', child: Text('Припев')),
+                              PopupMenuItem(value: 'Бридж', child: Text('Бридж')),
+                              PopupMenuItem(value: 'Интро', child: Text('Интро')),
+                              PopupMenuItem(value: 'Аутро', child: Text('Аутро')),
+                            ],
+                            child: const Chip(
+                              avatar: Icon(Icons.segment_rounded, size: 17),
+                              label: Text('Раздел песни'),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
                           Chip(
                             avatar: const Icon(Icons.keyboard_rounded, size: 16),
                             label: const Text('[Am] — аккорд в тексте'),
