@@ -22,6 +22,72 @@ class SongDocument {
   /// Returns the original representation unchanged for safe legacy storage.
   String toLegacyLyrics() => source;
 
+  /// Splits the logical lyrics into editable, contiguous columns.
+  /// Break positions are line counts before the next column; no marker is
+  /// inserted into the lyrics, so chord tokens and line content stay lossless.
+  static List<String> splitIntoColumns(
+    String source, {
+    int columns = 1,
+    List<int> columnBreaks = const [],
+  }) {
+    final count = columns.clamp(1, 3).toInt();
+    if (count == 1) return [source];
+
+    final lines = source.split('\\n');
+    List<int> breaks;
+    final validStoredBreaks = columnBreaks.length == count - 1 &&
+        columnBreaks.every((value) => value >= 0 && value <= lines.length) &&
+        columnBreaks.toList()..sort();
+    if (validStoredBreaks) {
+      breaks = List<int>.of(columnBreaks);
+      for (var i = 1; i < breaks.length; i++) {
+        if (breaks[i] < breaks[i - 1]) {
+          breaks = _balancedBreaks(lines.length, count);
+          break;
+        }
+      }
+    } else {
+      breaks = _balancedBreaks(lines.length, count);
+    }
+
+    final result = <String>[];
+    var start = 0;
+    for (final end in [...breaks, lines.length]) {
+      result.add(lines.sublist(start, end).join('\\n'));
+      start = end;
+    }
+    return result;
+  }
+
+  /// Stores column boundaries separately from lyrics as line offsets.
+  static List<int> columnBreaksFor(List<String> columns) {
+    if (columns.length <= 1 || columns.every((column) => column.isEmpty)) {
+      return const [];
+    }
+    var offset = 0;
+    final breaks = <int>[];
+    for (var i = 0; i < columns.length - 1; i++) {
+      offset += columns[i].split('\\n').length;
+      breaks.add(offset);
+    }
+    return breaks;
+  }
+
+  static String joinColumns(List<String> columns) =>
+      columns.every((column) => column.isEmpty) ? '' : columns.join('\\n');
+
+  static List<int> _balancedBreaks(int lineCount, int columnCount) {
+    final base = lineCount ~/ columnCount;
+    final remainder = lineCount % columnCount;
+    final breaks = <int>[];
+    var offset = 0;
+    for (var i = 0; i < columnCount - 1; i++) {
+      offset += base + (i < remainder ? 1 : 0);
+      breaks.add(offset);
+    }
+    return breaks;
+  }
+
   static bool isChordSymbol(String value) => SongDocumentLine.isChordSymbol(value);
 
   /// Inserts a legacy chord token at the selected lyric position.
