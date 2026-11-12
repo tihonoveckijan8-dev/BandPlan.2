@@ -114,7 +114,7 @@ class SetlistRepository {
       groupId: groupId, collection: 'group_setlists', recordId: setlist.id,
       payload: Map<String, Object?>.from(setlist.toLegacyJson()),
     );
-    return _syncEngine?.syncPending(force: true) ?? const SyncReport(pendingCount: 1);
+    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
   }
 
   Future<SyncReport> deleteGroupSetlist(String groupId, String setlistId) async {
@@ -132,7 +132,7 @@ class SetlistRepository {
       ownerUserId: user.id, groupId: groupId, collection: 'group_setlists',
       recordId: setlistId, payload: const {}, operation: 'delete',
     );
-    return _syncEngine?.syncPending(force: true) ?? const SyncReport(pendingCount: 1);
+    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
   }
 
   Future<List<Setlist>> _readCachedSetlists(String userId, String groupId) async {
