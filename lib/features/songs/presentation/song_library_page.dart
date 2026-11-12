@@ -426,8 +426,43 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    Text('Предпросмотр документа',
-                      style: Theme.of(context).textTheme.titleSmall),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Предпросмотр документа',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            final previewLyrics = SongDocument.joinColumns(
+                              lyricsControllers
+                                  .map((controller) => controller.text)
+                                  .toList(),
+                            );
+                            Navigator.of(context).push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => _SongLyricsPreviewPage(
+                                  title: titleController.text.trim().isEmpty
+                                      ? 'Предпросмотр песни'
+                                      : titleController.text.trim(),
+                                  lyrics: previewLyrics,
+                                  columns: selectedColumns,
+                                  columnBreaks: SongDocument.columnBreaksFor(
+                                    lyricsControllers
+                                        .map((controller) => controller.text)
+                                        .toList(),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.open_in_full_rounded, size: 18),
+                          label: const Text('На весь экран'),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       constraints: const BoxConstraints(maxHeight: 220),
@@ -821,6 +856,117 @@ class _LoadError extends StatelessWidget {
             const SizedBox(height: 16),
             OutlinedButton(onPressed: onRetry, child: const Text('Повторить')),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// WHY: The compact editor preview is useful while typing, but long lyrics
+/// need a dedicated reading surface so no part of the document is hidden
+/// behind a fixed-height preview viewport.
+class _SongLyricsPreviewPage extends StatelessWidget {
+  const _SongLyricsPreviewPage({
+    required this.title,
+    required this.lyrics,
+    required this.columns,
+    required this.columnBreaks,
+  });
+
+  final String title;
+  final String lyrics;
+  final int columns;
+  final List<int> columnBreaks;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        leading: IconButton(
+          tooltip: 'Закрыть предпросмотр',
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.close_rounded),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Вернуться к редактору',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.keyboard_return_rounded),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1180),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 13,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.description_outlined, color: colors.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Полный текст · ${columns > 1 ? '$columns колонки' : 'одна колонка'}',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Прокручивайте',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(22),
+                    child: lyrics.trim().isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            child: Center(
+                              child: Text(
+                                'Текст песни пока не добавлен.',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          )
+                        : SongLyricsView(
+                            lyrics: lyrics,
+                            columns: columns,
+                            columnBreaks: columnBreaks,
+                            textStyle: theme.textTheme.bodyLarge?.copyWith(
+                              fontFamily: 'monospace',
+                              height: 1.65,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
