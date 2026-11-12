@@ -36,22 +36,34 @@ class OfflineSyncEngine {
   final String? Function() _currentUserId;
   final OfflineMutationApplier _applyMutation;
   Future<SyncReport>? _inFlight;
+  bool _rerunRequested = false;
 
   Future<SyncReport> syncPending({
     bool force = false,
     bool retryFailed = false,
   }) {
     final active = _inFlight;
-    if (active != null) return active;
+    if (active != null) {
+      // WHY: a save can enter the outbox after the active drain took its
+      // snapshot. Schedule one more pass so the new song reaches Supabase.
+      _rerunRequested = true;
+      return active.then((report) {
+        if (!_rerunRequested) return report;
+        _rerunRequested = false;
+        return syncPending(force: force, retryFailed: retryFailed);
+      });
+    }
 
     final operation = _run(
       force: force,
       retryFailed: retryFailed,
     );
-    _inFlight = operation;
-    return operation.whenComplete(() {
-      if (identical(_inFlight, operation)) _inFlight = null;
+    late final Future<SyncReport> tracked;
+    tracked = operation.whenComplete(() {
+      if (identical(_inFlight, tracked)) _inFlight = null;
     });
+    _inFlight = tracked;
+    return tracked;
   }
 
   Future<SyncReport> _run({
