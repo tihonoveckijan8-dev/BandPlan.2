@@ -86,12 +86,14 @@ class SongDocument {
 
   static bool isChordSymbol(String value) => SongDocumentLine.isChordSymbol(value);
 
-  /// Finds standalone legacy section-marker lines without treating chord tokens as sections.
+  /// Finds standalone section headings, excluding chord-only lines.
+  /// WHY: section actions must never mistake a chord token for a song section.
   static List<int> sectionLineIndices(String source) {
     final lines = source.split('\\n');
     return [
       for (var i = 0; i < lines.length; i++)
         if (RegExp(r'^\\s*\\[[^\\]\\r\\n]+\\]\\s*
+  /// Inserts a legacy chord token at the selected lyric position.
   /// WHY: this keeps chord placement tied to the cursor/syllable, not to manually
   /// estimated spaces that change between fonts and screen sizes.
   static String insertChordToken({
@@ -244,19 +246,20 @@ class SongChordAnchor {
     for (var i = 0; i < starts.length; i++) {
       ranges.add([starts[i], i + 1 < starts.length ? starts[i + 1] : lines.length]);
     }
-    final first = ranges[sectionIndex];
-    final second = ranges[target];
+    final current = ranges[sectionIndex];
+    final adjacent = ranges[target];
     if (delta < 0) {
-      final before = lines.sublist(second[0], first[0]);
-      final current = lines.sublist(first[0], first[1]);
-      lines.replaceRange(second[0], first[1], [...current, ...before]);
+      final preceding = lines.sublist(adjacent[0], current[0]);
+      final selected = lines.sublist(current[0], current[1]);
+      lines.replaceRange(adjacent[0], current[1], [...selected, ...preceding]);
     } else {
-      final current = lines.sublist(first[0], first[1]);
-      final after = lines.sublist(second[0], second[1]);
-      lines.replaceRange(first[0], second[1], [...after, ...current]);
+      final selected = lines.sublist(current[0], current[1]);
+      final following = lines.sublist(adjacent[0], adjacent[1]);
+      lines.replaceRange(current[0], adjacent[1], [...following, ...selected]);
     }
     return lines.join('\\n');
   }
+
 
   /// Inserts a legacy chord token at the selected lyric position.
   /// WHY: this keeps chord placement tied to the cursor/syllable, not to manually
