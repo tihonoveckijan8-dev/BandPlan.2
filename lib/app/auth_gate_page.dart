@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/config/app_config.dart';
+import '../core/stage_mode_visibility.dart';
 import '../features/auth/application/auth_providers.dart';
 import '../features/auth/presentation/auth_page.dart';
 import '../features/onboarding/application/onboarding_providers.dart';
@@ -111,15 +112,17 @@ class _AdaptiveAppShell extends StatelessWidget {
         final isDesktop = width >= 1100;
         final colors = Theme.of(context).colorScheme;
 
-        return Scaffold(
+        return ValueListenableBuilder<bool>(
+          valueListenable: stageModeIsActive,
+          builder: (context, stageActive, _) => Scaffold(
           body: Row(
             children: [
-              if (isDesktop || (isTablet && !isTabletLandscape))
+              if (!stageActive && (isDesktop || (isTablet && !isTabletLandscape)))
                 _DesktopSidebar(
                   selectedIndex: navigationShell.currentIndex,
                   onSelect: _select,
                 )
-              else if (!useBottomNavigation && !isDesktop && !isTablet)
+              else if (!stageActive && !useBottomNavigation && !isDesktop && !isTablet)
                 SafeArea(
                   right: false,
                   child: Container(
@@ -157,10 +160,10 @@ class _AdaptiveAppShell extends StatelessWidget {
               ),
             ],
           ),
-          bottomNavigationBar: useBottomNavigation
+          bottomNavigationBar: !stageActive && useBottomNavigation
               ? _TelegramStyleNavigationBar(shell: navigationShell)
               : null,
-        );
+        ));
       },
     );
   }
