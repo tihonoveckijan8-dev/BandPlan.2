@@ -135,7 +135,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('adapts stage typography for phone and desktop widths', (tester) async {
+  testWidgets('keeps stage lyrics at 14px and chords at 18px on every display', (tester) async {
     final song = makeSong('responsive', 'Responsive', 'Responsive lyric line');
 
     tester.view.physicalSize = const Size(360, 800);
@@ -145,12 +145,15 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
     var richText = tester.widget<RichText>(lyricText('Responsive'));
-    expect(_firstExplicitFontSize(richText.text), 28);
+    expect(_firstExplicitFontSize(richText.text), 14);
+    final chord = tester.widget<Text>(find.text('Am'));
+    expect(chord.style?.fontSize, 18);
+    expect(chord.style?.color, Theme.of(tester.element(find.text('Am'))).colorScheme.primary);
 
     tester.view.physicalSize = const Size(1200, 800);
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
     richText = tester.widget<RichText>(lyricText('Responsive'));
-    expect(_firstExplicitFontSize(richText.text), 34);
+    expect(_firstExplicitFontSize(richText.text), 14);
     expect(tester.takeException(), isNull);
   });
 
