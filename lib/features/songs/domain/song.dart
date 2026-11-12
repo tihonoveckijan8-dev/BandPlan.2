@@ -263,7 +263,19 @@ class Song {
     return int.tryParse(value?.toString() ?? '');
   }
 
-  static List<int> _integerList(Object? value) {\n    if (value is! List) return const [];\n    return value.map((item) => item is int ? item : item is num ? item.toInt() : int.tryParse(item?.toString() ?? '')).whereType<int>().toList(growable: false);\n  }\n\n  static List<String> _stringList(Object? value) {
+  static List<int> _integerList(Object? value) {
+    if (value is! List) return const [];
+    return value
+        .map((item) => item is int
+            ? item
+            : item is num
+                ? item.toInt()
+                : int.tryParse(item?.toString() ?? ''))
+        .whereType<int>()
+        .toList(growable: false);
+  }
+
+  static List<String> _stringList(Object? value) {
     if (value is! List) return const [];
     return value
         .map((item) => item?.toString().trim() ?? '')
