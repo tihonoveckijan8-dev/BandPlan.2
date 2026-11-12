@@ -244,6 +244,52 @@ void main() {
       );
     });
 
+    test('splits lyrics into balanced columns and joins without losing lines', () {
+      const lyrics = 'line 1\\nline 2\\nline 3\\nline 4';
+      final columns = SongDocument.splitIntoColumns(lyrics, columns: 2);
+      expect(columns, ['line 1\\nline 2', 'line 3\\nline 4']);
+      expect(SongDocument.joinColumns(columns), lyrics);
+    });
+
+    test('keeps explicit column boundaries when text is edited', () {
+      final columns = ['Куплет\\nстрока 2', 'Припев\\nстрока 2'];
+      final breaks = SongDocument.columnBreaksFor(columns);
+      final lyrics = SongDocument.joinColumns(columns);
+      expect(breaks, [2]);
+      expect(
+        SongDocument.splitIntoColumns(
+          lyrics,
+          columns: 2,
+          columnBreaks: breaks,
+        ),
+        columns,
+      );
+    });
+
+    test('persists column count and break positions in song JSON', () {
+      final song = Song.fromJson({
+        'id': 'columns-1',
+        'title': 'Колонки',
+        'lyrics': 'A\\nB\\nC',
+        'lyricsColumns': 2,
+        'lyricsColumnBreaks': [1],
+      });
+      expect(song.lyricsColumns, 2);
+      expect(song.lyricsColumnBreaks, [1]);
+      final edited = song.withEdits(
+        title: song.title,
+        artist: song.artist,
+        key: song.key,
+        bpm: song.bpm,
+        tags: song.tags,
+        lyrics: song.lyrics,
+        lyricsColumns: song.lyricsColumns,
+        lyricsColumnBreaks: song.lyricsColumnBreaks,
+      );
+      expect(edited.toLegacyJson()['lyricsColumns'], 2);
+      expect(edited.toLegacyJson()['lyricsColumnBreaks'], [1]);
+    });
+
     test('round-trips original whitespace and line breaks exactly', () {
       const source = '[Куплет]\r\n[Am]Слова   строки\n\n[G]Финал  ';
       final document = SongDocument.fromLegacyLyrics(source);
