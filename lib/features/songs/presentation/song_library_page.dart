@@ -202,6 +202,9 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
         isScrollControlled: true,
         useSafeArea: true,
         showDragHandle: true,
+        // WHY: Flutter's default desktop bottom-sheet width is capped; a wider
+        // document canvas is required for two or three editable lyric columns.
+        constraints: const BoxConstraints(maxWidth: 1480),
         builder: (sheetContext) => StatefulBuilder(
           builder: (context, setSheetState) => Padding(
             padding: EdgeInsets.fromLTRB(
