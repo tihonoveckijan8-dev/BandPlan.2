@@ -93,7 +93,7 @@ class SongDocument {
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
       if (line.length > 2 && line.startsWith('[') && line.endsWith(']') &&
-          !isChordSymbol(line.substring(1, line.length - 1))) {
+          !isChordSymbol(line.substring(1, line.length - 1).trim())) {
         result.add(i);
       }
     }
