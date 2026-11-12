@@ -140,11 +140,17 @@ class _SongLyricsLine extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Text.rich(
-        TextSpan(children: spans, style: textStyle),
-        softWrap: true,
-        maxLines: null,
-        overflow: TextOverflow.visible,
+      // WHY: a lyric row is a musical phrase; wrapping it into several visual
+      // rows changes its reading rhythm. Keep it on one line and allow
+      // horizontal scrolling when the phrase is wider than the available area.
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Text.rich(
+          TextSpan(children: spans, style: textStyle),
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+        ),
       ),
     );
   }
