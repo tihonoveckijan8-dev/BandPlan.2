@@ -134,12 +134,12 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
     var richText = tester.widget<RichText>(lyricText('Responsive'));
-    expect(richText.text.style?.fontSize, 28);
+    expect((richText.text.children!.first as TextSpan).style?.fontSize, 28);
 
     tester.view.physicalSize = const Size(1200, 800);
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
     richText = tester.widget<RichText>(lyricText('Responsive'));
-    expect(richText.text.style?.fontSize, 34);
+    expect((richText.text.children!.first as TextSpan).style?.fontSize, 34);
     expect(tester.takeException(), isNull);
   });
 
