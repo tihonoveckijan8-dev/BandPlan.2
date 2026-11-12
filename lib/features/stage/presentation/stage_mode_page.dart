@@ -94,12 +94,8 @@ class _StageModePageState extends State<StageModePage> {
           builder: (context, constraints) {
             final width = constraints.maxWidth;
             final viewPadding = MediaQuery.of(context).viewPadding;
-            // WHY: stage typography and margins should use the available screen,
-            // not force the same cramped layout on a phone and a desktop display.
+            // WHY: stage lyrics and chords use fixed, readable sizes on every display.
             final horizontalPadding = width < 600 ? 18.0 : width < 1000 ? 28.0 : 40.0;
-            final fontSize = width < 600
-                ? (song.lyricsColumns > 1 ? 24.0 : 28.0)
-                : width < 1000 ? 30.0 : 34.0;
             return Stack(
               fit: StackFit.expand,
               children: [
@@ -135,11 +131,18 @@ class _StageModePageState extends State<StageModePage> {
                                   lyrics: song.lyrics,
                                   columns: song.lyricsColumns,
                                   columnBreaks: song.lyricsColumnBreaks,
-                                  textStyle: TextStyle(
+                                  textStyle: const TextStyle(
                                     fontFamily: 'monospace',
-                                    fontSize: fontSize,
+                                    fontSize: 14,
                                     height: 1.45,
                                     color: textColor,
+                                  ),
+                                  chordStyle: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 18,
+                                    height: 1,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
