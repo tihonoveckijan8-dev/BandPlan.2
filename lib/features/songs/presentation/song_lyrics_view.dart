@@ -5,31 +5,57 @@ import '../domain/song_document.dart';
 /// WHY: one renderer keeps chord-to-word positioning identical in song details
 /// and stage mode while leaving the legacy stored lyrics untouched.
 class SongLyricsView extends StatelessWidget {
-  const SongLyricsView({super.key, required this.lyrics, this.textStyle});
+  const SongLyricsView({
+    super.key,
+    required this.lyrics,
+    this.textStyle,
+    this.columns = 1,
+  });
 
   final String lyrics;
   final TextStyle? textStyle;
+  final int columns;
 
   @override
   Widget build(BuildContext context) {
     final document = SongDocument.fromLegacyLyrics(lyrics);
+    final lines = document.lines;
+    final count = columns.clamp(1, 3);
+    // WHY: divide the source lines into balanced reading columns while keeping
+    // each lyric line and its chord anchors intact.
+    final columnWidgets = <Widget>[];
+    for (var column = 0; column < count; column++) {
+      final start = (lines.length * column / count).floor();
+      final end = (lines.length * (column + 1) / count).floor();
+      columnWidgets.add(Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final line in lines.skip(start).take(end - start))
+              if (line.sectionLabel != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 14, bottom: 8),
+                  child: Text(
+                    line.sectionLabel!,
+                    style: textStyle?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                )
+              else
+                _SongLyricsLine(line: line, textStyle: textStyle),
+          ],
+        ),
+      ));
+      if (column != count - 1) columnWidgets.add(const SizedBox(width: 28));
+    }
     return SelectionArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final line in document.lines)
-            if (line.sectionLabel != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 14, bottom: 8),
-                child: Text(
-                  line.sectionLabel!,
-                  style: textStyle?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              )
-            else
-              _SongLyricsLine(line: line, textStyle: textStyle),
-        ],
-      ),
+      child: count == 1
+          ? columnWidgets.first is Expanded
+              ? (columnWidgets.first as Expanded).child
+              : columnWidgets.first
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: columnWidgets,
+            ),
     );
   }
 }
