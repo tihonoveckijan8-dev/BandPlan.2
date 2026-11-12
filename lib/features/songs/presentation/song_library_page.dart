@@ -302,31 +302,52 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final chord = await _promptChord(context);
-                          if (chord == null) return;
-                          final target = lyricsControllers[activeLyricsColumn];
-                          final selection = target.selection;
-                          final start = selection.isValid ? selection.start : target.text.length;
-                          final end = selection.isValid ? selection.end : target.text.length;
-                          final updated = SongDocument.insertChordToken(
-                            source: target.text,
-                            selectionStart: start,
-                            selectionEnd: end,
-                            chord: chord,
-                          );
-                          final cursor = (start < end ? start : end) + chord.length + 2;
-                          target.value = TextEditingValue(
-                            text: updated,
-                            selection: TextSelection.collapsed(offset: cursor),
-                          );
-                          setSheetState(() {});
-                        },
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: const Text('Вставить аккорд'),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          FilledButton.tonalIcon(
+                            onPressed: () async {
+                              final chord = await _promptChord(context);
+                              if (chord == null) return;
+                              final target = lyricsControllers[activeLyricsColumn];
+                              final selection = target.selection;
+                              final start = selection.isValid ? selection.start : target.text.length;
+                              final end = selection.isValid ? selection.end : target.text.length;
+                              final updated = SongDocument.insertChordToken(
+                                source: target.text,
+                                selectionStart: start,
+                                selectionEnd: end,
+                                chord: chord,
+                              );
+                              final cursor = (start < end ? start : end) + chord.length + 2;
+                              target.value = TextEditingValue(
+                                text: updated,
+                                selection: TextSelection.collapsed(offset: cursor),
+                              );
+                              setSheetState(() {});
+                            },
+                            icon: const Icon(Icons.music_note_rounded, size: 18),
+                            label: const Text('Вставить аккорд'),
+                          ),
+                          Chip(
+                            avatar: const Icon(Icons.keyboard_rounded, size: 16),
+                            label: const Text('[Am] — аккорд в тексте'),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          Chip(
+                            avatar: const Icon(Icons.edit_note_rounded, size: 16),
+                            label: Text('Активна колонка ${activeLyricsColumn + 1}'),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -369,31 +390,97 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                     const SizedBox(height: 6),
                     LayoutBuilder(
                       builder: (context, constraints) {
+                        final colors = Theme.of(context).colorScheme;
                         final editors = List.generate(selectedColumns, (index) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text('Колонка ${index + 1}',
-                                style: Theme.of(context).textTheme.labelLarge),
-                              const SizedBox(height: 6),
-                              TextFormField(
-                                controller: lyricsControllers[index],
-                                onTap: () => activeLyricsColumn = index,
-                                onChanged: (_) => setSheetState(() {}),
-                                minLines: 12,
-                                maxLines: null,
-                                keyboardType: TextInputType.multiline,
-                                style: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  height: 1.55,
-                                ),
-                                decoration: const InputDecoration(
-                                  hintText: 'Текст и аккорды…',
-                                  alignLabelWithHint: true,
-                                  border: OutlineInputBorder(),
-                                ),
+                          final isActive = activeLyricsColumn == index;
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: isActive ? colors.primary : colors.outlineVariant,
+                                width: isActive ? 1.8 : 1,
                               ),
-                            ],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.shadow.withValues(alpha: 0.045),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Container(
+                                  color: isActive
+                                      ? colors.primaryContainer.withValues(alpha: 0.48)
+                                      : colors.surfaceContainerLow,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 11,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.notes_rounded,
+                                        size: 17,
+                                        color: isActive ? colors.primary : colors.onSurfaceVariant),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text('КОЛОНКА ${index + 1}',
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                            letterSpacing: 0.8,
+                                            fontWeight: FontWeight.w800,
+                                            color: isActive ? colors.primary : colors.onSurfaceVariant,
+                                          )),
+                                      ),
+                                      if (isActive)
+                                        Icon(Icons.edit_rounded, size: 15, color: colors.primary),
+                                    ],
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(15, 12, 15, 16),
+                                  child: TextFormField(
+                                    controller: lyricsControllers[index],
+                                    onTap: () => setSheetState(() => activeLyricsColumn = index),
+                                    onChanged: (_) => setSheetState(() {}),
+                                    minLines: 12,
+                                    maxLines: null,
+                                    keyboardType: TextInputType.multiline,
+                                    style: TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 14,
+                                      height: 1.7,
+                                      color: colors.onSurface,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Начните писать текст песни…\\n\\n[Am]Аккорды можно вставлять прямо в строку',
+                                      hintStyle: TextStyle(
+                                        color: colors.onSurfaceVariant.withValues(alpha: 0.7),
+                                        height: 1.7,
+                                      ),
+                                      alignLabelWithHint: true,
+                                      filled: true,
+                                      fillColor: colors.surfaceContainerLowest,
+                                      contentPadding: const EdgeInsets.all(14),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.55)),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: colors.primary, width: 1.4),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         });
                         if (selectedColumns > 1 && constraints.maxWidth >= 760) {
@@ -465,12 +552,22 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      constraints: const BoxConstraints(maxHeight: 220),
+                      constraints: const BoxConstraints(maxHeight: 260),
                       width: double.infinity,
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(14),
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.035),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: SingleChildScrollView(
                         child: SongLyricsView(
@@ -481,9 +578,15 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                           columnBreaks: SongDocument.columnBreaksFor(
                             lyricsControllers.map((controller) => controller.text).toList(),
                           ),
-                          textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontFamily: 'monospace',
-                            height: 1.45,
+                            fontSize: 14,
+                            height: 1.65,
+                          ),
+                          chordStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
