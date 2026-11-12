@@ -9,12 +9,13 @@ Finder lyricText(String value) => find.byWidgetPredicate(
 
 double? _firstExplicitFontSize(InlineSpan span) {
   if (span is! TextSpan) return null;
-  if (span.style?.fontSize != null) return span.style!.fontSize;
+  // WHY: Text.rich may merge the ambient 14px DefaultTextStyle into its root
+  // span; inspect the lyric runs first to assert the explicit stage size.
   for (final child in span.children ?? const <InlineSpan>[]) {
     final size = _firstExplicitFontSize(child);
     if (size != null) return size;
   }
-  return null;
+  return span.style?.fontSize;
 }
 
 void main() {
