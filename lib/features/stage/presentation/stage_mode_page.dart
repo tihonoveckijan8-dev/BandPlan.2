@@ -92,6 +92,14 @@ class _StageModePageState extends State<StageModePage> {
         bottom: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final viewPadding = MediaQuery.of(context).viewPadding;
+            // WHY: stage typography and margins should use the available screen,
+            // not force the same cramped layout on a phone and a desktop display.
+            final horizontalPadding = width < 600 ? 18.0 : width < 1000 ? 28.0 : 40.0;
+            final fontSize = width < 600
+                ? (song.lyricsColumns > 1 ? 24.0 : 28.0)
+                : width < 1000 ? 30.0 : 34.0;
             return Stack(
               fit: StackFit.expand,
               children: [
@@ -108,7 +116,12 @@ class _StageModePageState extends State<StageModePage> {
                     child: SizedBox(
                       width: constraints.maxWidth,
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          width < 600 ? 22 : 28,
+                          horizontalPadding,
+                          width < 600 ? 30 : 36,
+                        ),
                         child: song.lyrics.isEmpty
                             ? Center(
                                 child: Text(
@@ -124,8 +137,8 @@ class _StageModePageState extends State<StageModePage> {
                                   columnBreaks: song.lyricsColumnBreaks,
                                   textStyle: TextStyle(
                                     fontFamily: 'monospace',
-                                    fontSize: 30,
-                                    height: 1.55,
+                                    fontSize: fontSize,
+                                    height: 1.45,
                                     color: textColor,
                                   ),
                                 ),
@@ -149,7 +162,8 @@ class _StageModePageState extends State<StageModePage> {
                 if (hasQueue) ...[
                   Positioned(
                     left: 12,
-                    bottom: 14,
+                    bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0),
+                    left: (viewPadding.left + 12).clamp(12.0, 40.0),
                     child: _StageNavigationButton(
                       tooltip: 'Предыдущая песня',
                       icon: Icons.skip_previous_rounded,
@@ -158,8 +172,8 @@ class _StageModePageState extends State<StageModePage> {
                     ),
                   ),
                   Positioned(
-                    right: 12,
-                    bottom: 14,
+                    right: (viewPadding.right + 12).clamp(12.0, 40.0),
+                    bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0),
                     child: _StageNavigationButton(
                       tooltip: 'Следующая песня',
                       icon: Icons.skip_next_rounded,
