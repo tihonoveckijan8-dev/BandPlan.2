@@ -140,16 +140,20 @@ class _SongLyricsLine extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      // WHY: a lyric row is a musical phrase; wrapping it into several visual
-      // rows changes its reading rhythm. Keep it on one line and allow
-      // horizontal scrolling when the phrase is wider than the available area.
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Text.rich(
-          TextSpan(children: spans, style: textStyle),
-          softWrap: false,
-          maxLines: 1,
-          overflow: TextOverflow.visible,
+      // WHY: stage mode must show the complete musical phrase at once.
+      // Scale only oversized rows down to the available width instead of
+      // forcing performers to pan horizontally or splitting the phrase.
+      child: SizedBox(
+        width: double.infinity,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text.rich(
+            TextSpan(children: spans, style: textStyle),
+            softWrap: false,
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+          ),
         ),
       ),
     );
