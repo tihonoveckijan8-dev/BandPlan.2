@@ -3,6 +3,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:bandplan/features/songs/presentation/song_lyrics_view.dart';
 
 void main() {
+  testWidgets('renders song section labels as distinct visual headings', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(16),
+            child: SongLyricsView(
+              lyrics: '[Куплет 1]\\nПервая строка\\n[Припев]\\nГлавная строка',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Куплет 1'), findsOneWidget);
+    expect(find.text('Припев'), findsOneWidget);
+    expect(find.byIcon(Icons.bookmark_rounded), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('keeps a complete lyric row visible without horizontal scrolling', (tester) async {
     const lyrics =
         'ОченьдлиннаястрокаБезПробеловКотораяДолжнаОстатьсяЦелой  и   сохранять пробелы';
