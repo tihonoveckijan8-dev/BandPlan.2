@@ -77,7 +77,8 @@ class ProfileRepository {
         roles: personalRoles,
         updatedAt: row?['updated_at']?.toString(),
       );
-      await _cacheProfile(profile);
+      // WHY: never cache a synthetic profile as a confirmed server baseline.
+      if (row != null) await _cacheProfile(profile);
       return profile;
     } catch (error) {
       if (!isOfflineNetworkError(error)) rethrow;
@@ -104,6 +105,44 @@ class ProfileRepository {
   Future<SyncReport> saveMyProfile({required String displayName, required List<String> roles}) async {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Требуется авторизация.');
+    final store = _offlineStore;
+    final syncEngine = _syncEngine;
+    if (store == null || syncEngine == null) {
+      throw StateError('Хранилище профиля не инициализировано.');
+    }
+
+    // WHY: profile names and roles are read by other group members from
+    // bandplan_accounts, so cache the confirmed server version before queueing
+    // an offline-safe compare-and-swap update to that shared directory row.
+    final cachedProfiles = await store.readCachedRecords(
+      ownerUserId: user.id,
+      collection: 'profile',
+    );
+    final cachedPayload = cachedProfiles.isEmpty ? null : cachedProfiles.first['payload'];
+    final cachedUpdatedAt = cachedPayload is Map
+        ? cachedPayload['updated_at']?.toString()
+        : null;
+    if (cachedUpdatedAt == null || cachedUpdatedAt.isEmpty) {
+      try {
+        final remote = await _client
+            .from('bandplan_accounts')
+            .select('user_id,display_name,roles,updated_at')
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (remote != null) {
+          await store.cacheRemoteRecord(
+            ownerUserId: user.id,
+            collection: 'profile',
+            recordId: 'profile',
+            payload: Map<String, Object?>.from(remote),
+          );
+        }
+      } catch (error) {
+        if (!isOfflineNetworkError(error)) rethrow;
+        // WHY: preserve the local edit while offline; sync will report a
+        // conflict rather than overwrite a server row without a known baseline.
+      }
+    }
 
     final stateRepository = _stateRepository();
     final state = await stateRepository.readState();
@@ -122,13 +161,33 @@ class ProfileRepository {
     }
     state['profile'] = personal;
 
-    final report = await stateRepository.saveState(state);
-    await _cacheProfile(AccountProfile(
-      userId: user.id,
-      displayName: displayName.trim(),
-      roles: roles,
-    ));
-    return report;
+    final stateReport = await stateRepository.saveState(state);
+    final updatedAt = DateTime.now().toUtc().toIso8601String();
+    await store.saveAndQueue(
+      operationId: '${user.id}:profile:profile:${DateTime.now().microsecondsSinceEpoch}',
+      ownerUserId: user.id,
+      collection: 'profile',
+      recordId: 'profile',
+      payload: <String, Object?>{
+        'user_id': user.id,
+        'display_name': displayName.trim(),
+        'roles': roles,
+        'updated_at': updatedAt,
+      },
+    );
+    // WHY: persist both the private profile preferences and the shared
+    // directory profile; the latter is what group member lists display.
+    final profileReport = await syncEngine.syncPending(
+      force: true,
+      retryFailed: true,
+    );
+    return SyncReport(
+      syncedCount: stateReport.syncedCount + profileReport.syncedCount,
+      pendingCount: profileReport.pendingCount,
+      failedCount: profileReport.failedCount,
+      conflictCount: profileReport.conflictCount,
+      lastError: profileReport.lastError ?? stateReport.lastError,
+    );
   }
 
   UserStateRepository _stateRepository() {
