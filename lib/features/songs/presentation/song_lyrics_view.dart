@@ -84,7 +84,7 @@ class _SongLyricsLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final words = RegExp(r'\\S+').allMatches(line.lyricText).toList();
+    final words = RegExp(r'\S+').allMatches(line.lyricText).toList();
     final anchors = line.anchors.map((anchor) {
       final word = anchor.wordIndex < words.length
           ? words[anchor.wordIndex]
