@@ -4,59 +4,47 @@ import 'package:bandplan/features/songs/domain/song.dart';
 import 'package:bandplan/features/stage/presentation/stage_mode_page.dart';
 
 void main() {
-  Song makeSong(String id, String title, String key, String lyrics) => Song.fromJson({
+  Song makeSong(String id, String title, String lyrics, {int columns = 1}) =>
+      Song.fromJson({
         'id': id,
         'title': title,
         'artist': 'Band',
-        'key': key,
+        'key': 'Am',
         'bpm': 96,
         'lyrics': lyrics,
+        'lyricsColumns': columns,
       });
 
-  testWidgets('shows song details and hides chord tokens while keeping section labels', (tester) async {
-    final song = makeSong('song-1', 'Stage song', 'Am', '[Am]First line\n[Куплет]\nSecond line');
+  testWidgets('stage mode is immersive text-only with pinch zoom', (tester) async {
+    final song = makeSong('song-1', 'Stage song', '[Am]First line\n[Куплет]\nSecond line');
     await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
 
-    expect(find.text('Stage song'), findsOneWidget);
-    expect(find.text('Am'), findsWidgets);
-    expect(find.text('96 BPM'), findsOneWidget);
     expect(find.text('First'), findsOneWidget);
     expect(find.text('line'), findsWidgets);
     expect(find.text('Куплет'), findsOneWidget);
-    expect(find.text('[Am]First line\n[Куплет]\nSecond line'), findsNothing);
-
-    await tester.tap(find.byTooltip('Скрыть аккорды'));
-    await tester.pump();
-    expect(find.text('First'), findsOneWidget);
-    expect(find.text('line'), findsWidgets);
-    expect(find.text('Куплет'), findsOneWidget);
+    expect(find.text('Stage song'), findsNothing);
+    expect(find.text('96 BPM'), findsNothing);
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(find.byTooltip('Автопрокрутка'), findsNothing);
+    expect(find.byTooltip('Увеличить текст'), findsNothing);
+    expect(find.byTooltip('Скрыть аккорды'), findsNothing);
   });
 
-  testWidgets('font and auto-scroll controls respond to user input', (tester) async {
-    tester.view.physicalSize = const Size(900, 1400);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets('renders song in configured columns', (tester) async {
+    final song = makeSong('columns', 'Columns', 'Line one\nLine two\nLine three\nLine four',
+        columns: 2);
+    await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
 
-    await tester.pumpWidget(MaterialApp(home: StageModePage(song: makeSong('song-1', 'Stage song', 'Am', 'Line'))));
-    expect(find.text('30 px'), findsOneWidget);
-    expect(find.text('24'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Увеличить текст'));
-    await tester.pump();
-    expect(find.text('32 px'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Автопрокрутка'));
-    await tester.pump();
-    expect(find.byTooltip('Пауза'), findsOneWidget);
-    await tester.tap(find.byTooltip('Пауза'));
-    await tester.pump();
-    expect(find.byTooltip('Автопрокрутка'), findsOneWidget);
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(find.text('Line'), findsNWidgets(4));
+    expect(find.text('one'), findsOneWidget);
+    expect(find.text('four'), findsOneWidget);
   });
 
-  testWidgets('navigates through setlist tracks with each track transpose and note', (tester) async {
-    final first = makeSong('one', 'First track', 'Am', '[Am]first lyrics');
-    final second = makeSong('two', 'Second track', 'C', '[C]second lyrics');
+  testWidgets('navigates through setlist tracks using only previous and next', (tester) async {
+    final first = makeSong('one', 'First track', '[Am]first lyrics');
+    final second = makeSong('two', 'Second track', '[C]second lyrics');
     await tester.pumpWidget(MaterialApp(
       home: StageModePage(
         song: first,
@@ -67,73 +55,40 @@ void main() {
       ),
     ));
 
-    expect(find.text('A#m'), findsWidgets);
-    expect(find.text('First note'), findsOneWidget);
-    expect(find.text('first'), findsOneWidget);
-    expect(find.text('[A#m]first lyrics'), findsNothing);
+    expect(find.byTooltip('Предыдущая песня'), findsOneWidget);
+    expect(find.byTooltip('Следующая песня'), findsOneWidget);
+    expect(find.text('First note'), findsNothing);
 
     await tester.tap(find.byTooltip('Следующая песня'));
     await tester.pumpAndSettle();
-
-    expect(find.text('Second track'), findsOneWidget);
-    expect(find.text('A#'), findsWidgets);
-    expect(find.text('Second note'), findsOneWidget);
     expect(find.text('second'), findsOneWidget);
-    expect(find.text('[A#]second lyrics'), findsNothing);
-    expect(find.text('2/2'), findsOneWidget);
+    expect(find.text('Second track'), findsNothing);
 
     await tester.tap(find.byTooltip('Предыдущая песня'));
     await tester.pumpAndSettle();
-    expect(find.text('First track'), findsOneWidget);
-    expect(find.text('First note'), findsOneWidget);
-  });
-  testWidgets('changes the live key without modifying the source song', (tester) async {
-    final song = makeSong('key-song', 'Key song', 'Am', '[Am]lyrics');
-    await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
-
-    expect(find.text('Am'), findsWidgets);
-    await tester.tap(find.byTooltip('Повысить тональность на полтона'));
-    await tester.pump();
-    expect(find.text('A#m'), findsWidgets);
-    expect(find.text('lyrics'), findsOneWidget);
-    expect(find.text('[A#m]lyrics'), findsNothing);
-
-    await tester.tap(find.byTooltip('Понизить тональность на полтона'));
-    await tester.pump();
-    expect(find.text('Am'), findsWidgets);
-    expect(song.key, 'Am');
-    expect(song.lyrics, '[Am]lyrics');
+    expect(find.text('first'), findsOneWidget);
   });
 
-  testWidgets('keeps setlist navigation usable on a phone-sized screen', (tester) async {
+  testWidgets('stage mode works on a phone-sized screen', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final first = makeSong('one', 'First track', 'Am', 'First lyrics');
-    final second = makeSong('two', 'Second track', 'C', 'Second lyrics');
+    final first = makeSong('one', 'First track', 'First lyrics');
+    final second = makeSong('two', 'Second track', 'Second lyrics');
     await tester.pumpWidget(MaterialApp(
       home: StageModePage(
         song: first,
-        queue: [
-          StageModeTrack(song: first),
-          StageModeTrack(song: second),
-        ],
+        queue: [StageModeTrack(song: first), StageModeTrack(song: second)],
       ),
     ));
 
-    expect(find.text('Песня 1 из 2'), findsOneWidget);
-    expect(find.byTooltip('Предыдущая песня'), findsOneWidget);
-    expect(find.byTooltip('Следующая песня'), findsOneWidget);
+    expect(find.text('First'), findsOneWidget);
     expect(tester.takeException(), isNull);
-
     await tester.tap(find.byTooltip('Следующая песня'));
     await tester.pumpAndSettle();
-
-    expect(find.text('Second track'), findsOneWidget);
-    expect(find.text('Песня 2 из 2'), findsOneWidget);
+    expect(find.text('Second'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
-
 }
