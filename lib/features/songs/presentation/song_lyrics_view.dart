@@ -84,7 +84,7 @@ class _SongLyricsLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final words = RegExp(r'\\S+').allMatches(line.lyricText).toList();
+    final words = RegExp(r'\S+').allMatches(line.lyricText).toList();
     if (words.isEmpty) {
       return SizedBox(height: (textStyle?.fontSize ?? 16) * 1.5);
     }
