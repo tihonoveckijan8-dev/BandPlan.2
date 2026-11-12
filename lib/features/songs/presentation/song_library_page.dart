@@ -497,7 +497,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                                 );
                                 final sync = await repository.saveGroupSong(group.id, edited);
                                 syncPending = sync.hasPending;
-                                syncFailed = sync.hasPermanentFailure;
+                                syncFailed = sync.hasPermanentFailure || sync.conflictCount > 0;
                                 ref.invalidate(groupSongsProvider);
                                 if (sheetContext.mounted) {
                                   Navigator.of(sheetContext).pop(true);
@@ -530,10 +530,10 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
       if (saved == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(syncFailed
-              ? 'Песня сохранена на устройстве, но сервер отклонил синхронизацию.'
+              ? 'Песня сохранена на устройстве, но сервер не принял изменение: ${sync.lastError ?? 'проверьте конфликт синхронизации'}'
               : syncPending
                   ? 'Песня сохранена на устройстве. Ожидает синхронизации.'
-                  : 'Песня сохранена в репертуаре группы')),
+                  : 'Песня сохранена на сервере и доступна участникам группы')),
         );
       }
     } finally {
