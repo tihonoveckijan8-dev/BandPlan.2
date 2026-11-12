@@ -88,7 +88,7 @@ class SongDocument {
   /// Finds standalone section headings, excluding chord-only lines.
   /// WHY: section actions must never mistake a chord token for a song section.
   static List<int> sectionLineIndices(String source) {
-    final lines = source.split('\\n');
+    final lines = source.split('\n');
     final result = <int>[];
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
@@ -101,38 +101,38 @@ class SongDocument {
   }
 
   static String renameSection(String source, int sectionIndex, String label) {
-    final lines = source.split('\\n');
+    final lines = source.split('\n');
     final starts = sectionLineIndices(source);
     if (sectionIndex < 0 || sectionIndex >= starts.length) return source;
     final clean = label.trim();
-    if (clean.isEmpty || clean.contains(']') || clean.contains('\\n')) return source;
+    if (clean.isEmpty || clean.contains(']') || clean.contains('\n')) return source;
     lines[starts[sectionIndex]] = '[$clean]';
-    return lines.join('\\n');
+    return lines.join('\n');
   }
 
   static String removeSection(String source, int sectionIndex) {
-    final lines = source.split('\\n');
+    final lines = source.split('\n');
     final starts = sectionLineIndices(source);
     if (sectionIndex < 0 || sectionIndex >= starts.length) return source;
     final start = starts[sectionIndex];
     final end = sectionIndex + 1 < starts.length ? starts[sectionIndex + 1] : lines.length;
     lines.removeRange(start, end);
-    return lines.join('\\n');
+    return lines.join('\n');
   }
 
   static String duplicateSection(String source, int sectionIndex) {
-    final lines = source.split('\\n');
+    final lines = source.split('\n');
     final starts = sectionLineIndices(source);
     if (sectionIndex < 0 || sectionIndex >= starts.length) return source;
     final start = starts[sectionIndex];
     final end = sectionIndex + 1 < starts.length ? starts[sectionIndex + 1] : lines.length;
     lines.insertAll(end, lines.sublist(start, end));
-    return lines.join('\\n');
+    return lines.join('\n');
   }
 
   static String moveSection(String source, int sectionIndex, int delta) {
     if (delta != -1 && delta != 1) return source;
-    final lines = source.split('\\n');
+    final lines = source.split('\n');
     final starts = sectionLineIndices(source);
     final target = sectionIndex + delta;
     if (sectionIndex < 0 || sectionIndex >= starts.length || target < 0 || target >= starts.length) return source;
@@ -151,9 +151,8 @@ class SongDocument {
       final following = lines.sublist(adjacent[0], adjacent[1]);
       lines.replaceRange(current[0], adjacent[1], [...following, ...selected]);
     }
-    return lines.join('\\n');
+    return lines.join('\n');
   }
-
 
   /// Inserts a legacy chord token at the selected lyric position.
   /// WHY: this keeps chord placement tied to the cursor/syllable, not to manually
