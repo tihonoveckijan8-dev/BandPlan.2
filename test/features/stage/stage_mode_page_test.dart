@@ -100,6 +100,30 @@ void main() {
     expect(find.byType(StageModePage), findsNothing);
   });
 
+  testWidgets('keeps a long lyric phrase fully visible without horizontal panning', (tester) async {
+    const longLine =
+        'ОченьдлиннаястрокаКотораяДолжнаПолностьюПомещатьсяНаЭкранеБезПрокрутки';
+    final song = makeSong('long-line', 'Long line', longLine);
+
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(MaterialApp(home: StageModePage(song: song)));
+
+    expect(find.byType(FittedBox), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsNothing);
+    final fitted = tester.widget<FittedBox>(find.byType(FittedBox));
+    expect(fitted.fit, BoxFit.scaleDown);
+
+    final rendered = tester.widget<RichText>(lyricText(longLine));
+    expect(rendered.softWrap, isFalse);
+    expect(rendered.maxLines, 1);
+    expect(rendered.text.toPlainText(), longLine);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('stage mode works on a phone-sized screen', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
