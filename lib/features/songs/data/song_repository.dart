@@ -113,13 +113,20 @@ class SongRepository {
       }, onConflict: 'group_id,id').select('id').single();
       return const SyncReport();
     }
+    final operationId =
+        '${user.id}:group_songs:${song.id}:${DateTime.now().microsecondsSinceEpoch}';
     await store.saveAndQueue(
-      operationId: '${user.id}:group_songs:${song.id}:${DateTime.now().microsecondsSinceEpoch}',
+      operationId: operationId,
       ownerUserId: user.id, groupId: groupId, collection: 'group_songs',
       recordId: song.id, payload: Map<String, Object?>.from(song.toLegacyJson()),
     );
-    // WHY: the latest song edit retries earlier failed outbox writes.
-    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
+    // WHY: an older unrelated queue error must not mark this song as rejected.
+    return _syncEngine?.syncMutation(
+          operationId: operationId,
+          force: true,
+          retryFailed: true,
+        ) ??
+        const SyncReport(pendingCount: 1);
   }
 
   Future<List<Song>> getPersonalSongs() async {
