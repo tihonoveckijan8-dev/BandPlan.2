@@ -83,7 +83,8 @@ class UserStateRepository {
       recordId: 'state',
       payload: payload,
     );
-    return _syncEngine.syncPending(force: true);
+    // WHY: a corrected later profile/settings edit can unblock an older failed write.
+    return _syncEngine.syncPending(force: true, retryFailed: true);
   }
 
   Map<String, Object?> _stateFromPayload(Object? raw) {

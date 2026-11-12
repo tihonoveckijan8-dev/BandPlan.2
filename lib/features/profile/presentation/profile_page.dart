@@ -445,6 +445,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                     ]),
                                     const SizedBox(height: 6),
                                     Text('В очереди: ${status.pendingCount} · Ошибок: ${status.failedCount} · Конфликтов: ${status.conflictCount}'),
+                                    if (status.lastError != null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        status.lastError!,
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.error,
+                                        ),
+                                      ),
+                                    ],
                                     offlineConflicts.when(
                                       loading: () => const SizedBox.shrink(),
                                       error: (error, stack) => const SizedBox.shrink(),

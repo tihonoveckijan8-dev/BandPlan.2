@@ -38,6 +38,10 @@ final offlineQueueStatusProvider = FutureProvider<SyncReport>((ref) async {
     pendingCount: mutations.length,
     failedCount: mutations.where((item) => item['status'] == 'failed').length,
     conflictCount: mutations.where((item) => item['status'] == 'conflict').length,
+    // WHY: expose the actual server rejection instead of an unexplained sync error.
+    lastError: mutations.reversed
+        .map((item) => item['lastError']?.toString())
+        .firstWhere((value) => value?.isNotEmpty == true, orElse: () => null),
   );
 });
 

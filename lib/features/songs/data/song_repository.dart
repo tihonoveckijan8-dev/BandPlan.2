@@ -118,7 +118,8 @@ class SongRepository {
       ownerUserId: user.id, groupId: groupId, collection: 'group_songs',
       recordId: song.id, payload: Map<String, Object?>.from(song.toLegacyJson()),
     );
-    return _syncEngine?.syncPending(force: true) ?? const SyncReport(pendingCount: 1);
+    // WHY: the latest song edit retries earlier failed outbox writes.
+    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
   }
 
   Future<List<Song>> getPersonalSongs() async {
