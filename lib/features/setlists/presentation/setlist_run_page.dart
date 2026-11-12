@@ -170,6 +170,7 @@ class _SetlistRunPageState extends State<SetlistRunPage> {
                             // WHY: setlist execution must render chord anchors like Stage mode,
                             // not expose the stored [Chord] tokens as plain lyric text.
                             lyrics: song.lyrics,
+                            columns: song.lyricsColumns,
                             textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                   fontFamily: 'monospace',
                                   height: 1.7,
