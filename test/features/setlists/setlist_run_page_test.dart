@@ -66,8 +66,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Second song'), findsOneWidget);
-    expect(lyricText('Second'), findsOneWidget);
-    expect(lyricText('lyrics'), findsOneWidget);
+    expect(lyricText('Second lyrics'), findsOneWidget);
     expect(find.text('2 / 2'), findsOneWidget);
 
     await tester.tap(find.text('Завершить'));
