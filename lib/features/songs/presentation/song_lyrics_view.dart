@@ -84,74 +84,56 @@ class _SongLyricsLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final words = RegExp(r'\S+').allMatches(line.lyricText).toList();
-    if (words.isEmpty) {
-      return SizedBox(height: (textStyle?.fontSize ?? 16) * 1.5);
-    }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.end,
-        children: [
-          for (var index = 0; index < words.length; index++)
-            _SongLyricsWord(
-              word: words[index].group(0)!,
-              anchors: line.anchors
-                  .where((anchor) => anchor.wordIndex == index)
-                  .toList(growable: false),
-              textStyle: textStyle,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SongLyricsWord extends StatelessWidget {
-  const _SongLyricsWord({
-    required this.word,
-    required this.anchors,
-    this.textStyle,
-  });
-
-  final String word;
-  final List<SongChordAnchor> anchors;
-  final TextStyle? textStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    if (anchors.isEmpty) return Text(word, style: textStyle);
-    final ordered = [...anchors]
+    final anchors = [...line.anchors]
       ..sort((a, b) => a.characterOffset.compareTo(b.characterOffset));
-    final pieces = <Widget>[];
+    final spans = <InlineSpan>[];
     var offset = 0;
-    for (final anchor in ordered) {
-      final position = anchor.characterOffset.clamp(offset, word.length).toInt();
+
+    for (final anchor in anchors) {
+      final position = anchor.characterOffset
+          .clamp(offset, line.lyricText.length)
+          .toInt();
       if (position > offset) {
-        pieces.add(_SongLyricsPiece(
-          text: word.substring(offset, position),
+        spans.add(TextSpan(
+          text: line.lyricText.substring(offset, position),
           style: textStyle,
         ));
       }
-      pieces.add(_SongLyricsPiece(
-        text: word.substring(position, position),
-        chord: anchor.chord,
-        style: textStyle,
+      // WHY: WidgetSpan keeps chord labels attached to their exact lyric
+      // character while Text handles natural wrapping and preserves spaces.
+      spans.add(WidgetSpan(
+        alignment: PlaceholderAlignment.aboveBaseline,
+        baseline: TextBaseline.alphabetic,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 1),
+          child: Text(
+            anchor.chord,
+            style: textStyle?.copyWith(
+              fontSize: (textStyle?.fontSize ?? 16) * 0.72,
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ));
       offset = position;
     }
-    if (offset < word.length) {
-      pieces.add(_SongLyricsPiece(
-        text: word.substring(offset),
+
+    if (offset < line.lyricText.length) {
+      spans.add(TextSpan(
+        text: line.lyricText.substring(offset),
         style: textStyle,
       ));
     }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: pieces,
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text.rich(
+        TextSpan(children: spans, style: textStyle),
+        softWrap: true,
+        maxLines: null,
+        overflow: TextOverflow.visible,
+      ),
     );
   }
 }
