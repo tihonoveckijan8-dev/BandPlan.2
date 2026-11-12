@@ -69,6 +69,33 @@ void main() {
     expect(find.text('first'), findsOneWidget);
   });
 
+  testWidgets('shows an explicit exit control and returns to the previous page', (tester) async {
+    final song = makeSong('exit', 'Exit test', 'All lyrics');
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => StageModePage(song: song)),
+              ),
+              child: const Text('Open stage'),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('Open stage'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Выйти из режима сцены'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Выйти из режима сцены'));
+    await tester.pumpAndSettle();
+    expect(find.text('Open stage'), findsOneWidget);
+    expect(find.byType(StageModePage), findsNothing);
+  });
+
   testWidgets('stage mode works on a phone-sized screen', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
