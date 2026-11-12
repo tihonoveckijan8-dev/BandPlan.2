@@ -136,8 +136,9 @@ class SupabaseOfflineMutationHandler {
           remoteVersionExists: false,
         );
       }
+      // WHY: user_id is immutable after insert; column-level UPDATE grants
+      // intentionally allow only the shared profile fields below.
       final values = {
-        'user_id': ownerUserId,
         'display_name': payload['display_name'],
         'roles': payload['roles'],
         if (payload['updated_at'] != null) 'updated_at': payload['updated_at'],
@@ -153,7 +154,7 @@ class SupabaseOfflineMutationHandler {
         // WHY: an absent baseline can only create. INSERT, rather than UPSERT,
         // prevents a second device's newly-created profile from being replaced.
         try {
-          await table.insert(values).select('user_id').single();
+          await table.insert({'user_id': ownerUserId, ...values}).select('user_id').single();
         } on PostgrestException catch (error) {
           if (error.code != '23505') rethrow;
           final latest = await table

@@ -14,7 +14,7 @@
 | Table | Fields observed | Purpose / scope | Verification |
 |---|---|---|---|
 | bandplan_user_state | user_id, state, updated_at | Per-account JSON state; includes profile, settings, onboardingDone, activeGroupId, personalSongs, personalSetlists | Live schema, owner-only RLS, and authenticated SELECT/INSERT/UPDATE grants verified |
-| bandplan_accounts | user_id, display_name, roles, personal_settings, updated_at | Shared account identity and musician roles | Live schema and RLS verified; authenticated has SELECT only (no direct INSERT/UPDATE table grants) |
+| bandplan_accounts | user_id, display_name, roles, personal_settings, updated_at | Shared account identity and musician roles | Authenticated SELECT plus column-scoped INSERT/UPDATE for own profile fields; own-row RLS policies remain authoritative |
 | bandplan_groups | id, name, owner_id, created_at; generated normalized_name in initial migration | Group/workspace identity | DDL confirmed in 20261001000000_shared_groups.sql |
 | bandplan_group_members | group_id, user_id, joined_at | Many-to-many memberships | DDL confirmed in 20261001000000_shared_groups.sql |
 | bandplan_group_state | group_id, state, updated_at | Shared JSON group state; includes roster snapshot and legacy arrays | DDL confirmed in 20261001000000_shared_groups.sql |
