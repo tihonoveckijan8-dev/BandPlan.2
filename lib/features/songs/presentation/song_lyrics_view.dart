@@ -9,12 +9,14 @@ class SongLyricsView extends StatelessWidget {
     super.key,
     required this.lyrics,
     this.textStyle,
+    this.chordStyle,
     this.columns = 1,
     this.columnBreaks = const [],
   });
 
   final String lyrics;
   final TextStyle? textStyle;
+  final TextStyle? chordStyle;
   final int columns;
   final List<int> columnBreaks;
 
@@ -26,7 +28,7 @@ class SongLyricsView extends StatelessWidget {
       columnBreaks: columnBreaks,
     );
     final content = columnSources.length == 1
-        ? _SongLyricsColumn(source: columnSources.single, textStyle: textStyle)
+        ? _SongLyricsColumn(source: columnSources.single, textStyle: textStyle, chordStyle: chordStyle)
         : Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -39,6 +41,7 @@ class SongLyricsView extends StatelessWidget {
                     child: _SongLyricsColumn(
                       source: columnSources[index],
                       textStyle: textStyle,
+                      chordStyle: chordStyle,
                     ),
                   ),
                 ),
@@ -49,10 +52,11 @@ class SongLyricsView extends StatelessWidget {
 }
 
 class _SongLyricsColumn extends StatelessWidget {
-  const _SongLyricsColumn({required this.source, this.textStyle});
+  const _SongLyricsColumn({required this.source, this.textStyle, this.chordStyle});
 
   final String source;
   final TextStyle? textStyle;
+  final TextStyle? chordStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -70,17 +74,18 @@ class _SongLyricsColumn extends StatelessWidget {
               ),
             )
           else
-            _SongLyricsLine(line: line, textStyle: textStyle),
+            _SongLyricsLine(line: line, textStyle: textStyle, chordStyle: chordStyle),
       ],
     );
   }
 }
 
 class _SongLyricsLine extends StatelessWidget {
-  const _SongLyricsLine({required this.line, this.textStyle});
+  const _SongLyricsLine({required this.line, this.textStyle, this.chordStyle});
 
   final SongDocumentLine line;
   final TextStyle? textStyle;
+  final TextStyle? chordStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +125,7 @@ class _SongLyricsLine extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 1),
           child: Text(
             anchor.chord,
-            style: textStyle?.copyWith(
+            style: chordStyle ?? textStyle?.copyWith(
               fontSize: (textStyle?.fontSize ?? 16) * 0.72,
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w700,
