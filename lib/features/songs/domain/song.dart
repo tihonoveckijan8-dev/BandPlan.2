@@ -71,9 +71,9 @@ class Song {
   Song transposedBy(int semitones) {
     if (semitones == 0) return this;
     final transposedLyrics = lyrics
-        .split('\\n')
+        .split('\n')
         .map((line) => _transposeLyricsLine(line, semitones))
-        .join('\\n');
+        .join('\n');
     final transposedKey = _transposeChord(key, semitones) ?? key;
     return Song._({...raw, 'key': transposedKey, 'lyrics': transposedLyrics});
   }
@@ -81,27 +81,27 @@ class Song {
   static String _transposeLyricsLine(String line, int semitones) {
     // Legacy section labels such as [Куплет] are deliberately left untouched.
     final withInlineChords = line.replaceAllMapped(
-      RegExp(r'\\[([^\\r\\n\\]]+)\\]'),
+      RegExp(r'\[([^\r\n\]]+)\]'),
       (match) {
         final chord = _transposeChord(match.group(1)!, semitones);
         return chord == null ? match.group(0)! : '[$chord]';
       },
     );
-    final tokens = RegExp(r'\\S+').allMatches(withInlineChords).toList();
+    final tokens = RegExp(r'\S+').allMatches(withInlineChords).toList();
     if (tokens.isEmpty ||
         tokens.any((match) => _transposeChord(match.group(0)!, semitones) == null)) {
       return withInlineChords;
     }
     // Chord-only rows (for example "Am       G") are common in legacy songs.
     return withInlineChords.replaceAllMapped(
-      RegExp(r'\\S+'),
+      RegExp(r'\S+'),
       (match) => _transposeChord(match.group(0)!, semitones)!,
     );
   }
 
   static String? _transposeChord(String value, int semitones) {
     final match = RegExp(
-      r'^([A-G](?:#|b)?)(?:(?:maj|min|m|M|dim|aug|sus[24]?|add\\d+|no\\d+|omit\\d+|\\d+|[b#]\\d+|ø|°|\\+|-)*)(?:/([A-G](?:#|b)?))?$',
+      r'^([A-G](?:#|b)?)(?:(?:maj|min|m|M|dim|aug|sus[24]?|add\d+|no\d+|omit\d+|\d+|[b#]\d+|ø|°|\+|-)*)(?:/([A-G](?:#|b)?))?$',
     ).firstMatch(value);
     if (match == null) return null;
     final root = _transposeNote(match.group(1)!, semitones);
