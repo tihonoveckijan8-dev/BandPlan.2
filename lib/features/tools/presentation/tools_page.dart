@@ -19,12 +19,9 @@ class ToolsPage extends StatelessWidget {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final horizontalPadding = constraints.maxWidth >= 720 ? 28.0 : 18.0;
-          final columns = constraints.maxWidth >= 900
-              ? 4
-              : constraints.maxWidth >= 340
-                  ? 2
-                  : 1;
+          final isDesktop = constraints.maxWidth >= 1100;
+          final horizontalPadding = isDesktop ? 32.0 : (constraints.maxWidth >= 720 ? 28.0 : 18.0);
+          final columns = isDesktop ? 4 : constraints.maxWidth >= 900 ? 3 : constraints.maxWidth >= 340 ? 2 : 1;
 
           return ListView(
             padding: EdgeInsets.fromLTRB(
@@ -34,7 +31,7 @@ class ToolsPage extends StatelessWidget {
               32,
             ),
             children: [
-              _WorkshopHeader(),
+              _WorkshopHeader(compact: isDesktop),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -78,13 +75,14 @@ class ToolsPage extends StatelessWidget {
                 mainAxisSpacing: 12,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: columns == 1 ? 1.8 : 0.92,
+                childAspectRatio: columns == 1 ? 1.8 : (isDesktop ? 1.48 : 0.92),
                 children: [
                   _ToolTile(
                     icon: Icons.graphic_eq_rounded,
                     title: 'Гитарный тюнер',
                     subtitle: 'Настройка по микрофону',
                     accent: colors.primary,
+                    compact: isDesktop,
                     onTap: () => _open(context, const GuitarTunerPage()),
                   ),
                   _ToolTile(
@@ -92,6 +90,7 @@ class ToolsPage extends StatelessWidget {
                     title: 'Скрипичный тюнер',
                     subtitle: 'G3 · D4 · A4 · E5',
                     accent: const Color(0xFF249B68),
+                    compact: isDesktop,
                     onTap: () => _open(context, const ViolinTunerPage()),
                   ),
                   _ToolTile(
@@ -99,6 +98,7 @@ class ToolsPage extends StatelessWidget {
                     title: 'Метроном',
                     subtitle: 'Темп, размер и акценты',
                     accent: const Color(0xFFE39A32),
+                    compact: isDesktop,
                     onTap: () => _open(context, const MetronomePage()),
                   ),
                   _ToolTile(
@@ -106,6 +106,7 @@ class ToolsPage extends StatelessWidget {
                     title: 'Библиотека аккордов',
                     subtitle: 'Аппликатуры и ноты',
                     accent: const Color(0xFF8A68D8),
+                    compact: isDesktop,
                     onTap: () => _open(context, const ChordLibraryPage()),
                   ),
                 ],
@@ -129,7 +130,9 @@ class ToolsPage extends StatelessWidget {
 }
 
 class _WorkshopHeader extends StatelessWidget {
-  const _WorkshopHeader();
+  const _WorkshopHeader({this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +142,7 @@ class _WorkshopHeader extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 18, 20),
+      padding: EdgeInsets.fromLTRB(compact ? 26 : 22, compact ? 17 : 22, 18, compact ? 16 : 20),
       decoration: BoxDecoration(
         color: colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(28),
@@ -192,7 +195,7 @@ class _WorkshopHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 13),
+              SizedBox(height: compact ? 8 : 13),
               Text(
                 'Звучать точнее.\nИграть увереннее.',
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -201,7 +204,7 @@ class _WorkshopHeader extends StatelessWidget {
                   letterSpacing: -0.7,
                 ),
               ),
-              const SizedBox(height: 9),
+              SizedBox(height: compact ? 5 : 9),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 290),
                 child: Text(
@@ -212,7 +215,7 @@ class _WorkshopHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 17),
+              SizedBox(height: compact ? 10 : 17),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -262,6 +265,7 @@ class _SoundChip extends StatelessWidget {
 
 class _ToolTile extends StatelessWidget {
   const _ToolTile({
+    this.compact = false,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -269,6 +273,7 @@ class _ToolTile extends StatelessWidget {
     required this.onTap,
   });
 
+  final bool compact;
   final IconData icon;
   final String title;
   final String subtitle;
@@ -288,7 +293,7 @@ class _ToolTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(compact ? 18 : 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
@@ -304,50 +309,67 @@ class _ToolTile extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: accent.withOpacity(.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(icon, color: accent, size: 26),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.arrow_outward_rounded,
-                    size: 18,
-                    color: colors.onSurfaceVariant.withOpacity(.65),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  height: 1.3,
-                ),
-              ),
-            ],
+          child: compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: accent.withOpacity(.13),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(icon, color: accent, size: 23),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.north_east_rounded, size: 18,
+                        color: colors.onSurfaceVariant.withOpacity(.7)),
+                    ]),
+                    const SizedBox(height: 18),
+                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800, letterSpacing: -.25)),
+                    const SizedBox(height: 5),
+                    Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant)),
+                    const Spacer(),
+                    Row(children: [
+                      Text('Открыть инструмент',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: accent, fontWeight: FontWeight.w700)),
+                      const SizedBox(width: 6),
+                      Icon(Icons.arrow_forward_rounded, size: 15, color: accent),
+                    ]),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(children: [
+                      Container(
+                        width: 48, height: 48,
+                        decoration: BoxDecoration(
+                          color: accent.withOpacity(.12),
+                          borderRadius: BorderRadius.circular(16)),
+                        child: Icon(icon, color: accent, size: 26)),
+                      const Spacer(),
+                      Icon(Icons.arrow_outward_rounded, size: 18,
+                        color: colors.onSurfaceVariant.withOpacity(.65)),
+                    ]),
+                    const SizedBox(height: 14),
+                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800, height: 1.2)),
+                    const SizedBox(height: 5),
+                    Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant, height: 1.3)),
+                  ],
+                )
           ),
         ),
       ),
