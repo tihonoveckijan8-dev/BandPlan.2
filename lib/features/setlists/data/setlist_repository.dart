@@ -109,13 +109,19 @@ class SetlistRepository {
       }, onConflict: 'group_id,id').select('id').single();
       return const SyncReport();
     }
+    final operationId = _operationId(user.id, setlist.id);
     await store.saveAndQueue(
-      operationId: _operationId(user.id, setlist.id), ownerUserId: user.id,
+      operationId: operationId, ownerUserId: user.id,
       groupId: groupId, collection: 'group_setlists', recordId: setlist.id,
       payload: Map<String, Object?>.from(setlist.toLegacyJson()),
     );
-    // WHY: each setlist mutation retries earlier failed outbox writes.
-    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
+    // WHY: unrelated failed records must not make this setlist look unsaved.
+    return _syncEngine?.syncMutation(
+          operationId: operationId,
+          force: true,
+          retryFailed: true,
+        ) ??
+        const SyncReport(pendingCount: 1);
   }
 
   Future<SyncReport> deleteGroupSetlist(String groupId, String setlistId) async {
