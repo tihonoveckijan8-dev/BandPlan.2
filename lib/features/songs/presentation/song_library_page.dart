@@ -382,6 +382,841 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                               visualDensity: VisualDensity.compact,
                             ),
                           ),
+                          PopupMenuButton<String>(
+                            tooltip: 'Управление текущим разделом',
+                            onSelected: (action) async {
+                              final target = lyricsControllers[activeLyricsColumn];
+                              final cursor = target.selection.isValid
+                                  ? target.selection.baseOffset.clamp(0, target.text.length)
+                                  : target.text.length;
+                              final lineIndex = target.text.substring(0, cursor).split('\\n').length - 1;
+                              final sectionStarts = SongDocument.sectionLineIndices(target.text);
+                              var sectionIndex = -1;
+                              for (var i = 0; i < sectionStarts.length; i++) {
+                                if (sectionStarts[i] <= lineIndex) sectionIndex = i;
+                              }
+                              if (sectionIndex < 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Поставьте курсор внутри раздела песни')),
+                                );
+                                return;
+                              }
+                              var updated = target.text;
+                              switch (action) {
+                                case 'rename':
+                                  final lines = target.text.split('\\n');
+                                  final current = lines[sectionStarts[sectionIndex]]
+                                      .trim().replaceAll(RegExp(r'^\\[|\\]
+                            label: const Text('[Am] — аккорд в тексте'),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          Chip(
+                            avatar: const Icon(Icons.edit_note_rounded, size: 16),
+                            label: Text('Активна колонка ${activeLyricsColumn + 1}'),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text('Колонки текста',
+                            style: Theme.of(context).textTheme.titleSmall),
+                        ),
+                        SegmentedButton<int>(
+                          segments: const [
+                            ButtonSegment(value: 1, label: Text('1')),
+                            ButtonSegment(value: 2, label: Text('2')),
+                            ButtonSegment(value: 3, label: Text('3')),
+                          ],
+                          selected: {selectedColumns},
+                          onSelectionChanged: (value) {
+                            final nextCount = value.first;
+                            final merged = SongDocument.joinColumns(
+                              lyricsControllers.map((controller) => controller.text).toList(),
+                            );
+                            final split = SongDocument.splitIntoColumns(
+                              merged,
+                              columns: nextCount,
+                            );
+                            for (final controller in lyricsControllers) {
+                              controller.dispose();
+                            }
+                            setSheetState(() {
+                              selectedColumns = nextCount;
+                              activeLyricsColumn = 0;
+                              lyricsControllers = split
+                                  .map((text) => TextEditingController(text: text))
+                                  .toList();
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final colors = Theme.of(context).colorScheme;
+                        final editors = List.generate(selectedColumns, (index) {
+                          final isActive = activeLyricsColumn == index;
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: isActive ? colors.primary : colors.outlineVariant,
+                                width: isActive ? 1.8 : 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.shadow.withValues(alpha: 0.045),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Container(
+                                  color: isActive
+                                      ? colors.primaryContainer.withValues(alpha: 0.48)
+                                      : colors.surfaceContainerLow,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 11,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.notes_rounded,
+                                        size: 17,
+                                        color: isActive ? colors.primary : colors.onSurfaceVariant),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text('КОЛОНКА ${index + 1}',
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                            letterSpacing: 0.8,
+                                            fontWeight: FontWeight.w800,
+                                            color: isActive ? colors.primary : colors.onSurfaceVariant,
+                                          )),
+                                      ),
+                                      if (isActive)
+                                        Icon(Icons.edit_rounded, size: 15, color: colors.primary),
+                                    ],
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(15, 12, 15, 16),
+                                  child: TextFormField(
+                                    controller: lyricsControllers[index],
+                                    onTap: () => setSheetState(() => activeLyricsColumn = index),
+                                    onChanged: (_) => setSheetState(() {}),
+                                    minLines: 12,
+                                    maxLines: null,
+                                    keyboardType: TextInputType.multiline,
+                                    style: TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 14,
+                                      height: 1.7,
+                                      color: colors.onSurface,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Начните писать текст песни…\\n\\n[Am]Аккорды можно вставлять прямо в строку',
+                                      hintStyle: TextStyle(
+                                        color: colors.onSurfaceVariant.withValues(alpha: 0.7),
+                                        height: 1.7,
+                                      ),
+                                      alignLabelWithHint: true,
+                                      filled: true,
+                                      fillColor: colors.surfaceContainerLowest,
+                                      contentPadding: const EdgeInsets.all(14),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.55)),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: colors.primary, width: 1.4),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        });
+                        if (selectedColumns > 1 && constraints.maxWidth >= 760) {
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (var index = 0; index < editors.length; index++)
+                                Expanded(
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      right: index == editors.length - 1 ? 0 : 12,
+                                    ),
+                                    child: editors[index],
+                                  ),
+                                ),
+                            ],
+                          );
+                        }
+                        return Column(
+                          children: [
+                            for (var index = 0; index < editors.length; index++)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index == editors.length - 1 ? 0 : 12,
+                                ),
+                                child: editors[index],
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Предпросмотр документа',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            final previewLyrics = SongDocument.joinColumns(
+                              lyricsControllers
+                                  .map((controller) => controller.text)
+                                  .toList(),
+                            );
+                            Navigator.of(context).push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => _SongLyricsPreviewPage(
+                                  title: titleController.text.trim().isEmpty
+                                      ? 'Предпросмотр песни'
+                                      : titleController.text.trim(),
+                                  lyrics: previewLyrics,
+                                  columns: selectedColumns,
+                                  columnBreaks: SongDocument.columnBreaksFor(
+                                    lyricsControllers
+                                        .map((controller) => controller.text)
+                                        .toList(),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.open_in_full_rounded, size: 18),
+                          label: const Text('На весь экран'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 260),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.035),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        child: SongLyricsView(
+                          lyrics: SongDocument.joinColumns(
+                            lyricsControllers.map((controller) => controller.text).toList(),
+                          ),
+                          columns: selectedColumns,
+                          columnBreaks: SongDocument.columnBreaksFor(
+                            lyricsControllers.map((controller) => controller.text).toList(),
+                          ),
+                          textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontFamily: 'monospace',
+                            fontSize: 14,
+                            height: 1.65,
+                          ),
+                          chordStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (!(formKey.currentState?.validate() ?? false)) {
+                                return;
+                              }
+                              setSheetState(() => saving = true);
+                              try {
+                                final group = await ref.read(activeGroupProvider.future);
+                                if (group == null) {
+                                  throw StateError('Сначала выберите музыкальную группу.');
+                                }
+                                final repository = await ref.read(songRepositoryProvider.future);
+                                final bpmText = bpmController.text.trim();
+                                // WHY: editing a song must not silently discard legacy tags
+                                // or rewrite their capitalization when the user only edits lyrics.
+                                final tags = tagsController.text
+                                    .split(',')
+                                    .map((tag) => tag.trim())
+                                    .where((tag) => tag.isNotEmpty)
+                                    .toList(growable: false);
+                                final base = existing ?? Song.fromJson({
+                                  'id': DateTime.now().microsecondsSinceEpoch.toString(),
+                                  'title': titleController.text.trim(),
+                                  'lyrics': '',
+                                });
+                                final edited = base.withEdits(
+                                  title: titleController.text.trim(),
+                                  artist: artistController.text.trim(),
+                                  key: selectedKey,
+                                  bpm: bpmText.isEmpty ? null : int.parse(bpmText),
+                                  tags: tags,
+                                  lyrics: SongDocument.joinColumns(
+                                    lyricsControllers.map((controller) => controller.text).toList(),
+                                  ),
+                                  lyricsColumns: selectedColumns,
+                                  lyricsColumnBreaks: SongDocument.columnBreaksFor(
+                                    lyricsControllers.map((controller) => controller.text).toList(),
+                                  ),
+                                );
+                                final sync = await repository.saveGroupSong(group.id, edited);
+                                syncPending = sync.hasPending;
+                                syncFailed = sync.hasPermanentFailure || sync.conflictCount > 0;
+                                ref.invalidate(groupSongsProvider);
+                                if (sheetContext.mounted) {
+                                  Navigator.of(sheetContext).pop(true);
+                                }
+                              } catch (error) {
+                                setSheetState(() => saving = false);
+                                if (sheetContext.mounted) {
+                                  ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                    SnackBar(content: Text('Не удалось сохранить: $error')),
+                                  );
+                                }
+                              }
+                            },
+                      icon: saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_rounded),
+                      label: Text(saving ? 'Сохранение…' : 'Сохранить песню'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      if (saved == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(syncFailed
+              ? 'Песня сохранена на устройстве, но сервер не подтвердил изменение. Проверьте синхронизацию группы.'
+              : syncPending
+                  ? 'Песня сохранена на устройстве. Ожидает синхронизации.'
+                  : 'Песня сохранена на сервере и доступна участникам группы')),
+        );
+      }
+    } finally {
+      titleController.dispose();
+      artistController.dispose();
+      bpmController.dispose();
+      tagsController.dispose();
+      for (final controller in lyricsControllers) {
+        controller.dispose();
+      }
+    }
+  }
+
+  Future<String?> _promptChord(BuildContext context) async {
+    final controller = TextEditingController(text: 'Am');
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Добавить аккорд'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.none,
+            decoration: const InputDecoration(
+              labelText: 'Аккорд',
+              hintText: 'Например, Am7 или D/F#',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) {
+              if (SongDocument.isChordSymbol(value.trim())) {
+                Navigator.of(dialogContext).pop(value.trim());
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Отмена'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                if (SongDocument.isChordSymbol(value)) {
+                  Navigator.of(dialogContext).pop(value);
+                }
+              },
+              child: const Text('Вставить'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  Future<void> _showSong(BuildContext context, Song song) {
+    var semitones = 0;
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final displayedSong = song.transposedBy(semitones);
+          return SafeArea(
+            child: FractionallySizedBox(
+              heightFactor: 0.88,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => StageModePage(
+                            song: song,
+                            initialSemitones: semitones,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.theater_comedy_rounded),
+                      label: const Text('Сценический режим'),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(song.title, style: Theme.of(context).textTheme.headlineSmall),
+                        if (song.artist.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(song.artist, style: Theme.of(context).textTheme.bodyMedium),
+                        ],
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Text('Тональность', style: Theme.of(context).textTheme.labelLarge),
+                            const Spacer(),
+                            IconButton(
+                              tooltip: 'Понизить на полутон',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => setSheetState(() => semitones--),
+                              icon: const Icon(Icons.remove_circle_outline_rounded),
+                            ),
+                            Text(
+                              displayedSong.key.isEmpty ? '—' : displayedSong.key,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            IconButton(
+                              tooltip: 'Повысить на полутон',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => setSheetState(() => semitones++),
+                              icon: const Icon(Icons.add_circle_outline_rounded),
+                            ),
+                            if (semitones != 0)
+                              TextButton(
+                                onPressed: () => setSheetState(() => semitones = 0),
+                                child: const Text('Сбросить'),
+                              ),
+                          ],
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (song.bpm != null) _SongMeta(label: 'BPM', value: song.bpm.toString()),
+                            for (final tag in song.tags) _SongMeta(label: 'Тег', value: tag),
+                          ],
+                        ),
+                        if (semitones != 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              'Транспонирование применяется только к просмотру и не меняет сохранённую песню.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: displayedSong.lyrics.isEmpty
+                          ? const Text('Текст песни пока не добавлен.')
+                          : SongLyricsView(
+                              lyrics: displayedSong.lyrics,
+                              columns: displayedSong.lyricsColumns,
+                              columnBreaks: displayedSong.lyricsColumnBreaks,
+                              textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontFamily: 'monospace',
+                                height: 1.5,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+}
+
+class _SongTile extends StatelessWidget {
+  const _SongTile({required this.song, required this.onTap, this.onEdit});
+
+  final Song song;
+  final VoidCallback onTap;
+  final VoidCallback? onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(
+          child: Text(song.key.isEmpty ? '♫' : song.key,
+              style: Theme.of(context).textTheme.labelMedium),
+        ),
+        title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(
+          [if (song.artist.isNotEmpty) song.artist, if (song.bpm != null) '${song.bpm} BPM']
+              .join(' · '),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onEdit != null)
+              IconButton(
+                tooltip: 'Редактировать песню',
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined),
+              ),
+            if (song.isFavorite)
+              const Icon(Icons.star_rounded, color: Colors.amber)
+            else
+              const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SongMeta extends StatelessWidget {
+  const _SongMeta({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(label: Text('$label: $value'));
+  }
+}
+
+class _EmptySongs extends StatelessWidget {
+  const _EmptySongs({required this.hasQuery, required this.isPersonal});
+
+  final bool hasQuery;
+  final bool isPersonal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.library_music_outlined,
+                size: 44, color: Theme.of(context).colorScheme.secondary),
+            const SizedBox(height: 12),
+            Text(
+              hasQuery
+                  ? 'Ничего не найдено'
+                  : isPersonal
+                      ? 'Личная библиотека пока пуста'
+                      : 'В репертуаре пока нет песен',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              hasQuery
+                  ? 'Попробуйте изменить поисковый запрос.'
+                  : 'Здесь появятся песни, уже сохранённые в BandPlan.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadError extends StatelessWidget {
+  const _LoadError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded, size: 40),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: const Text('Повторить')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// WHY: The compact editor preview is useful while typing, but long lyrics
+/// need a dedicated reading surface so no part of the document is hidden
+/// behind a fixed-height preview viewport.
+class _SongLyricsPreviewPage extends StatelessWidget {
+  const _SongLyricsPreviewPage({
+    required this.title,
+    required this.lyrics,
+    required this.columns,
+    required this.columnBreaks,
+  });
+
+  final String title;
+  final String lyrics;
+  final int columns;
+  final List<int> columnBreaks;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        leading: IconButton(
+          tooltip: 'Закрыть предпросмотр',
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.close_rounded),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Вернуться к редактору',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.keyboard_return_rounded),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1180),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 13,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.description_outlined, color: colors.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Полный текст · ${columns > 1 ? '$columns колонки' : 'одна колонка'}',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Прокручивайте',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(22),
+                    child: lyrics.trim().isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            child: Center(
+                              child: Text(
+                                'Текст песни пока не добавлен.',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          )
+                        : SongLyricsView(
+                            lyrics: lyrics,
+                            columns: columns,
+                            columnBreaks: columnBreaks,
+                            textStyle: theme.textTheme.bodyLarge?.copyWith(
+                              fontFamily: 'monospace',
+                              height: 1.65,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+), '');
+                                  final controller = TextEditingController(text: current);
+                                  final label = await showDialog<String>(
+                                    context: context,
+                                    builder: (dialogContext) => AlertDialog(
+                                      title: const Text('Название раздела'),
+                                      content: TextField(
+                                        controller: controller,
+                                        autofocus: true,
+                                        decoration: const InputDecoration(
+                                          hintText: 'Например, Припев',
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(dialogContext),
+                                          child: const Text('Отмена'),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () => Navigator.pop(
+                                            dialogContext, controller.text,
+                                          ),
+                                          child: const Text('Сохранить'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  controller.dispose();
+                                  if (label == null) return;
+                                  updated = SongDocument.renameSection(
+                                    target.text, sectionIndex, label,
+                                  );
+                                case 'duplicate':
+                                  updated = SongDocument.duplicateSection(
+                                    target.text, sectionIndex,
+                                  );
+                                case 'delete':
+                                  updated = SongDocument.removeSection(
+                                    target.text, sectionIndex,
+                                  );
+                                case 'up':
+                                  updated = SongDocument.moveSection(
+                                    target.text, sectionIndex, -1,
+                                  );
+                                case 'down':
+                                  updated = SongDocument.moveSection(
+                                    target.text, sectionIndex, 1,
+                                  );
+                              }
+                              target.value = TextEditingValue(
+                                text: updated,
+                                selection: TextSelection.collapsed(
+                                  offset: updated.length.clamp(0, updated.length),
+                                ),
+                              );
+                              setSheetState(() {});
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(value: 'rename', child: Text('Переименовать')),
+                              PopupMenuItem(value: 'up', child: Text('Переместить выше')),
+                              PopupMenuItem(value: 'down', child: Text('Переместить ниже')),
+                              PopupMenuItem(value: 'duplicate', child: Text('Дублировать раздел')),
+                              PopupMenuDivider(),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Удалить раздел', style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                            child: const Chip(
+                              avatar: Icon(Icons.tune_rounded, size: 17),
+                              label: Text('Управление разделом'),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
                           Chip(
                             avatar: const Icon(Icons.keyboard_rounded, size: 16),
                             label: const Text('[Am] — аккорд в тексте'),
