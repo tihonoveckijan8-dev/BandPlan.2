@@ -67,10 +67,49 @@ class _SongLyricsColumn extends StatelessWidget {
         for (final line in document.lines)
           if (line.sectionLabel != null)
             Padding(
-              padding: const EdgeInsets.only(top: 14, bottom: 8),
-              child: Text(
-                line.sectionLabel!,
-                style: textStyle?.copyWith(fontWeight: FontWeight.w700),
+              padding: const EdgeInsets.only(top: 16, bottom: 10),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.bookmark_rounded,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          line.sectionLabel!,
+                          style: textStyle?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            letterSpacing: 0.25,
+                          ) ?? TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Divider(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      height: 1,
+                    ),
+                  ),
+                ],
               ),
             )
           else
