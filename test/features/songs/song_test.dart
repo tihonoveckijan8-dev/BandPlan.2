@@ -290,6 +290,23 @@ void main() {
       expect(edited.toLegacyJson()['lyricsColumnBreaks'], [1]);
     });
 
+    test('section editor renames and duplicates a complete section losslessly', () {
+      const source = '[Куплет 1]\\n[Am]Первая строка\\nВторая строка\\n[Припев]\\n[ G ]';
+      expect(SongDocument.renameSection(source, 0, 'Куплет A'),
+          '[Куплет A]\\n[Am]Первая строка\\nВторая строка\\n[Припев]\\n[ G ]');
+      expect(SongDocument.duplicateSection(source, 0),
+          '[Куплет 1]\\n[Am]Первая строка\\nВторая строка\\n[Куплет 1]\\n[Am]Первая строка\\nВторая строка\\n[Припев]\\n[ G ]');
+    });
+
+    test('section editor moves and removes only the selected section block', () {
+      const source = '[Куплет 1]\\nСтрока 1\\n[Припев]\\nСтрока припева\\n[Бридж]\\nФинал';
+      expect(SongDocument.moveSection(source, 2, -1),
+          '[Куплет 1]\\nСтрока 1\\n[Бридж]\\nФинал\\n[Припев]\\nСтрока припева');
+      expect(SongDocument.removeSection(source, 1),
+          '[Куплет 1]\\nСтрока 1\\n[Бридж]\\nФинал');
+      expect(SongDocument.sectionLineIndices(source), [0, 2, 4]);
+    });
+
     test('round-trips original whitespace and line breaks exactly', () {
       const source = '[Куплет]\r\n[Am]Слова   строки\n\n[G]Финал  ';
       final document = SongDocument.fromLegacyLyrics(source);
