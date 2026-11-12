@@ -83,8 +83,28 @@ class ProfileRepository {
     } catch (error) {
       if (!isOfflineNetworkError(error)) rethrow;
       final cached = await _offlineStore?.readCachedRecords(ownerUserId: user.id, collection: 'profile');
-      if (cached == null || cached.isEmpty || cached.first['payload'] is! Map) rethrow;
-      return AccountProfile.fromJson(Map<String, dynamic>.from(cached.first['payload'] as Map));
+      if (cached != null && cached.isNotEmpty && cached.first['payload'] is Map) {
+        return AccountProfile.fromJson(Map<String, dynamic>.from(cached.first['payload'] as Map));
+      }
+      // WHY: the private user-state cache also contains profile edits, even
+      // when a new account has not yet received a shared directory row.
+      final localState = await _stateRepository().readState();
+      final rawLocalProfile = localState['profile'];
+      final localProfile = rawLocalProfile is Map
+          ? Map<String, Object?>.from(rawLocalProfile)
+          : <String, Object?>{};
+      final localRoles = localProfile['roles'] is List
+          ? (localProfile['roles'] as List).map((role) => role.toString()).toList(growable: false)
+          : (localProfile['role']?.toString().isNotEmpty == true
+              ? <String>[localProfile['role'].toString()]
+              : const <String>[]);
+      return AccountProfile(
+        userId: user.id,
+        displayName: localProfile['name']?.toString().trim().isNotEmpty == true
+            ? localProfile['name'].toString().trim()
+            : user.email?.split('@').first ?? '',
+        roles: localRoles,
+      );
     }
   }
 
@@ -135,6 +155,15 @@ class ProfileRepository {
             collection: 'profile',
             recordId: 'profile',
             payload: Map<String, Object?>.from(remote),
+          );
+        } else {
+          // WHY: remove legacy synthetic cache rows with no server version;
+          // otherwise the outbox mistakes a not-yet-created account row for
+          // an existing baseline and permanently reports a false conflict.
+          await store.replaceRemoteRecords(
+            ownerUserId: user.id,
+            collection: 'profile',
+            records: const [],
           );
         }
       } catch (error) {
