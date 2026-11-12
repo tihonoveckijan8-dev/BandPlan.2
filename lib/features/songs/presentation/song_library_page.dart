@@ -381,7 +381,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                                 onTap: () => activeLyricsColumn = index,
                                 onChanged: (_) => setSheetState(() {}),
                                 minLines: 12,
-                                maxLines: 18,
+                                maxLines: null,
                                 keyboardType: TextInputType.multiline,
                                 style: const TextStyle(
                                   fontFamily: 'monospace',
