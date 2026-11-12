@@ -25,6 +25,7 @@ class SongRepository {
     RealtimeChannel? channel;
     var refreshing = false;
     var refreshAgain = false;
+    var hasConnectedOnce = false;
 
     Future<void> refresh() async {
       if (refreshing) {
@@ -78,7 +79,15 @@ class SongRepository {
               ),
               callback: (_) => unawaited(refresh()),
             )
-            .subscribe();
+            .subscribe((status, error) {
+              if (status == RealtimeSubscribeStatus.subscribed) {
+                // WHY: Realtime may reconnect after a network interruption.
+                // Refresh a full snapshot after reconnection so changes missed
+                // while disconnected are not left stale on this device.
+                if (hasConnectedOnce) unawaited(refresh());
+                hasConnectedOnce = true;
+              }
+            });
 
         await refresh();
       },
