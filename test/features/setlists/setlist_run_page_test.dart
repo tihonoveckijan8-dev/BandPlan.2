@@ -58,8 +58,7 @@ void main() {
     expect(find.text('Start after intro'), findsOneWidget);
     expect(find.text('[A#m]First line'), findsNothing);
     expect(find.text('A#m'), findsWidgets);
-    expect(lyricText('First'), findsOneWidget);
-    expect(lyricText('line'), findsOneWidget);
+    expect(lyricText('First line'), findsOneWidget);
     expect(firstSong.key, 'Am');
     expect(firstSong.lyrics, '[Am]First line');
 
@@ -130,7 +129,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(lyricText('Selected'), findsOneWidget);
-    expect(find.text('song'), findsWidgets);
+    expect(lyricText('Selected song lyrics'), findsOneWidget);
     expect(lyricText('lyrics'), findsOneWidget);
     expect(lyricText('Following'), findsNothing);
   });
