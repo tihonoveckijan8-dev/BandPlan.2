@@ -27,6 +27,7 @@ void main() {
       expect(song.tags, ['рок', 'живое']);
       expect(song.isFavorite, isTrue);
       expect(song.lyrics, lyrics);
+      expect(song.lyricsColumns, 1);
     });
 
     test('keeps unknown chord and arrangement fields for round-trip', () {
@@ -89,6 +90,7 @@ void main() {
       expect(edited.key, 'C');
       expect(edited.bpm, 112);
       expect(edited.lyrics, 'C       G\nНовый текст');
+      expect(edited.lyricsColumns, 1);
       expect(edited.toLegacyJson()['chordAnchors'], song.toLegacyJson()['chordAnchors']);
       expect(edited.toLegacyJson()['dynamics'], song.toLegacyJson()['dynamics']);
       expect(edited.toLegacyJson()['legacyExtension'], {'keep': true});
