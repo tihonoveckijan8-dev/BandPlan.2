@@ -9,8 +9,10 @@ void main() {
         home: Scaffold(
           body: Padding(
             padding: EdgeInsets.all(16),
+            // WHY: use real line breaks so the legacy parser can recognize
+            // each section marker as a standalone heading.
             child: SongLyricsView(
-              lyrics: '[Куплет 1]\\nПервая строка\\n[Припев]\\nГлавная строка',
+              lyrics: '[Куплет 1]\nПервая строка\n[Припев]\nГлавная строка',
             ),
           ),
         ),
