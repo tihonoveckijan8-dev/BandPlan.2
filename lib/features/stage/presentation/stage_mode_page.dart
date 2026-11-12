@@ -161,9 +161,8 @@ class _StageModePageState extends State<StageModePage> {
                 ),
                 if (hasQueue) ...[
                   Positioned(
-                    left: 12,
-                    bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0),
-                    left: (viewPadding.left + 12).clamp(12.0, 40.0),
+                    bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0).toDouble(),
+                    left: (viewPadding.left + 12).clamp(12.0, 40.0).toDouble(),
                     child: _StageNavigationButton(
                       tooltip: 'Предыдущая песня',
                       icon: Icons.skip_previous_rounded,
@@ -172,8 +171,8 @@ class _StageModePageState extends State<StageModePage> {
                     ),
                   ),
                   Positioned(
-                    right: (viewPadding.right + 12).clamp(12.0, 40.0),
-                    bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0),
+                    right: (viewPadding.right + 12).clamp(12.0, 40.0).toDouble(),
+                    bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0).toDouble(),
                     child: _StageNavigationButton(
                       tooltip: 'Следующая песня',
                       icon: Icons.skip_next_rounded,
