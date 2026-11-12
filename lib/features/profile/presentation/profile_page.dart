@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,6 +26,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   String? _loadedUserId;
   bool _saving = false;
   bool _syncing = false;
+  Timer? _profileSaveDebounce;
+  bool _profileSaveQueued = false;
+  String? _lastSavedProfileKey;
 
   static final _androidApkUri = Uri.parse(
     'https://github.com/tihonoveckijan8-dev/BandPlan.2/releases/download/'
@@ -35,19 +40,36 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   @override
   void dispose() {
+    _profileSaveDebounce?.cancel();
     _nameController.dispose();
     _rolesController.dispose();
     super.dispose();
   }
 
-  Future<void> _save() async {
+  String _profileDraftKey(String name, List<String> roles) =>
+      '$name\u0000${roles.join('\u0000')}';
+
+  void _scheduleProfileAutoSave() {
+    _profileSaveDebounce?.cancel();
+    // WHY: persist account edits after a short typing pause, so leaving the
+    // profile tab does not depend on remembering a separate Save button.
+    _profileSaveDebounce = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      if (_saving) {
+        _profileSaveQueued = true;
+        return;
+      }
+      unawaited(_save(showFeedback: false));
+    });
+  }
+
+  Future<void> _save({bool showFeedback = true}) async {
+    _profileSaveDebounce?.cancel();
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      _message('Укажите имя.');
+      if (showFeedback) _message('Укажите имя.');
       return;
     }
-
-    final repository = await ref.read(profileRepositoryProvider.future);
 
     final roles = _rolesController.text
         .split(',')
@@ -55,21 +77,38 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         .where((role) => role.isNotEmpty)
         .toSet()
         .toList(growable: false);
+    final draftKey = _profileDraftKey(name, roles);
+    if (draftKey == _lastSavedProfileKey) return;
+    if (_saving) {
+      _profileSaveQueued = true;
+      return;
+    }
 
     setState(() => _saving = true);
     try {
+      final repository = await ref.read(profileRepositoryProvider.future);
       final sync = await repository.saveMyProfile(displayName: name, roles: roles);
+      _lastSavedProfileKey = draftKey;
       ref.invalidate(myProfileProvider);
       ref.invalidate(offlineQueueStatusProvider);
-      if (mounted) _message(sync.hasPermanentFailure
-          ? 'Профиль сохранён на устройстве, но сервер отклонил синхронизацию.'
-          : sync.hasPending
-              ? 'Профиль сохранён на устройстве. Ожидает синхронизации.'
-              : 'Профиль сохранён.');
+      if (mounted && (showFeedback || sync.hasPermanentFailure || sync.conflictCount > 0)) {
+        _message(sync.hasPermanentFailure || sync.conflictCount > 0
+            ? 'Профиль сохранён локально, но сервер сообщил об ошибке синхронизации.'
+            : sync.hasPending
+                ? 'Профиль сохранён на устройстве. Ожидает синхронизации.'
+                : 'Профиль сохранён на сервере.');
+      }
     } catch (error) {
-      if (mounted) _message('Не удалось сохранить профиль: $error');
+      if (mounted) _message('Не удалось автоматически сохранить профиль: $error');
     } finally {
       if (mounted) setState(() => _saving = false);
+      if (mounted && _profileSaveQueued) {
+        _profileSaveQueued = false;
+        _profileSaveDebounce?.cancel();
+        _profileSaveDebounce = Timer(const Duration(milliseconds: 100), () {
+          if (mounted) unawaited(_save(showFeedback: false));
+        });
+      }
     }
   }
 
@@ -208,6 +247,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   if (_loadedUserId != value.userId) {
                     _nameController.text = value.displayName;
                     _rolesController.text = value.roles.join(', ');
+                    _lastSavedProfileKey = _profileDraftKey(
+                      value.displayName.trim(),
+                      value.roles,
+                    );
                     _loadedUserId = value.userId;
                   }
 
@@ -397,6 +440,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               TextField(
                                 controller: _nameController,
                                 textCapitalization: TextCapitalization.words,
+                                onChanged: (_) => _scheduleProfileAutoSave(),
                                 decoration: const InputDecoration(
                                   labelText: 'Отображаемое имя',
                                   hintText: 'Как к вам обращаться',
@@ -406,6 +450,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               const SizedBox(height: 16),
                               TextField(
                                 controller: _rolesController,
+                                onChanged: (_) => _scheduleProfileAutoSave(),
                                 decoration: const InputDecoration(
                                   labelText: 'Музыкальные роли',
                                   hintText: 'Вокал, гитара, клавиши',
