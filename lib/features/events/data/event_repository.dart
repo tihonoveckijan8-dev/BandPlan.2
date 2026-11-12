@@ -114,7 +114,7 @@ class EventRepository {
       groupId: groupId, collection: 'group_events', recordId: event.id,
       payload: Map<String, Object?>.from(event.toLegacyJson()),
     );
-    return _syncEngine?.syncPending(force: true) ?? const SyncReport(pendingCount: 1);
+    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
   }
 
   Future<SyncReport> deleteGroupEvent(String groupId, String eventId) async {
@@ -132,7 +132,7 @@ class EventRepository {
       ownerUserId: user.id, groupId: groupId, collection: 'group_events',
       recordId: eventId, payload: const {}, operation: 'delete',
     );
-    return _syncEngine?.syncPending(force: true) ?? const SyncReport(pendingCount: 1);
+    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
   }
 
   Future<List<GroupEvent>> _readCachedEvents(String userId, String groupId) async {
