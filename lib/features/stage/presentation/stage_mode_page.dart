@@ -135,7 +135,7 @@ class _StageModePageState extends State<StageModePage> {
                                     fontFamily: 'monospace',
                                     fontSize: 14,
                                     height: 1.45,
-                                    color: textColor,
+                                    color: Colors.white,
                                   ),
                                   chordStyle: TextStyle(
                                     fontFamily: 'monospace',
