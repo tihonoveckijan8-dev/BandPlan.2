@@ -33,7 +33,7 @@ class SongDocument {
     final count = columns.clamp(1, 3).toInt();
     if (count == 1) return [source];
 
-    final lines = source.split('\\n');
+    final lines = source.split('\n');
     List<int> breaks;
     var validStoredBreaks = columnBreaks.length == count - 1 &&
         columnBreaks.every((value) => value >= 0 && value <= lines.length);
@@ -49,7 +49,7 @@ class SongDocument {
     final result = <String>[];
     var start = 0;
     for (final end in [...breaks, lines.length]) {
-      result.add(lines.sublist(start, end).join('\\n'));
+      result.add(lines.sublist(start, end).join('\n'));
       start = end;
     }
     return result;
@@ -63,14 +63,14 @@ class SongDocument {
     var offset = 0;
     final breaks = <int>[];
     for (var i = 0; i < columns.length - 1; i++) {
-      offset += columns[i].split('\\n').length;
+      offset += columns[i].split('\n').length;
       breaks.add(offset);
     }
     return breaks;
   }
 
   static String joinColumns(List<String> columns) =>
-      columns.every((column) => column.isEmpty) ? '' : columns.join('\\n');
+      columns.every((column) => column.isEmpty) ? '' : columns.join('\n');
 
   static List<int> _balancedBreaks(int lineCount, int columnCount) {
     final base = lineCount ~/ columnCount;
