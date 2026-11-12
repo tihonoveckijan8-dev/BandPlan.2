@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_memory.dart';
@@ -37,6 +39,37 @@ void main() {
     final report = await engine.syncPending();
     expect(report.syncedCount, 1);
     expect(report.pendingCount, 0);
+    expect(await store.readPendingMutations(ownerUserId: 'user-a'), isEmpty);
+  });
+
+  test('drains edits enqueued while another sync is in progress', () async {
+    await enqueue('song-1');
+    final enteredHandler = Completer<void>();
+    final releaseHandler = Completer<void>();
+    final applied = <String>[];
+    final engine = OfflineSyncEngine(
+      store: store,
+      currentUserId: () => 'user-a',
+      applyMutation: (mutation) async {
+        final id = mutation['recordId']! as String;
+        applied.add(id);
+        if (id == 'song-1') {
+          enteredHandler.complete();
+          await releaseHandler.future;
+        }
+      },
+    );
+
+    final firstDrain = engine.syncPending(force: true);
+    await enteredHandler.future;
+    await enqueue('song-2');
+    final joinedDrain = engine.syncPending(force: true);
+    releaseHandler.complete();
+
+    await firstDrain;
+    final finalReport = await joinedDrain;
+    expect(applied, ['song-1', 'song-2']);
+    expect(finalReport.pendingCount, 0);
     expect(await store.readPendingMutations(ownerUserId: 'user-a'), isEmpty);
   });
 
