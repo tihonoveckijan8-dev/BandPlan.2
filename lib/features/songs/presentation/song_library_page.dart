@@ -1175,22 +1175,27 @@ class _SongLyricsPreviewPage extends StatelessWidget {
                                   updated = SongDocument.renameSection(
                                     target.text, sectionIndex, label,
                                   );
+                                  break;
                                 case 'duplicate':
                                   updated = SongDocument.duplicateSection(
                                     target.text, sectionIndex,
                                   );
+                                  break;
                                 case 'delete':
                                   updated = SongDocument.removeSection(
                                     target.text, sectionIndex,
                                   );
+                                  break;
                                 case 'up':
                                   updated = SongDocument.moveSection(
                                     target.text, sectionIndex, -1,
                                   );
+                                  break;
                                 case 'down':
                                   updated = SongDocument.moveSection(
                                     target.text, sectionIndex, 1,
                                   );
+                                  break;
                               }
                               target.value = TextEditingValue(
                                 text: updated,
