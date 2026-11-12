@@ -440,6 +440,9 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                             lyricsControllers.map((controller) => controller.text).toList(),
                           ),
                           columns: selectedColumns,
+                          columnBreaks: SongDocument.columnBreaksFor(
+                            lyricsControllers.map((controller) => controller.text).toList(),
+                          ),
                           textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                             fontFamily: 'monospace',
                             height: 1.45,
@@ -679,6 +682,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                           : SongLyricsView(
                               lyrics: displayedSong.lyrics,
                               columns: displayedSong.lyricsColumns,
+                              columnBreaks: displayedSong.lyricsColumnBreaks,
                               textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 fontFamily: 'monospace',
                                 height: 1.5,
