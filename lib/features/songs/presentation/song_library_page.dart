@@ -183,7 +183,12 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
     final tagsController = TextEditingController(
       text: existing?.tags.join(', ') ?? '',
     );
-    final lyricsController = TextEditingController(text: existing?.lyrics ?? '');
+    var lyricsControllers = SongDocument.splitIntoColumns(
+      existing?.lyrics ?? '',
+      columns: existing?.lyricsColumns ?? 1,
+      columnBreaks: existing?.lyricsColumnBreaks ?? const [],
+    ).map((text) => TextEditingController(text: text)).toList();
+    var activeLyricsColumn = 0;
     var selectedKey = existing?.key.isNotEmpty == true ? existing!.key : 'Am';
     var selectedColumns = existing?.lyricsColumns ?? 1;
     var saving = false;
@@ -300,24 +305,22 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                         onPressed: () async {
                           final chord = await _promptChord(context);
                           if (chord == null) return;
-                          final selection = lyricsController.selection;
-                          final start = selection.isValid
-                              ? selection.start
-                              : lyricsController.text.length;
-                          final end = selection.isValid
-                              ? selection.end
-                              : lyricsController.text.length;
+                          final target = lyricsControllers[activeLyricsColumn];
+                          final selection = target.selection;
+                          final start = selection.isValid ? selection.start : target.text.length;
+                          final end = selection.isValid ? selection.end : target.text.length;
                           final updated = SongDocument.insertChordToken(
-                            source: lyricsController.text,
+                            source: target.text,
                             selectionStart: start,
                             selectionEnd: end,
                             chord: chord,
                           );
                           final cursor = (start < end ? start : end) + chord.length + 2;
-                          lyricsController.value = TextEditingValue(
+                          target.value = TextEditingValue(
                             text: updated,
                             selection: TextSelection.collapsed(offset: cursor),
                           );
+                          setSheetState(() {});
                         },
                         icon: const Icon(Icons.add_rounded, size: 18),
                         label: const Text('Вставить аккорд'),
@@ -343,22 +346,63 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    TextFormField(
-                      controller: lyricsController,
-                      onChanged: (_) => setSheetState(() {}),
-                      minLines: 10,
-                      maxLines: 18,
-                      keyboardType: TextInputType.multiline,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        height: 1.55,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Текст и аккорды',
-                        alignLabelWithHint: true,
-                        helperText: 'Поставьте курсор перед нужным слогом и вставьте аккорд — пробелы вручную не нужны.',
-                        border: OutlineInputBorder(),
-                      ),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final editors = List.generate(selectedColumns, (index) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text('Колонка ${index + 1}',
+                                style: Theme.of(context).textTheme.labelLarge),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: lyricsControllers[index],
+                                onTap: () => activeLyricsColumn = index,
+                                onChanged: (_) => setSheetState(() {}),
+                                minLines: 12,
+                                maxLines: 18,
+                                keyboardType: TextInputType.multiline,
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  height: 1.55,
+                                ),
+                                decoration: const InputDecoration(
+                                  hintText: 'Текст и аккорды…',
+                                  alignLabelWithHint: true,
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                            ],
+                          );
+                        });
+                        if (selectedColumns > 1 && constraints.maxWidth >= 760) {
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (var index = 0; index < editors.length; index++)
+                                Expanded(
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      right: index == editors.length - 1 ? 0 : 12,
+                                    ),
+                                    child: editors[index],
+                                  ),
+                                ),
+                            ],
+                          );
+                        }
+                        return Column(
+                          children: [
+                            for (var index = 0; index < editors.length; index++)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index == editors.length - 1 ? 0 : 12,
+                                ),
+                                child: editors[index],
+                              ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
                     Text('Предпросмотр документа',
@@ -374,7 +418,9 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                       ),
                       child: SingleChildScrollView(
                         child: SongLyricsView(
-                          lyrics: lyricsController.text,
+                          lyrics: SongDocument.joinColumns(
+                            lyricsControllers.map((controller) => controller.text).toList(),
+                          ),
                           columns: selectedColumns,
                           textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                             fontFamily: 'monospace',
@@ -417,8 +463,13 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                                   key: selectedKey,
                                   bpm: bpmText.isEmpty ? null : int.parse(bpmText),
                                   tags: tags,
-                                  lyrics: lyricsController.text,
+                                  lyrics: SongDocument.joinColumns(
+                                    lyricsControllers.map((controller) => controller.text).toList(),
+                                  ),
                                   lyricsColumns: selectedColumns,
+                                  lyricsColumnBreaks: SongDocument.columnBreaksFor(
+                                    lyricsControllers.map((controller) => controller.text).toList(),
+                                  ),
                                 );
                                 final sync = await repository.saveGroupSong(group.id, edited);
                                 syncPending = sync.hasPending;
@@ -466,7 +517,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
       artistController.dispose();
       bpmController.dispose();
       tagsController.dispose();
-      lyricsController.dispose();
+      for (final controller in lyricsControllers) {\n        controller.dispose();\n      }
     }
   }
 
