@@ -13,7 +13,7 @@ class Song {
         bpm = _integer(raw['bpm']),
         durationSeconds = _integer(raw['duration']),
         tags = _stringList(raw['tags']),
-        isFavorite = raw['fav'] == true;
+        isFavorite = raw['fav'] == true,\n        lyricsColumns = (_integer(raw['lyricsColumns']) ?? 1).clamp(1, 3).toInt(),\n        lyricsColumnBreaks = _integerList(raw['lyricsColumnBreaks']);
 
   final Map<String, dynamic> raw;
   final String id;
@@ -26,7 +26,7 @@ class Song {
   final int? bpm;
   final int? durationSeconds;
   final List<String> tags;
-  final bool isFavorite;
+  final bool isFavorite;\n  final int lyricsColumns;\n  final List<int> lyricsColumnBreaks;
 
   factory Song.fromJson(Map<String, dynamic> json) {
     final copy = Map<String, dynamic>.from(json);
@@ -134,7 +134,7 @@ class Song {
     return int.tryParse(value?.toString() ?? '');
   }
 
-  static List<String> _stringList(Object? value) {
+  static List<int> _integerList(Object? value) {\n    if (value is! List) return const [];\n    return value.map((item) => item is int ? item : item is num ? item.toInt() : int.tryParse(item?.toString() ?? '')).whereType<int>().toList(growable: false);\n  }\n\n  static List<String> _stringList(Object? value) {
     if (value is! List) return const [];
     return value
         .map((item) => item?.toString().trim() ?? '')
