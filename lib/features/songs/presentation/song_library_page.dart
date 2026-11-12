@@ -345,6 +345,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: lyricsController,
+                      onChanged: (_) => setSheetState(() {}),
                       minLines: 10,
                       maxLines: 18,
                       keyboardType: TextInputType.multiline,
