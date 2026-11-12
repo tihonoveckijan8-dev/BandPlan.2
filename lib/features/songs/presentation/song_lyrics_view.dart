@@ -84,15 +84,24 @@ class _SongLyricsLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final anchors = [...line.anchors]
-      ..sort((a, b) => a.characterOffset.compareTo(b.characterOffset));
+    final words = RegExp(r'\\S+').allMatches(line.lyricText).toList();
+    final anchors = line.anchors.map((anchor) {
+      final word = anchor.wordIndex < words.length
+          ? words[anchor.wordIndex]
+          : null;
+      final position = word == null
+          ? line.lyricText.length
+          : word.start +
+              anchor.characterOffset.clamp(0, word.end - word.start).toInt();
+      return (anchor: anchor, position: position);
+    }).toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
     final spans = <InlineSpan>[];
     var offset = 0;
 
-    for (final anchor in anchors) {
-      final position = anchor.characterOffset
-          .clamp(offset, line.lyricText.length)
-          .toInt();
+    for (final item in anchors) {
+      final anchor = item.anchor;
+      final position = item.position.clamp(offset, line.lyricText.length).toInt();
       if (position > offset) {
         spans.add(TextSpan(
           text: line.lyricText.substring(offset, position),
