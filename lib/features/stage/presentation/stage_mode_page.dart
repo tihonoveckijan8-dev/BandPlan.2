@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:vector_math/vector_math_64.dart' show Matrix4;
@@ -42,6 +44,20 @@ class StageModePage extends StatefulWidget {
 class _StageModePageState extends State<StageModePage> {
   late int _trackIndex;
   final TransformationController _transformController = TransformationController();
+  Timer? _controlsHideTimer;
+  bool _controlsVisible = true;
+
+  void _scheduleControlsHide() {
+    _controlsHideTimer?.cancel();
+    _controlsHideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _controlsVisible = false);
+    });
+  }
+
+  void _showControls() {
+    if (!_controlsVisible) setState(() => _controlsVisible = true);
+    _scheduleControlsHide();
+  }
 
   StageModeTrack get _track => widget.queue.isEmpty
       ? StageModeTrack(
@@ -61,6 +77,7 @@ class _StageModePageState extends State<StageModePage> {
         : widget.initialTrackIndex.clamp(0, widget.queue.length - 1).toInt();
     // WHY: performance mode must use the entire display, not the app chrome.
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _scheduleControlsHide();
   }
 
   void _moveTrack(int delta) {
@@ -74,6 +91,7 @@ class _StageModePageState extends State<StageModePage> {
 
   @override
   void dispose() {
+    _controlsHideTimer?.cancel();
     _transformController.dispose();
     // WHY: restore the normal system bars when leaving the immersive stage.
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -87,7 +105,12 @@ class _StageModePageState extends State<StageModePage> {
     final textColor = Colors.white;
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
+      body: GestureDetector(
+        // WHY: a tap on the performance canvas reveals controls temporarily;
+        // the lyrics stay unobstructed during normal use.
+        behavior: HitTestBehavior.translucent,
+        onTap: _showControls,
+        child: SafeArea(
         top: false,
         bottom: false,
         child: LayoutBuilder(
@@ -150,44 +173,56 @@ class _StageModePageState extends State<StageModePage> {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: SafeArea(
-                    child: _StageNavigationButton(
-                      tooltip: 'Выйти из режима сцены',
-                      icon: Icons.close_rounded,
-                      enabled: true,
-                      onPressed: () => Navigator.of(context).maybePop(),
+                IgnorePointer(
+                  ignoring: !_controlsVisible,
+                  child: AnimatedOpacity(
+                    opacity: _controlsVisible ? 1 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: SafeArea(
+                            child: _StageNavigationButton(
+                              tooltip: 'Выйти из режима сцены',
+                              icon: Icons.close_rounded,
+                              enabled: true,
+                              onPressed: () => Navigator.of(context).maybePop(),
+                            ),
+                          ),
+                        ),
+                        if (hasQueue) ...[
+                          Positioned(
+                            bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0).toDouble(),
+                            left: (viewPadding.left + 12).clamp(12.0, 40.0).toDouble(),
+                            child: _StageNavigationButton(
+                              tooltip: 'Предыдущая песня',
+                              icon: Icons.skip_previous_rounded,
+                              enabled: _trackIndex > 0,
+                              onPressed: () => _moveTrack(-1),
+                            ),
+                          ),
+                          Positioned(
+                            right: (viewPadding.right + 12).clamp(12.0, 40.0).toDouble(),
+                            bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0).toDouble(),
+                            child: _StageNavigationButton(
+                              tooltip: 'Следующая песня',
+                              icon: Icons.skip_next_rounded,
+                              enabled: _trackIndex < widget.queue.length - 1,
+                              onPressed: () => _moveTrack(1),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
-                if (hasQueue) ...[
-                  Positioned(
-                    bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0).toDouble(),
-                    left: (viewPadding.left + 12).clamp(12.0, 40.0).toDouble(),
-                    child: _StageNavigationButton(
-                      tooltip: 'Предыдущая песня',
-                      icon: Icons.skip_previous_rounded,
-                      enabled: _trackIndex > 0,
-                      onPressed: () => _moveTrack(-1),
-                    ),
-                  ),
-                  Positioned(
-                    right: (viewPadding.right + 12).clamp(12.0, 40.0).toDouble(),
-                    bottom: (viewPadding.bottom + 14).clamp(14.0, 48.0).toDouble(),
-                    child: _StageNavigationButton(
-                      tooltip: 'Следующая песня',
-                      icon: Icons.skip_next_rounded,
-                      enabled: _trackIndex < widget.queue.length - 1,
-                      onPressed: () => _moveTrack(1),
-                    ),
-                  ),
-                ],
               ],
             );
           },
         ),
+      ),
       ),
     );
   }
