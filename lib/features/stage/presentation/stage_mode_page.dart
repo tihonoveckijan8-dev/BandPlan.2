@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:vector_math/vector_math_64.dart' show Matrix4;
 
+import '../../core/stage_mode_visibility.dart';
 import '../../songs/domain/song.dart';
 import '../../songs/presentation/song_lyrics_view.dart';
 
@@ -76,6 +77,7 @@ class _StageModePageState extends State<StageModePage> {
         ? 0
         : widget.initialTrackIndex.clamp(0, widget.queue.length - 1).toInt();
     // WHY: performance mode must use the entire display, not the app chrome.
+    stageModeIsActive.value = true;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _scheduleControlsHide();
   }
@@ -92,6 +94,7 @@ class _StageModePageState extends State<StageModePage> {
   @override
   void dispose() {
     _controlsHideTimer?.cancel();
+    stageModeIsActive.value = false;
     _transformController.dispose();
     // WHY: restore the normal system bars when leaving the immersive stage.
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
