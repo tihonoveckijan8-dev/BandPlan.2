@@ -108,7 +108,7 @@ class SongRepository {
       ownerUserId: user.id, groupId: groupId, collection: 'group_songs',
       recordId: song.id, payload: Map<String, Object?>.from(song.toLegacyJson()),
     );
-    return _syncEngine?.syncPending(force: true) ?? const SyncReport(pendingCount: 1);
+    return _syncEngine?.syncPending(force: true, retryFailed: true) ?? const SyncReport(pendingCount: 1);
   }
 
   Future<List<Song>> getPersonalSongs() async {
