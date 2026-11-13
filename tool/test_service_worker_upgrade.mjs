@@ -100,6 +100,7 @@ function createWorker(buildId) {
   let skipWaitingCount = 0;
   let networkCalls = 0;
   let navigationOffline = false;
+  let navigationContent = null;
   let failedAssetSuffix = null;
 
   const fakeFetch = async (input) => {
@@ -115,6 +116,9 @@ function createWorker(buildId) {
       throw new TypeError('Simulated interrupted asset download');
     }
     if (navigationOffline) throw new TypeError('Network unavailable in test');
+    if (new URL(url).pathname.endsWith('/index.html') && navigationContent) {
+      return new Response(navigationContent, { status: 200 });
+    }
     return new Response('asset:' + new URL(url).pathname, { status: 200 });
   };
 
@@ -162,6 +166,7 @@ function createWorker(buildId) {
   return {
     dispatch,
     setNavigationOffline: (value) => { navigationOffline = value; },
+    setNavigationContent: (value) => { navigationContent = value; },
     setFailedAsset: (suffix) => { failedAssetSuffix = suffix; },
     get claimCount() { return claimCount; },
     get skipWaitingCount() { return skipWaitingCount; },
@@ -252,7 +257,9 @@ await currentWorker.dispatch('fetch', {
 });
 assert.equal(apiResponseHandled, false, 'Supabase API requests must bypass the service-worker cache');
 
-// Navigation must use the complete cached shell first, even while online.
+// WHY: Online entry must receive fresh HTML so a cached old page cannot hide
+// the update notification code needed to activate its replacement worker.
+currentWorker.setNavigationContent('fresh-index-for-update-check');
 const callsBeforeNavigation = currentWorker.networkCalls;
 let navigationResponse;
 await currentWorker.dispatch('fetch', {
@@ -264,14 +271,14 @@ await currentWorker.dispatch('fetch', {
   respondWith: (promise) => { navigationResponse = promise; },
 });
 assert.equal((await navigationResponse).status, 200);
-assert.equal(await (await navigationResponse).text(), 'asset:/BandPlan.2/index.html');
+assert.equal(await (await navigationResponse).text(), 'fresh-index-for-update-check');
 assert.equal(
   currentWorker.networkCalls,
-  callsBeforeNavigation,
-  'Launching an installed PWA must not make a network request for its app shell',
+  callsBeforeNavigation + 1,
+  'Online app entry must request fresh index.html instead of returning stale cached HTML',
 );
 
-// The same cached shell must launch after the network becomes unavailable.
+// The complete cached shell must still launch when the network is unavailable.
 currentWorker.setNavigationOffline(true);
 navigationResponse = undefined;
 await currentWorker.dispatch('fetch', {
