@@ -174,12 +174,65 @@ class GroupWorkspacePage extends ConsumerWidget {
   ) async {
     final code = await _scanGroupInviteCode(context);
     if (code == null || !context.mounted) return;
-    await _showGroupDialog(
-      context,
-      ref,
-      repository,
-      create: false,
-      initialInviteCode: code,
+
+    // WHY: scanning is the user's explicit join action; don't make them type or
+    // submit the same invite code again after the camera has already read it.
+    final userEmail = ref.read(authRepositoryProvider)?.currentUser?.email ?? '';
+    final profile = ref.read(myProfileProvider).asData?.value;
+    final displayName = profile?.displayName.trim().isNotEmpty == true
+        ? profile!.displayName.trim()
+        : userEmail.split('@').first;
+    final roles = profile?.roles ?? const <String>[];
+
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    final progressDialog = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              SizedBox(width: 16),
+              Expanded(child: Text('Подключаем к группе…')),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    String? failure;
+    try {
+      await repository.joinGroup(
+        inviteCode: code,
+        displayName: displayName,
+        roles: roles,
+      );
+      // WHY: the join RPC changes server membership and can change the active group.
+      ref.invalidate(myGroupsProvider);
+      ref.invalidate(activeGroupProvider);
+      ref.invalidate(myProfileProvider);
+    } catch (error) {
+      failure = error.toString();
+    } finally {
+      if (rootNavigator.mounted) rootNavigator.pop();
+      await progressDialog;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          failure == null
+              ? 'Вы вступили в группу.'
+              : 'Не удалось вступить в группу: $failure',
+        ),
+      ),
     );
   }
 
@@ -479,28 +532,64 @@ class _GroupTile extends StatelessWidget {
 }
 
 Future<String?> _scanGroupInviteCode(BuildContext context) async {
+  var codeWasRead = false;
   return showDialog<String>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: const Text('Сканировать приглашение'),
       content: SizedBox(
         width: 320,
-        height: 320,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: MobileScanner(
-            onDetect: (capture) {
-              for (final barcode in capture.barcodes) {
-                final rawValue = barcode.rawValue;
-                if (rawValue == null) continue;
-                final code = _extractGroupInviteCode(rawValue);
-                if (code != null) {
-                  Navigator.of(dialogContext).pop(code);
-                  return;
-                }
-              }
-            },
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 280,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: MobileScanner(
+                  errorBuilder: (context, error) {
+                    final permissionDenied =
+                        error.errorCode == MobileScannerErrorCode.permissionDenied;
+                    return ColoredBox(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(18),
+                          child: Text(
+                            permissionDenied
+                                ? 'Нет доступа к камере. Разрешите камеру для BandPlan в настройках браузера и откройте сканер снова.'
+                                : 'Не удалось запустить камеру. Проверьте разрешение на использование камеры и попробуйте ещё раз.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  onDetect: (capture) {
+                    // WHY: mobile_scanner can emit the same QR in several frames.
+                    // Close the scanner only once to avoid duplicate navigation.
+                    if (codeWasRead) return;
+                    for (final barcode in capture.barcodes) {
+                      final rawValue = barcode.rawValue;
+                      if (rawValue == null) continue;
+                      final code = _extractGroupInviteCode(rawValue);
+                      if (code != null) {
+                        codeWasRead = true;
+                        Navigator.of(dialogContext).pop(code);
+                        return;
+                      }
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Наведите камеру на QR-код приглашения. '
+              'После считывания приложение автоматически отправит запрос на вступление.',
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
       actions: [
