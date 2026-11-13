@@ -223,29 +223,32 @@
 
       function watchInstallingWorker(registration) {
         const installing = registration.installing;
-        if (!installing) return;
-        installing.addEventListener('statechange', function () {
+        if (!installing) {
+          showUpdate(registration);
+          return;
+        }
+        const checkInstalled = function () {
           if (installing.state === 'installed') showUpdate(registration);
-        });
+        };
+        // WHY: The registration/update check can start before this watcher is
+        // attached. Check the current state immediately as well as future events,
+        // otherwise an already-installed waiting worker can be missed.
+        installing.addEventListener('statechange', checkInstalled);
+        checkInstalled();
       }
 
       navigator.serviceWorker.getRegistration('./').then(function (registration) {
         if (!registration) return;
         showUpdate(registration);
+        // WHY: The first script may have started downloading an update before
+        // this listener was attached; watch an already-installing worker too.
+        watchInstallingWorker(registration);
         registration.addEventListener('updatefound', function () {
           watchInstallingWorker(registration);
         });
 
-        // WHY: A page left open for hours should discover a published build without requiring a manual tab restart.
-        function checkForUpdate() {
-          if (document.visibilityState === 'visible') {
-            registration.update().catch(function (error) {
-              console.warn('BandPlan PWA update check failed:', error);
-            });
-          }
-        }
-        window.setInterval(checkForUpdate, 5 * 60 * 1000);
-        document.addEventListener('visibilitychange', checkForUpdate);
+        // WHY: Check for updates on fresh app entry only. Do not poll or
+        // interrupt a rehearsal/session while the user is working in BandPlan.
       }).catch(function (error) {
         console.warn('BandPlan PWA update watcher failed:', error);
       });
