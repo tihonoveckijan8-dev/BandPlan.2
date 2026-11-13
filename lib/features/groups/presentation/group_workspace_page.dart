@@ -377,6 +377,22 @@ class _GroupTile extends StatelessWidget {
                           ),
                     ),
                   ],
+                  if (repo != null)
+                    TextButton.icon(
+                      // WHY: make invite sharing discoverable without opening the overflow menu.
+                      onPressed: () => _showGroupInviteQr(
+                        context,
+                        repo,
+                        group,
+                        onActivated,
+                      ),
+                      icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                      label: const Text('Показать QR-код'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -459,29 +475,7 @@ class _GroupTile extends StatelessWidget {
                     }
                   }
                 } else if (action == 'invite') {
-                  try {
-                    await repo.setActiveGroup(id);
-                    // WHY: invite generation switches the active group on the server.
-                    onActivated();
-                    final result = await repo.getOrCreateInviteCode();
-                    if (!context.mounted) return;
-                    final code = result is Map
-                        ? (result['invite_code'] ?? result['code'])?.toString()
-                        : result?.toString();
-                    if (code == null || code.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Сервер не вернул код приглашения.')),
-                      );
-                      return;
-                    }
-                    await _showInviteQrDialog(context, name, code.trim().toUpperCase());
-                  } catch (error) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(error.toString())),
-                      );
-                    }
-                  }
+                  await _showGroupInviteQr(context, repo, group, onActivated);
                 } else if (action == 'leave') {
                   final confirmed = await showDialog<bool>(
                     context: context,
@@ -528,6 +522,41 @@ class _GroupTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+Future<void> _showGroupInviteQr(
+  BuildContext context,
+  GroupRepository repository,
+  GroupSummary group,
+  VoidCallback onActivated,
+) async {
+  try {
+    await repository.setActiveGroup(group.id);
+    // WHY: the existing invite RPC creates/returns a code for the active group.
+    onActivated();
+    final result = await repository.getOrCreateInviteCode();
+    if (!context.mounted) return;
+    final code = result is Map
+        ? (result['invite_code'] ?? result['code'])?.toString()
+        : result?.toString();
+    if (code == null || code.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Сервер не вернул код приглашения.')),
+      );
+      return;
+    }
+    await _showInviteQrDialog(
+      context,
+      group.name,
+      code.trim().toUpperCase(),
+    );
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
   }
 }
 
