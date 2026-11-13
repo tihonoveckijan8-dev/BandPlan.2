@@ -223,15 +223,26 @@
 
       function watchInstallingWorker(registration) {
         const installing = registration.installing;
-        if (!installing) return;
-        installing.addEventListener('statechange', function () {
+        if (!installing) {
+          showUpdate(registration);
+          return;
+        }
+        const checkInstalled = function () {
           if (installing.state === 'installed') showUpdate(registration);
-        });
+        };
+        // WHY: The registration/update check can start before this watcher is
+        // attached. Check the current state immediately as well as future events,
+        // otherwise an already-installed waiting worker can be missed.
+        installing.addEventListener('statechange', checkInstalled);
+        checkInstalled();
       }
 
       navigator.serviceWorker.getRegistration('./').then(function (registration) {
         if (!registration) return;
         showUpdate(registration);
+        // WHY: The first script may have started downloading an update before
+        // this listener was attached; watch an already-installing worker too.
+        watchInstallingWorker(registration);
         registration.addEventListener('updatefound', function () {
           watchInstallingWorker(registration);
         });
