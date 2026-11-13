@@ -89,21 +89,25 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      // WHY: A launch must not wait for GitHub Pages or the network. The
-      // versioned index is installed before this worker can become active.
+
+      // WHY: The cached index can contain an older update watcher, creating a
+      // deadlock: it cannot display the update that would replace that index.
+      // Fetch fresh HTML on every online entry, but keep the cached shell as
+      // the offline fallback so the PWA still relaunches without a connection.
+      try {
+        const freshPage = await fetch(request, { cache: 'no-store' });
+        if (freshPage.ok) return freshPage;
+      } catch (_) {
+        // Offline launch continues with the last complete app shell below.
+      }
+
       const cachedShell = await cache.match(APP_INDEX) || await cache.match(request);
       if (cachedShell) return cachedShell;
 
-      // WHY: Network is only a first-visit fallback; an active worker should
-      // always have a complete app shell available for offline relaunches.
-      try {
-        return await fetch(request);
-      } catch (_) {
-        return new Response(
-          'BandPlan is unavailable offline. Open the app once while online.',
-          { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
-        );
-      }
+      return new Response(
+        'BandPlan is unavailable offline. Open the app once while online.',
+        { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
+      );
     })());
     return;
   }
