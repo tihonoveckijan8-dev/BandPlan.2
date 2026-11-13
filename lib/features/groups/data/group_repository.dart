@@ -168,10 +168,11 @@ class GroupRepository {
     required String displayName,
     required List<String> roles,
   }) async {
+    final normalizedCode = inviteCode.trim().toUpperCase();
     final response = await _client.rpc(
       'bandplan_join_group',
       params: {
-        'p_code': inviteCode,
+        'p_code': normalizedCode,
         'p_display_name': displayName,
         'p_roles': roles,
       },
