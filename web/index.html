@@ -247,16 +247,8 @@
           watchInstallingWorker(registration);
         });
 
-        // WHY: A page left open for hours should discover a published build without requiring a manual tab restart.
-        function checkForUpdate() {
-          if (document.visibilityState === 'visible') {
-            registration.update().catch(function (error) {
-              console.warn('BandPlan PWA update check failed:', error);
-            });
-          }
-        }
-        window.setInterval(checkForUpdate, 5 * 60 * 1000);
-        document.addEventListener('visibilitychange', checkForUpdate);
+        // WHY: Check for updates on fresh app entry only. Do not poll or
+        // interrupt a rehearsal/session while the user is working in BandPlan.
       }).catch(function (error) {
         console.warn('BandPlan PWA update watcher failed:', error);
       });
