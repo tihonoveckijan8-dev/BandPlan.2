@@ -184,10 +184,11 @@ class GroupWorkspacePage extends ConsumerWidget {
         : userEmail.split('@').first;
     final roles = profile?.roles ?? const <String>[];
 
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
     final progressDialog = showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => const PopScope(
+      builder: (_) => const PopScope(
         canPop: false,
         child: AlertDialog(
           content: Row(
@@ -219,9 +220,7 @@ class GroupWorkspacePage extends ConsumerWidget {
     } catch (error) {
       failure = error.toString();
     } finally {
-      if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
+      if (rootNavigator.mounted) rootNavigator.pop();
       await progressDialog;
     }
 
@@ -548,6 +547,24 @@ Future<String?> _scanGroupInviteCode(BuildContext context) async {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18),
                 child: MobileScanner(
+                  errorBuilder: (context, error) {
+                    final permissionDenied =
+                        error.errorCode == MobileScannerErrorCode.permissionDenied;
+                    return ColoredBox(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(18),
+                          child: Text(
+                            permissionDenied
+                                ? 'Нет доступа к камере. Разрешите камеру для BandPlan в настройках браузера и откройте сканер снова.'
+                                : 'Не удалось запустить камеру. Проверьте разрешение на использование камеры и попробуйте ещё раз.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                   onDetect: (capture) {
                     // WHY: mobile_scanner can emit the same QR in several frames.
                     // Close the scanner only once to avoid duplicate navigation.
