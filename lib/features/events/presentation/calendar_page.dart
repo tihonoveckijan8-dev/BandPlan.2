@@ -56,68 +56,103 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
                 _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
               if(selectedItems.isEmpty)
+                // WHY: The calendar is the app's landing screen, so its first viewport
+                // should communicate group activity and offer a clear next action.
                 Card(
+                  color: Theme.of(context).colorScheme.primary,
+                  clipBehavior: Clip.antiAlias,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.event_available_rounded,
-                            size: 34, color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(height: 10),
-                        Text('День свободен',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-                        const SizedBox(height: 5),
-                        Text('На выбранную дату пока ничего не запланировано.',
-                          textAlign: TextAlign.center,
+                        Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(Icons.graphic_eq_rounded, color: Theme.of(context).colorScheme.onPrimary),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'BANDPLAN  /  MUSIC GROUP OS',
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.78),
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Перейти к сегодняшней дате',
+                              onPressed: () => setState(() {
+                                final today = DateTime.now();
+                                visibleMonth = DateTime(today.year, today.month);
+                                selectedDate = _iso(today);
+                              }),
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              icon: const Icon(Icons.today_rounded),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          'Музыка начинается\\nс общего плана.',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.w800,
+                            height: 1.12,
+                            letterSpacing: -0.6,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Репетиции, выступления и планы группы — в одном месте.',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: () => _edit(context, ref, programs, initialDate: selectedDate),
-                          icon: const Icon(Icons.add_rounded), label: const Text('Добавить событие')),
+                            color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.82),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _DashboardMetric(value: '${items.length}', label: 'событий'),
+                            _DashboardMetric(value: '${programs.length}', label: 'сет-листов'),
+                            _DashboardMetric(value: '${selectedItems.length}', label: 'на выбранный день'),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.onPrimary,
+                                foregroundColor: Theme.of(context).colorScheme.primary,
+                              ),
+                              onPressed: () => _edit(context, ref, programs, initialDate: selectedDate),
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text('Добавить событие'),
+                            ),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                              onPressed: () => context.push('/songs'),
+                              icon: const Icon(Icons.library_music_rounded),
+                              label: const Text('Открыть песни'),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ),
-                ),
-              ...selectedItems.map((occurrence){
-                final e=occurrence.event;final sl=map[e.setlistId];
-                return Padding(padding:const EdgeInsets.only(bottom:10),
-                  child:Card(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
-                    leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
-                    title:Text(e.title,style:const TextStyle(fontWeight:FontWeight.w700)),
-                    subtitle:Text([if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location,
-                      if(sl!=null)'Сет-лист: '+sl.name,if(e.status=='done')'Проведено',if(e.status=='cancelled')'Отменено'].join(' · '),
-                      maxLines:3,overflow:TextOverflow.ellipsis),
-                    trailing:const Icon(Icons.chevron_right_rounded),
-                    onTap:()=>_details(context,ref,e,sl,programs,occurrenceDate:occurrence.date,seriesEvent:occurrence.series))));
-              }),
-            ],
-          );
-          return LayoutBuilder(builder:(context,constraints){
-            // WHY: A desktop viewport has room for a month navigator and its selected-day
-            // agenda side by side; keep the stacked flow on phones and narrow tablets.
-            final isWide = constraints.maxWidth >= 1180;
-            return Center(child:ConstrainedBox(
-              constraints:const BoxConstraints(maxWidth:1680),
-              child:ListView(padding:EdgeInsets.fromLTRB(isWide?24:16,12,isWide?24:16,110),children:[
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                    child: Row(children: [
-                      Container(width:46,height:46,decoration:BoxDecoration(
-                        color:Theme.of(context).colorScheme.primaryContainer,borderRadius:BorderRadius.circular(15)),
-                        child:Icon(Icons.calendar_month_rounded,color:Theme.of(context).colorScheme.onPrimaryContainer)),
-                      const SizedBox(width:14),
-                      Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-                        Text('План группы',style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.w800)),
-                        const SizedBox(height:3),
-                        Text(items.isEmpty?'Пока нет запланированных событий':'${items.length} событий в этом месяце',
-                          style:Theme.of(context).textTheme.bodySmall?.copyWith(color:Theme.of(context).colorScheme.onSurfaceVariant)),
-                      ])),
-                      IconButton(tooltip:'Сегодня',onPressed:()=>setState((){
-                        final today=DateTime.now();visibleMonth=DateTime(today.year,today.month);selectedDate=_iso(today);
-                      }),icon:const Icon(Icons.today_rounded)),
-                    ]),
                   ),
                 ),
                 const SizedBox(height:8),
@@ -368,4 +403,45 @@ class _Error extends StatelessWidget{
   @override Widget build(BuildContext context)=>Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
     const Icon(Icons.cloud_off_rounded,size:40),const SizedBox(height:12),Text(message,textAlign:TextAlign.center),
     const SizedBox(height:16),OutlinedButton(onPressed:retry,child:const Text('Повторить'))])));
+}
+
+
+class _DashboardMetric extends StatelessWidget {
+  const _DashboardMetric({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = Theme.of(context).colorScheme.onPrimary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: foreground.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: foreground.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: foreground.withValues(alpha: 0.82),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
