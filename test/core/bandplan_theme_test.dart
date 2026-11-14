@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../lib/core/theme/bandplan_theme.dart';
+import 'package:bandplan/core/theme/bandplan_theme.dart';
 
 void main() {
   test('soft-clay theme exposes two opposing surface shadows', () {
