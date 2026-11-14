@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/clay_surface.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -76,7 +78,7 @@ class GroupWorkspacePage extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Card(
+                ClaySurface(
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -347,7 +349,7 @@ class _GroupTile extends StatelessWidget {
     final id = group.id;
     final name = group.name;
     final repo = repository;
-    return Card(
+    return ClaySurface(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
         padding: const EdgeInsets.all(16),
