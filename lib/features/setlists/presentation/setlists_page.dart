@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/clay_surface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../groups/application/group_providers.dart';
@@ -92,7 +94,7 @@ class SetlistsPage extends ConsumerWidget {
                 final setlist = items[index];
                 final duration = setlist.items.fold<int>(0, (total, item) =>
                     total + (songMap[item.songId]?.durationSeconds ?? 0).toInt());
-                return Card(
+                return ClaySurface(
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                     leading: CircleAvatar(
@@ -316,7 +318,7 @@ class SetlistsPage extends ConsumerWidget {
                                     break;
                                   }
                                 }
-                                return Card(
+                                return ClaySurface(
                                   key: ValueKey(item.id.isEmpty ? '${item.songId}-$index' : item.id),
                                   margin: const EdgeInsets.only(bottom: 8),
                                   child: ListTile(
