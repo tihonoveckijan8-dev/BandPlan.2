@@ -21,9 +21,11 @@ class ClaySurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final depth = theme.extension<BandPlanClayDepth>();
-    final cornerRadius = radius ?? theme.cardTheme.shape is RoundedRectangleBorder
-        ? (radius ?? 24.0)
+    final shape = theme.cardTheme.shape;
+    final defaultRadius = shape is RoundedRectangleBorder
+        ? shape.borderRadius.resolve(Directionality.of(context)).topLeft.x
         : 24.0;
+    final cornerRadius = radius ?? defaultRadius;
     final borderRadius = BorderRadius.circular(cornerRadius);
 
     return Container(
