@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/clay_surface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../groups/application/group_providers.dart';
@@ -56,7 +58,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               Padding(padding:const EdgeInsets.fromLTRB(4,18,4,10),child:Text(
                 _date(selectedDate),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w800))),
               if(selectedItems.isEmpty)
-                Card(
+                ClaySurface(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
                     child: Column(
@@ -82,7 +84,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               ...selectedItems.map((occurrence){
                 final e=occurrence.event;final sl=map[e.setlistId];
                 return Padding(padding:const EdgeInsets.only(bottom:10),
-                  child:Card(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
+                  child:ClaySurface(child:ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
                     leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,child:Icon(_icon(e.type))),
                     title:Text(e.title,style:const TextStyle(fontWeight:FontWeight.w700)),
                     subtitle:Text([if(e.time.isNotEmpty)e.time+(e.end.isNotEmpty?'–'+e.end:''),if(e.location.isNotEmpty)e.location,
@@ -100,7 +102,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             return Center(child:ConstrainedBox(
               constraints:const BoxConstraints(maxWidth:1680),
               child:ListView(padding:EdgeInsets.fromLTRB(isWide?24:16,12,isWide?24:16,110),children:[
-                Card(
+                ClaySurface(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                     child: Row(children: [
@@ -149,7 +151,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     final counts=<String,int>{};
     for(final occurrence in events){counts.update(occurrence.date,(v)=>v+1,ifAbsent:()=>1);}
     final scheme=Theme.of(context).colorScheme;
-    return Card(child:Padding(padding:const EdgeInsets.fromLTRB(12,10,12,12),child:Column(children:[
+    return ClaySurface(child:Padding(padding:const EdgeInsets.fromLTRB(12,10,12,12),child:Column(children:[
       Row(children:[
         IconButton(tooltip:'Предыдущий месяц',onPressed:()=>onMonthChanged(DateTime(month.year,month.month-1,1)),icon:const Icon(Icons.chevron_left_rounded)),
         Expanded(child:Center(child:Text('${monthNames[month.month-1][0].toUpperCase()}${monthNames[month.month-1].substring(1)} ${month.year}',

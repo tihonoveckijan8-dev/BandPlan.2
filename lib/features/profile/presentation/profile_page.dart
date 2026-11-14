@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/clay_surface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -432,7 +434,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 fontWeight: FontWeight.w800,
                               )),
                       const SizedBox(height: 10),
-                      Card(
+                      ClaySurface(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(

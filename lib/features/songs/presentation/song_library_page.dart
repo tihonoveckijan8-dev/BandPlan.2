@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/clay_surface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/song_providers.dart';
@@ -1038,7 +1040,7 @@ class _SongTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return ClaySurface(
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
@@ -1225,7 +1227,7 @@ class _SongLyricsPreviewPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                Card(
+                ClaySurface(
                   margin: EdgeInsets.zero,
                   child: Padding(
                     padding: const EdgeInsets.all(22),
