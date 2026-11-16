@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/clay_surface.dart';
+
 import 'chord_library_page.dart';
 import 'guitar_tuner_page.dart';
 import 'metronome_page.dart';
@@ -138,28 +140,13 @@ class _WorkshopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final dark = theme.brightness == Brightness.dark;
 
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(compact ? 26 : 22, compact ? 17 : 22, 18, compact ? 16 : 20),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: colors.shadow.withOpacity(dark ? .24 : .09),
-            blurRadius: 22,
-            offset: const Offset(0, 9),
-          ),
-          BoxShadow(
-            color: colors.surface.withOpacity(dark ? .22 : .95),
-            blurRadius: 2,
-            offset: const Offset(0, -1),
-          ),
-        ],
-      ),
-      child: Stack(
+      child: ClaySurface(
+        radius: 28,
+        padding: EdgeInsets.fromLTRB(compact ? 26 : 22, compact ? 17 : 22, 18, compact ? 16 : 20),
+        child: Stack(
         children: [
           Positioned(
             right: -2,
@@ -229,6 +216,7 @@ class _WorkshopHeader extends StatelessWidget {
             ],
           ),
         ],
+        ),
       ),
     );
   }
@@ -284,31 +272,16 @@ class _ToolTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final dark = theme.brightness == Brightness.dark;
 
     return Material(
-      color: colors.surfaceContainerLow,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
-        child: Container(
+        child: ClaySurface(
+          radius: 24,
           padding: EdgeInsets.all(compact ? 18 : 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: colors.shadow.withOpacity(dark ? .17 : .055),
-                blurRadius: 15,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: colors.surface.withOpacity(dark ? .16 : .8),
-                blurRadius: 1,
-                offset: const Offset(0, -1),
-              ),
-            ],
-          ),
           child: compact
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
