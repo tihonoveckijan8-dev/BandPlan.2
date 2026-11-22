@@ -94,6 +94,9 @@ class SetlistsPage extends ConsumerWidget {
                 final setlist = items[index];
                 final duration = setlist.items.fold<int>(0, (total, item) =>
                     total + (songMap[item.songId]?.durationSeconds ?? 0).toInt());
+                // WHY: event lookup may scan the event map when the direct link
+                // is missing; calculate it once instead of twice per card.
+                final linkedEvent = _linkedEventLabel(setlist, eventMap);
                 return ClaySurface(
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
@@ -105,8 +108,8 @@ class SetlistsPage extends ConsumerWidget {
                     subtitle: Text([
                       '${setlist.items.length} песен',
                       if (duration > 0) _durationLabel(duration),
-                      if (_linkedEventLabel(setlist, eventMap).isNotEmpty)
-                        'Событие: ${_linkedEventLabel(setlist, eventMap)}',
+                      if (linkedEvent.isNotEmpty)
+                        'Событие: $linkedEvent',
                       if (setlist.note.isNotEmpty) setlist.note,
                     ].join(' · '), maxLines: 3, overflow: TextOverflow.ellipsis),
                     trailing: Row(
