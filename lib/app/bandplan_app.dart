@@ -60,8 +60,9 @@ class _BandPlanAppState extends ConsumerState<BandPlanApp>
     if (!mounted || !SupabaseBootstrap.isInitialized) return;
     try {
       final engine = await ref.read(offlineSyncEngineProvider.future);
-      // WHY: recover previously rejected transient writes after connectivity returns.
-      await engine.syncPending(retryFailed: true);
+      // WHY: periodic sync respects retry backoff and must not reactivate
+      // permanent server rejections; retrying those is an explicit user action.
+      await engine.syncPending();
       ref.invalidate(offlineQueueStatusProvider);
     } catch (_) {
       // WHY: network failure must never block startup, navigation, or resume.
