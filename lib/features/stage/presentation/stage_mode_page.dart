@@ -68,7 +68,16 @@ class _StageModePageState extends State<StageModePage> {
         )
       : widget.queue[_trackIndex];
 
-  Song get _song => _track.song.transposedBy(_track.semitones);
+  // WHY: Transposing lyrics scans every line and chord token. Keep the
+  // display copy until the performer changes tracks instead of rebuilding it
+  // on every controls/gesture rebuild.
+  late Song _displaySong;
+
+  Song get _song => _displaySong;
+
+  void _updateDisplaySong() {
+    _displaySong = _track.song.transposedBy(_track.semitones);
+  }
 
   @override
   void initState() {
@@ -76,10 +85,26 @@ class _StageModePageState extends State<StageModePage> {
     _trackIndex = widget.queue.isEmpty
         ? 0
         : widget.initialTrackIndex.clamp(0, widget.queue.length - 1).toInt();
+    _updateDisplaySong();
     // WHY: performance mode must use the entire display, not the app chrome.
     stageModeIsActive.value = true;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _scheduleControlsHide();
+  }
+
+  @override
+  void didUpdateWidget(covariant StageModePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.song != widget.song ||
+        oldWidget.initialSemitones != widget.initialSemitones ||
+        oldWidget.performanceNote != widget.performanceNote ||
+        !identical(oldWidget.queue, widget.queue) ||
+        oldWidget.initialTrackIndex != widget.initialTrackIndex) {
+      _trackIndex = widget.queue.isEmpty
+          ? 0
+          : widget.initialTrackIndex.clamp(0, widget.queue.length - 1).toInt();
+      _updateDisplaySong();
+    }
   }
 
   void _moveTrack(int delta) {
@@ -87,6 +112,7 @@ class _StageModePageState extends State<StageModePage> {
     if (next < 0 || next >= widget.queue.length) return;
     setState(() {
       _trackIndex = next;
+      _updateDisplaySong();
       _transformController.value = Matrix4.identity();
     });
   }
