@@ -20,6 +20,12 @@ class CalendarPage extends ConsumerStatefulWidget {
 class _CalendarPageState extends ConsumerState<CalendarPage> {
   late DateTime visibleMonth;
   late String selectedDate;
+  List<GroupEvent>? _cachedSourceEvents;
+  int? _cachedYear;
+  int? _cachedMonth;
+  List<EventOccurrence> _cachedOccurrences = const [];
+  Map<String, List<EventOccurrence>> _cachedOccurrencesByDate = const {};
+  Map<String, int> _cachedEventCounts = const {};
 
   @override
   void initState() {
@@ -43,10 +49,34 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         loading:()=>const Center(child:CircularProgressIndicator()),
         error:(e,_)=>_Error(message:e.toString(),retry:()=>ref.invalidate(groupEventsProvider)),
         data:(values){
-          final items=expandEventOccurrences(values, DateTime(visibleMonth.year,visibleMonth.month,1), DateTime(visibleMonth.year,visibleMonth.month+1,0));
+          // WHY: switching dates or rebuilding because setlists changed must not
+          // re-expand every recurring event for the month. Recompute only when
+          // the source snapshot or visible month actually changes.
+          if (!identical(_cachedSourceEvents, values) ||
+              _cachedYear != visibleMonth.year ||
+              _cachedMonth != visibleMonth.month) {
+            final occurrences = expandEventOccurrences(
+              values,
+              DateTime(visibleMonth.year, visibleMonth.month, 1),
+              DateTime(visibleMonth.year, visibleMonth.month + 1, 0),
+            );
+            final byDate = <String, List<EventOccurrence>>{};
+            final counts = <String, int>{};
+            for (final occurrence in occurrences) {
+              byDate.putIfAbsent(occurrence.date, () => <EventOccurrence>[]).add(occurrence);
+              counts.update(occurrence.date, (count) => count + 1, ifAbsent: () => 1);
+            }
+            _cachedSourceEvents = values;
+            _cachedYear = visibleMonth.year;
+            _cachedMonth = visibleMonth.month;
+            _cachedOccurrences = occurrences;
+            _cachedOccurrencesByDate = byDate;
+            _cachedEventCounts = counts;
+          }
+          final items = _cachedOccurrences;
           final map={for(final s in programs)s.id:s};
-          final selectedItems=items.where((o)=>o.date==selectedDate).toList();
-          final calendarPanel = _monthCalendar(context,visibleMonth,selectedDate,items,
+          final selectedItems = _cachedOccurrencesByDate[selectedDate] ?? const <EventOccurrence>[];
+          final calendarPanel = _monthCalendar(context,visibleMonth,selectedDate,_cachedEventCounts,
             (month)=>setState((){visibleMonth=month;selectedDate=_iso(month);}),
             (day)=>setState((){
               // WHY: the Today shortcut must bring the visible month along with the selected date.
@@ -140,7 +170,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     );
   }
 
-  Widget _monthCalendar(BuildContext context,DateTime month,String selectedDate,List<EventOccurrence> events,
+  Widget _monthCalendar(BuildContext context,DateTime month,String selectedDate,Map<String, int> counts,
       ValueChanged<DateTime> onMonthChanged,ValueChanged<DateTime> onDaySelected) {
     const monthNames=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
     const weekdays=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
@@ -148,8 +178,6 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     final offset=first.weekday-1;
     final days=DateTime(month.year,month.month+1,0).day;
     final cells=((offset+days+6)~/7)*7;
-    final counts=<String,int>{};
-    for(final occurrence in events){counts.update(occurrence.date,(v)=>v+1,ifAbsent:()=>1);}
     final scheme=Theme.of(context).colorScheme;
     return ClaySurface(child:Padding(padding:const EdgeInsets.fromLTRB(12,10,12,12),child:Column(children:[
       Row(children:[
