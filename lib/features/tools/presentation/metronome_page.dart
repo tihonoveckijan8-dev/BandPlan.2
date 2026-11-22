@@ -21,6 +21,10 @@ class _MetronomePageState extends State<MetronomePage>
   ];
 
   final _player = AudioPlayer();
+  // WHY: The click waveforms are identical for every beat of a given accent
+  // type; synthesize each once instead of allocating PCM buffers every beat.
+  late final Uint8List _accentClick = _clickWav(true);
+  late final Uint8List _regularClick = _clickWav(false);
   Timer? _timer;
   final Stopwatch _clock = Stopwatch();
   int _bpm = 100;
@@ -82,8 +86,10 @@ class _MetronomePageState extends State<MetronomePage>
       // WHY: The click is synthesized locally; no network or bundled media
       // is needed, and the accent uses a higher, stronger transient.
       await _player.stop();
-      await _player.play(BytesSource(_clickWav(accented),
-          mimeType: 'audio/wav'));
+      await _player.play(BytesSource(
+        accented ? _accentClick : _regularClick,
+        mimeType: 'audio/wav',
+      ));
     } catch (_) {
       if (mounted) setState(() => _running = false);
       _timer?.cancel();
