@@ -24,6 +24,12 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
   _SongLibrary _library = _SongLibrary.group;
   String _query = '';
 
+  // WHY: filtering and sorting a large library on every unrelated rebuild
+  // wastes work; reuse the derived list until the source or query changes.
+  List<Song>? _cachedSourceSongs;
+  String _cachedFilterQuery = '';
+  List<Song> _cachedFilteredSongs = const [];
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -140,11 +146,7 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
                 ),
                 data: (value) {
                   final query = _query.toLowerCase();
-                  final filtered = value
-                      .where((song) =>
-                          query.isEmpty || song.searchableText.contains(query))
-                      .toList(growable: false)
-                    ..sort((a, b) => a.title.compareTo(b.title));
+                  final filtered = _filteredSongs(value);
 
                   if (filtered.isEmpty) {
                     return _EmptySongs(
@@ -172,6 +174,24 @@ class _SongLibraryPageState extends ConsumerState<SongLibraryPage> {
         ),
       ),
     );
+  }
+
+  List<Song> _filteredSongs(List<Song> songs) {
+    final query = _query.toLowerCase();
+    if (identical(_cachedSourceSongs, songs) && _cachedFilterQuery == query) {
+      return _cachedFilteredSongs;
+    }
+
+    final filtered = songs
+        .where((song) =>
+            query.isEmpty || song.searchableText.contains(query))
+        .toList(growable: false)
+      ..sort((a, b) => a.title.compareTo(b.title));
+
+    _cachedSourceSongs = songs;
+    _cachedFilterQuery = query;
+    _cachedFilteredSongs = filtered;
+    return filtered;
   }
 
   Future<void> _editSong(BuildContext context, [Song? existing]) async {
