@@ -31,6 +31,7 @@ class SetlistRepository {
     RealtimeChannel? channel;
     var refreshing = false;
     var refreshAgain = false;
+    Timer? realtimeRefreshTimer;
 
     Future<void> refresh() async {
       if (refreshing) {
@@ -82,13 +83,23 @@ class SetlistRepository {
                 column: 'group_id',
                 value: groupId,
               ),
-              callback: (_) => unawaited(refresh()),
+              callback: (_) {
+                // WHY: One database transaction can emit several row events;
+                // coalesce the burst into a single full-snapshot request.
+                realtimeRefreshTimer?.cancel();
+                realtimeRefreshTimer = Timer(const Duration(milliseconds: 250), () {
+                  realtimeRefreshTimer = null;
+                  unawaited(refresh());
+                });
+              },
             )
             .subscribe();
 
         await refresh();
       },
       onCancel: () async {
+        realtimeRefreshTimer?.cancel();
+        realtimeRefreshTimer = null;
         final activeChannel = channel;
         channel = null;
         if (activeChannel != null) {

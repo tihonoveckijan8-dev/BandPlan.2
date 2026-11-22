@@ -25,6 +25,7 @@ class SongRepository {
     RealtimeChannel? channel;
     var refreshing = false;
     var refreshAgain = false;
+    Timer? realtimeRefreshTimer;
     var hasConnectedOnce = false;
 
     Future<void> refresh() async {
@@ -77,7 +78,15 @@ class SongRepository {
                 column: 'group_id',
                 value: groupId,
               ),
-              callback: (_) => unawaited(refresh()),
+              callback: (_) {
+                // WHY: One database transaction can emit several row events;
+                // coalesce the burst into a single full-snapshot request.
+                realtimeRefreshTimer?.cancel();
+                realtimeRefreshTimer = Timer(const Duration(milliseconds: 250), () {
+                  realtimeRefreshTimer = null;
+                  unawaited(refresh());
+                });
+              },
             )
             .subscribe((status, error) {
               if (status == RealtimeSubscribeStatus.subscribed) {
@@ -92,6 +101,8 @@ class SongRepository {
         await refresh();
       },
       onCancel: () async {
+        realtimeRefreshTimer?.cancel();
+        realtimeRefreshTimer = null;
         final activeChannel = channel;
         channel = null;
         if (activeChannel != null) {
